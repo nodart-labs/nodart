@@ -1,0 +1,3 @@
+export = {
+    rootDir: __dirname + '/..'
+}

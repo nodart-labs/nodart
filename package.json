@@ -1,0 +1,31 @@
+{
+  "name": "nodart",
+  "version": "1.0.0",
+  "description": "typescript backend framework",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodart-labs/nodart.git"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --loader ts-node/esm testapp",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "test": "tests"
+  },
+  "author": "ArGab",
+  "license": "MIT",
+  "dependencies": {
+    "ts-node": "^10.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.35",
+    "nodemon": "^2.0.15",
+    "typescript": "^4.6.4"
+  },
+  "keywords": [
+    "ts framework",
+    "typescript framework",
+    "node.js framework"
+  ]
+}

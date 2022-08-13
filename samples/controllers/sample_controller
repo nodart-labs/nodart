@@ -1,0 +1,22 @@
+import {Controller} from "nodart";
+
+export class SampleController extends Controller {
+
+    get() {
+    }
+
+    post() {
+    }
+
+    patch() {
+    }
+
+    put() {
+    }
+
+    delete() {
+    }
+
+    head() {
+    }
+}
