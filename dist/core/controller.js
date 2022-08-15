@@ -11,10 +11,9 @@ const di_1 = require("./di");
 exports.CONTROLLER_INITIAL_ACTION = 'init';
 exports.CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head'];
 let Controller = class Controller {
-    constructor(app, http, route) {
+    constructor(app, http) {
         this.app = app;
         this.http = http;
-        this.route = route;
     }
 };
 __decorate([
@@ -23,9 +22,6 @@ __decorate([
 __decorate([
     (0, di_1.injects)('middleware')
 ], Controller.prototype, "middleware", void 0);
-__decorate([
-    (0, di_1.injects)('middleware/route')
-], Controller.prototype, "routes", void 0);
 __decorate([
     (0, di_1.injects)('strategy')
 ], Controller.prototype, "strategy", void 0);

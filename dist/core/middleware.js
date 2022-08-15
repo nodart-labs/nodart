@@ -5,25 +5,23 @@ class Middleware {
     constructor(scope = {}) {
         this.scope = scope;
         this.cases = [];
-        this._reference = [];
-    }
-    expose(rule, filter) {
+        this._uses = [];
     }
     setScope(scope) {
         Object.assign(this.scope, scope);
     }
-    use(reference) {
-        Array.isArray(reference) ? this._reference = [...this._reference, ...reference] : this._reference.push(reference);
+    use(reference, props = []) {
+        this._uses.push({ reference, props });
         return this;
     }
     on(rule, descriptor, payload) {
         this.cases.push({
-            uses: this._reference,
+            uses: this._uses,
             rule,
             descriptor,
             payload,
         });
-        this._reference = [];
+        this._uses = [];
     }
 }
 exports.Middleware = Middleware;

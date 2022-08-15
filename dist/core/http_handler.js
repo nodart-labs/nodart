@@ -18,42 +18,40 @@ class HttpHandler {
         this.app = app;
         this.request = request;
         this.response = response;
-        this.attach = { controller: null, action: null, route: null, httpClient: null };
         this.httpClient = new http_client_1.HttpClient(request, response);
+        this.controllerLoader = app.get('controller');
     }
     getRoute() {
         return this.app.router.httpRoute(this.httpClient);
     }
     getController(route, httpClient) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.attach.route = (route || (route = this.getRoute()));
-            this.attach.httpClient = (httpClient || (httpClient = this.httpClient));
-            const loader = this.app.get('controller');
-            const { path, action } = HttpHandler.getControllerPathData(route, loader);
+            route || (route = this.getRoute());
+            httpClient || (httpClient = this.httpClient);
+            const { path, action } = HttpHandler.getControllerPathData(route, this.controllerLoader);
             if (path) {
-                this.attach.controller = path;
-                this.attach.action = action;
-                return yield loader.require(path).call([httpClient, route]);
+                this.action = action;
+                return yield this.controllerLoader.require(path).call([httpClient, route]);
             }
         });
     }
     runController(controller, action, args) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const target = controller !== null && controller !== void 0 ? controller : yield this.getController();
             if (!(target instanceof controller_1.Controller))
                 return;
-            this.attach.action = action = this.getValidatedControllerAction(target, action);
-            args || (args = target.route ? this.app.router.arrangeRouteParams(target.route) : []);
+            action = this.getValidatedControllerAction(target, action || ((_a = target.route) === null || _a === void 0 ? void 0 : _a.data.action));
+            args || (args = ((_b = target.route) === null || _b === void 0 ? void 0 : _b.data) ? this.app.router.arrangeRouteParams(target.route.data) : []);
             yield target[controller_1.CONTROLLER_INITIAL_ACTION]();
-            return yield target[action].apply(target, args);
+            target.route && (target.route.data.action = action);
+            if (target[action] instanceof Function)
+                return yield target[action].apply(target, args);
         });
     }
     getValidatedControllerAction(controller, action) {
-        var _a;
         const httpMethod = controller.http.request.method.toLowerCase();
-        action || (action = (_a = this.attach.action) !== null && _a !== void 0 ? _a : httpMethod);
-        if (!(controller[action] instanceof Function))
-            throw `The action "${action}" is not found in the "${controller.constructor.name}".`;
+        action || (action = this.action || httpMethod);
         if (controller_1.CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod)
             throw `The action "${action}" not responds to the HTTP method "${httpMethod.toUpperCase()}" in the "${controller.constructor.name}".`;
         return action;

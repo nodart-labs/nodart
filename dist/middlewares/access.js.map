@@ -1,1 +1,1 @@
-{"version":3,"file":"access.js","sourceRoot":"","sources":["../../middlewares/access.ts"],"names":[],"mappings":";;;AAAA,mDAA8C;AAE9C,MAAa,MAAO,SAAQ,uBAAU;CAErC;AAFD,wBAEC"}
+{"version":3,"file":"access.js","sourceRoot":"","sources":["../../middlewares/access.ts"],"names":[],"mappings":";;;AAAA,mDAA8C;AAE9C,MAAa,MAAO,SAAQ,uBAAU;IAClC,MAAM,CAAC,IAAY,EAAE,MAAiB;IACtC,CAAC;CACJ;AAHD,wBAGC"}

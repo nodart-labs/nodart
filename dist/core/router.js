@@ -20,12 +20,14 @@ class Router {
                     path: route.path,
                     pathname: route.pathname,
                     params: route.params,
+                    action: route.action,
                 };
         }
         return {
             route: '',
             name: '',
             path: '',
+            action: '',
             pathname,
             params: {},
         };

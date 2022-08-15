@@ -3,17 +3,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Route = void 0;
 const middleware_1 = require("../core/middleware");
 class Route extends middleware_1.Middleware {
-    constructor() {
-        super(...arguments);
-        this.scope = {};
+    constructor(_data, scope = {}) {
+        super(scope);
+        this._data = _data;
+        this.scope = scope;
     }
-    setScope(scope) {
-        super.setScope(scope);
-        this.scope.request = scope.http.request;
-        this.scope.response = scope.http.response;
+    get data() {
+        return this._data;
     }
-    on(requestMethod, route, payload) {
-        super.on(requestMethod, route, payload);
+    set data(data) {
+        this._data = data;
+    }
+    on(action, route, payload) {
+        super.on(action, route, payload);
+    }
+    expose(rule, filter) {
+    }
+    delete(...args) {
+    }
+    get(...args) {
+    }
+    head(...args) {
+    }
+    patch(...args) {
+    }
+    post(...args) {
+    }
+    put(...args) {
     }
 }
 exports.Route = Route;

@@ -18,14 +18,14 @@ class AppLoader {
         this._pathSuffix = '';
         this._targetPath = '';
     }
-    get targetUnderScorePath() {
-        return this._targetPath.replace('/', '_');
-    }
     _resolve(target, args) {
         var _a;
         if ((_a = target === null || target === void 0 ? void 0 : target.prototype) === null || _a === void 0 ? void 0 : _a.constructor)
             return Reflect.construct(target, args !== null && args !== void 0 ? args : []);
         return target;
+    }
+    get repository() {
+        return utils_1.$.trimPath(this._repository);
     }
     getTarget() {
         return this._target;
@@ -34,14 +34,19 @@ class AppLoader {
     }
     onGetProperty(property, value, reference) {
     }
-    getReferenceTarget(reference) {
-        if (!this._targetPath || !reference)
+    getUnderScorePath(targetPath) {
+        targetPath || (targetPath = this._targetPath);
+        return targetPath.replace('/', '_');
+    }
+    getReferenceTarget(referencePathLike, targetPath) {
+        targetPath || (targetPath = this._targetPath);
+        if (!targetPath || !referencePathLike)
             return;
-        const path = this.targetUnderScorePath;
-        if (this.isTarget(reference + '/' + path))
+        const path = this.getUnderScorePath(targetPath);
+        if (this.isTarget(referencePathLike + '/' + path))
             return path;
-        if (this.isTarget(reference + '/' + this._targetPath))
-            return this._targetPath;
+        if (this.isTarget(referencePathLike + '/' + this._targetPath))
+            return targetPath;
     }
     getReferenceProps(reference) {
     }
@@ -62,14 +67,16 @@ class AppLoader {
     generate() {
         return __awaiter(this, void 0, void 0, function* () {
             this._onGenerate(this.getRepo());
-            const repo = this.getRepo();
-            repo && !utils_1.fs.isDir(repo) && utils_1.fs.mkdir(repo);
             yield this._resolve();
         });
     }
     getRepo() {
-        const repo = utils_1.$.trimPath(this._repository);
-        return repo ? this._app.rootDir + '/' + repo : '';
+        const repo = this.repository;
+        if (!repo)
+            return '';
+        const path = this._app.rootDir + '/' + repo;
+        utils_1.fs.isDir(path) || utils_1.fs.mkdir(path);
+        return path;
     }
     absPath(path) {
         const repo = this.getRepo();
@@ -80,6 +87,16 @@ class AppLoader {
     }
     isSource(path) {
         return utils_1.fs.isFile(this.absPath(path), ['.ts', '.js']);
+    }
+    intersectLoader(loaderName, subRepo, targetPath) {
+        subRepo || (subRepo = '');
+        targetPath || (targetPath = this._targetPath);
+        const loader = this._app.get(loaderName);
+        if (!loader)
+            return;
+        const referenceTarget = loader.getReferenceTarget(loader.repository + (subRepo ? '/' + utils_1.$.trimPath(subRepo) : ''), utils_1.$.trimPath(targetPath));
+        if (referenceTarget)
+            return loader.require(subRepo + '/' + referenceTarget);
     }
 }
 exports.AppLoader = AppLoader;
