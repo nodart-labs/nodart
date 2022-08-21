@@ -27,6 +27,7 @@ export type typeAppConfig = {
     mimeType?: string,
     mimeTypes?: typeBaseEntry,
     static?: string,
+    staticIndex?: string,
     [addon: string]: any,
 }
 
@@ -80,10 +81,12 @@ export const getSamples = (path: string) => {
 }
 
 export const DEFAULT_CONTROLLER_NAME = 'index'
+export const DEFAULT_STATIC_INDEX = 'index.html'
 export const DEFAULT_STATIC_REPOSITORY = 'static'
 export const DEFAULT_MIME_TYPE = 'application/octet-stream'
 export const DEFAULT_MIME_TYPES = Object.freeze({
     'html': 'text/html',
+    'htm': 'text/html',
     'js': 'text/javascript',
     'css': 'text/css',
     'json': 'application/json',
@@ -108,6 +111,7 @@ export const APP_CONFIG: typeAppConfig = Object.freeze({
     storeName: CLIENT_STORE_NAME,
     stateName: CLIENT_STATE_NAME,
     routes: {},
+    staticIndex: DEFAULT_STATIC_INDEX,
     loaders: {
         controller: ControllerLoader,
         model: ModelLoader,

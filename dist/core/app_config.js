@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_MIME_TYPES = exports.DEFAULT_MIME_TYPE = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_CONTROLLER_NAME = exports.getSamples = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
+exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_MIME_TYPES = exports.DEFAULT_MIME_TYPE = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.getSamples = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const controller_loader_1 = require("../loaders/controller_loader");
 const model_loader_1 = require("../loaders/model_loader");
@@ -25,10 +25,12 @@ const getSamples = (path) => {
 };
 exports.getSamples = getSamples;
 exports.DEFAULT_CONTROLLER_NAME = 'index';
+exports.DEFAULT_STATIC_INDEX = 'index.html';
 exports.DEFAULT_STATIC_REPOSITORY = 'static';
 exports.DEFAULT_MIME_TYPE = 'application/octet-stream';
 exports.DEFAULT_MIME_TYPES = Object.freeze({
     'html': 'text/html',
+    'htm': 'text/html',
     'js': 'text/javascript',
     'css': 'text/css',
     'json': 'application/json',
@@ -52,6 +54,7 @@ exports.APP_CONFIG = Object.freeze({
     storeName: exports.CLIENT_STORE_NAME,
     stateName: exports.CLIENT_STATE_NAME,
     routes: {},
+    staticIndex: exports.DEFAULT_STATIC_INDEX,
     loaders: {
         controller: controller_loader_1.ControllerLoader,
         model: model_loader_1.ModelLoader,

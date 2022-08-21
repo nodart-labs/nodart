@@ -10,7 +10,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
     const http = new HttpClient(request, response)
 
-    const urlPath = http.parseURL.pathname
+    const urlPath = http.parseURL.pathname === '/' ? app.config.get.staticIndex : http.parseURL.pathname
 
     const file = staticLoader.require(urlPath).call()
 
