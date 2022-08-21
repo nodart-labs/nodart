@@ -10,15 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpHandler = void 0;
-const http_client_1 = require("./http_client");
 const controller_1 = require("./controller");
 const app_config_1 = require("./app_config");
 class HttpHandler {
-    constructor(app, request, response) {
+    constructor(app, httpClient) {
         this.app = app;
-        this.request = request;
-        this.response = response;
-        this.httpClient = new http_client_1.HttpClient(request, response);
+        this.httpClient = httpClient;
         this.controllerLoader = app.get('controller');
     }
     getRoute() {

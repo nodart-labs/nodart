@@ -3,11 +3,11 @@ import {Strategy} from "./strategy";
 import {Middleware} from "./middleware";
 import {uses, injects} from "./di";
 import {App} from './app'
-import {Entity} from "./entity";
 import {Route} from "../middlewares/route";
 import {HttpAcceptorInterface} from "./interfaces/http_acceptor_interface";
 import {Session} from "./session";
-import {SessionLoader} from "../loaders/session_loader";
+import {Engine} from "./engine";
+import {Model} from "./model";
 
 type typeDeepNestedGeneric<T> = T | { [key: string]: typeDeepNestedGeneric<T> }
 
@@ -15,23 +15,19 @@ export const CONTROLLER_INITIAL_ACTION = 'init'
 export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head']
 
 @uses('middleware')
-@uses('strategy')
-@uses('entity')
-@uses('engine')
+@uses('model')
 
 export abstract class Controller implements HttpAcceptorInterface {
 
-    @injects('entity') readonly entity: typeDeepNestedGeneric<Entity | typeof Entity>
-
     @injects('middleware') readonly middleware: typeDeepNestedGeneric<Middleware | typeof Middleware>
 
-    @injects('strategy') readonly strategy: typeDeepNestedGeneric<Strategy | typeof Strategy>
-
-    @injects('engine') readonly engine
+    @injects('model') readonly model: typeDeepNestedGeneric<Model | typeof Model>
 
     readonly route: Route
 
     protected _session: Session
+
+    protected _engine: Engine
 
     protected constructor(readonly app?: App, readonly http?: HttpClient) {
     }

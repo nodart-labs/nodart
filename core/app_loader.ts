@@ -86,7 +86,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
         return this
     }
 
-    call(args: any[]) {
+    call(args: any[] = []) {
 
         this._onCall(this._target, args)
 
@@ -119,6 +119,8 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         const repo = this.getRepo()
 
+        path = this.securePath(path)
+
         return repo ? repo + '/' + $.trimPath(path) + this._pathSuffix : ''
     }
 
@@ -130,6 +132,16 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
     isSource(path: string) {
 
         return fs.isFile(this.absPath(path), ['.ts', '.js'])
+    }
+
+    isFile(path: string) {
+
+        return fs.isFile(this.absPath(path))
+    }
+
+    securePath(path: string) {
+
+        return path.replace('../', '').replace('..\\', '')
     }
 
     intersectLoader(loaderName: typeAppLoaderKeys, subRepo?: string, targetPath?: string) {

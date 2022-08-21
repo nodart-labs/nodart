@@ -22,22 +22,14 @@ let Controller = class Controller {
     }
 };
 __decorate([
-    (0, di_1.injects)('entity')
-], Controller.prototype, "entity", void 0);
-__decorate([
     (0, di_1.injects)('middleware')
 ], Controller.prototype, "middleware", void 0);
 __decorate([
-    (0, di_1.injects)('strategy')
-], Controller.prototype, "strategy", void 0);
-__decorate([
-    (0, di_1.injects)('engine')
-], Controller.prototype, "engine", void 0);
+    (0, di_1.injects)('model')
+], Controller.prototype, "model", void 0);
 Controller = __decorate([
     (0, di_1.uses)('middleware'),
-    (0, di_1.uses)('strategy'),
-    (0, di_1.uses)('entity'),
-    (0, di_1.uses)('engine')
+    (0, di_1.uses)('model')
 ], Controller);
 exports.Controller = Controller;
 //# sourceMappingURL=controller.js.map

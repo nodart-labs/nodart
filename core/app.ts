@@ -49,7 +49,6 @@ export class App {
     serve(port: number = 3000, protocol: string = 'http') {
         require(protocol).createServer(async (req: Http2ServerRequest, res: Http2ServerResponse) => {
             await App.system.set({event: {[events.HTTP_REQUEST]: [this, req, res]}})
-            res.end()
         }).listen(port, function () {
             console.log(`server start at port ${port}`)
         })

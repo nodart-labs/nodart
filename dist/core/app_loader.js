@@ -59,7 +59,7 @@ class AppLoader {
         utils_1.$.isPlainObject(this._target) && (this._target = this._target[Object.keys(this._target)[0]]);
         return this;
     }
-    call(args) {
+    call(args = []) {
         this._onCall(this._target, args);
         this.intercept();
         return this._resolve(this._target, args);
@@ -80,6 +80,7 @@ class AppLoader {
     }
     absPath(path) {
         const repo = this.getRepo();
+        path = this.securePath(path);
         return repo ? repo + '/' + utils_1.$.trimPath(path) + this._pathSuffix : '';
     }
     isTarget(path) {
@@ -87,6 +88,12 @@ class AppLoader {
     }
     isSource(path) {
         return utils_1.fs.isFile(this.absPath(path), ['.ts', '.js']);
+    }
+    isFile(path) {
+        return utils_1.fs.isFile(this.absPath(path));
+    }
+    securePath(path) {
+        return path.replace('../', '').replace('..\\', '');
     }
     intersectLoader(loaderName, subRepo, targetPath) {
         subRepo || (subRepo = '');

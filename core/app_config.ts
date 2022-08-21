@@ -1,16 +1,19 @@
 import {$, fs, object} from '../utils'
+import {App} from './app'
 import {typeAppLoaderEntries} from "./app_loader";
 import {typeRouteEntries} from "./router";
 import {ControllerLoader} from "../loaders/controller_loader";
 import {ModelLoader} from "../loaders/model_loader";
-import {StrategyLoader} from "../loaders/strategy_loader";
 import {StoreLoader} from "../loaders/store_loader";
 import {MiddlewareLoader} from "../loaders/middleware_loader";
 import {SessionLoader} from "../loaders/session_loader";
-import {typeReferenceEntries} from "./di";
-import {App} from './app'
+import {typeReferenceEntries, typeReferencePayload} from "./di";
+import {EngineLoader} from "../loaders/engine_loader";
+import {StaticLoader} from "../loaders/static_loader";
 
 const _path = require('path')
+
+type typeBaseEntry = { [key: string]: string }
 
 export type typeAppConfig = {
     rootDir?: string,
@@ -21,15 +24,19 @@ export type typeAppConfig = {
     loaders?: typeAppLoaderEntries,
     reference?: typeReferenceEntries,
     session?: typeAppSessionConfig,
+    mimeType?: string,
+    mimeTypes?: typeBaseEntry,
+    static?: string,
     [addon: string]: any,
 }
 
 export type typeAppLoaderKeys = 'controller'
     | 'model'
-    | 'strategy'
     | 'store'
     | 'middleware'
     | 'session'
+    | 'engine'
+    | 'static'
     | keyof typeAppLoaderEntries
 /**
  * https://github.com/mozilla/node-client-sessions
@@ -73,6 +80,27 @@ export const getSamples = (path: string) => {
 }
 
 export const DEFAULT_CONTROLLER_NAME = 'index'
+export const DEFAULT_STATIC_REPOSITORY = 'static'
+export const DEFAULT_MIME_TYPE = 'application/octet-stream'
+export const DEFAULT_MIME_TYPES = Object.freeze({
+    'html': 'text/html',
+    'js': 'text/javascript',
+    'css': 'text/css',
+    'json': 'application/json',
+    'png': 'image/png',
+    'ico': 'image/vnd.microsoft.icon',
+    'jpg': 'image/jpg',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+    'wav': 'audio/wav',
+    'mp4': 'video/mp4',
+    'avi': 'video/x-msvideo',
+    'woff': 'application/font-woff',
+    'ttf': 'application/font-ttf',
+    'eot': 'application/vnd.ms-fontobject',
+    'otf': 'application/font-otf',
+    'wasm': 'application/wasm',
+})
 
 export const APP_CONFIG: typeAppConfig = Object.freeze({
     rootDir: '',
@@ -83,10 +111,11 @@ export const APP_CONFIG: typeAppConfig = Object.freeze({
     loaders: {
         controller: ControllerLoader,
         model: ModelLoader,
-        strategy: StrategyLoader,
         store: StoreLoader,
         middleware: MiddlewareLoader,
         session: SessionLoader,
+        engine: EngineLoader,
+        static: StaticLoader,
     },
     reference: {
         middleware: (app: App, target: string, props?: any[]) => app.get('middleware').require(target).call(props),

@@ -16,7 +16,6 @@ const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
 const events = require('../store/system').events;
-const sessions = require("client-sessions");
 class App {
     constructor(config) {
         this.config = new app_config_1.AppConfig().set(config);
@@ -42,7 +41,6 @@ class App {
     serve(port = 3000, protocol = 'http') {
         require(protocol).createServer((req, res) => __awaiter(this, void 0, void 0, function* () {
             yield App.system.set({ event: { [events.HTTP_REQUEST]: [this, req, res] } });
-            res.end();
         })).listen(port, function () {
             console.log(`server start at port ${port}`);
         });

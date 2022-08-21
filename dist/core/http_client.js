@@ -8,7 +8,7 @@ class HttpClient {
         this.response = response;
     }
     get parseURL() {
-        return _url.parse(this.request.url, true);
+        return this._url || (this._url = _url.parse(this.request.url, true));
     }
     static isValidURL(url) {
         try {

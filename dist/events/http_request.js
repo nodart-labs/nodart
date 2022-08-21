@@ -9,8 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const http_handler_1 = require("../core/http_handler");
+const http_client_1 = require("../core/http_client");
 module.exports = (app, request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const handler = new http_handler_1.HttpHandler(app, request, response);
+    const staticLoader = app.get('static');
+    const http = new http_client_1.HttpClient(request, response);
+    const urlPath = http.parseURL.pathname;
+    const file = staticLoader.require(urlPath).call();
+    if (file)
+        return staticLoader.send(file, response);
+    const handler = new http_handler_1.HttpHandler(app, http);
     if (app.httpHandler)
         return yield app.httpHandler(handler);
     yield handler.runController();

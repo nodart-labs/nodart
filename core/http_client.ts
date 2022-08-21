@@ -19,13 +19,15 @@ type typeHttpData = {
 
 export class HttpClient {
 
+    protected _url: typeHttpData
+
     constructor (
         readonly request: Http2ServerRequest,
         readonly response?: Http2ServerResponse) {
     }
 
     get parseURL(): typeHttpData {
-        return _url.parse(this.request.url, true)
+        return this._url ||= _url.parse(this.request.url, true)
     }
 
     static isValidURL(url: string) {

@@ -1,4 +1,3 @@
-import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {App} from "./app";
 import {HttpClient} from "./http_client";
 import {typeDataRoute} from "./router";
@@ -11,16 +10,12 @@ export class HttpHandler {
 
     readonly controllerLoader: ControllerLoader
 
-    readonly httpClient: HttpClient
-
     private action: string
 
     constructor (
         readonly app: App,
-        readonly request: Http2ServerRequest,
-        readonly response?: Http2ServerResponse) {
+        readonly httpClient: HttpClient) {
 
-        this.httpClient = new HttpClient(request, response)
         this.controllerLoader = <ControllerLoader>app.get('controller')
     }
 
