@@ -6,6 +6,8 @@ import {App} from './app'
 import {Entity} from "./entity";
 import {Route} from "../middlewares/route";
 import {HttpAcceptorInterface} from "./interfaces/http_acceptor_interface";
+import {Session} from "./session";
+import {SessionLoader} from "../loaders/session_loader";
 
 type typeDeepNestedGeneric<T> = T | { [key: string]: typeDeepNestedGeneric<T> }
 
@@ -29,6 +31,8 @@ export abstract class Controller implements HttpAcceptorInterface {
 
     readonly route: Route
 
+    protected _session: Session
+
     protected constructor(readonly app?: App, readonly http?: HttpClient) {
     }
 
@@ -45,5 +49,11 @@ export abstract class Controller implements HttpAcceptorInterface {
     abstract delete(...args): any
 
     abstract head(...args): any
+
+    get session() {
+        return this._session ||= <Session>this.app.get('session')
+            .call([this.app.config.get.session])
+            .load(this.http.request, this.http.response)
+    }
 
 }

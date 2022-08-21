@@ -7,6 +7,7 @@ const model_loader_1 = require("../loaders/model_loader");
 const strategy_loader_1 = require("../loaders/strategy_loader");
 const store_loader_1 = require("../loaders/store_loader");
 const middleware_loader_1 = require("../loaders/middleware_loader");
+const session_loader_1 = require("../loaders/session_loader");
 const _path = require('path');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -35,9 +36,12 @@ exports.APP_CONFIG = Object.freeze({
         strategy: strategy_loader_1.StrategyLoader,
         store: store_loader_1.StoreLoader,
         middleware: middleware_loader_1.MiddlewareLoader,
+        session: session_loader_1.SessionLoader,
     },
     reference: {
         middleware: (app, target, props) => app.get('middleware').require(target).call(props),
+        model: (app, target, props) => app.get('model').require(target).call(props),
+        strategy: (app, target, props) => app.get('strategy').require(target).call(props),
     }
 });
 class AppConfig {

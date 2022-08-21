@@ -16,6 +16,7 @@ const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
 const events = require('../store/system').events;
+const sessions = require("client-sessions");
 class App {
     constructor(config) {
         this.config = new app_config_1.AppConfig().set(config);

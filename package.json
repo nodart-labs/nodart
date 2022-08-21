@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "typescript backend framework",
   "repository": {
     "type": "git",
@@ -17,6 +17,7 @@
   "author": "ArGab",
   "license": "MIT",
   "dependencies": {
+    "client-sessions": "^0.8.0",
     "ts-node": "^10.8.0"
   },
   "devDependencies": {

@@ -15,6 +15,11 @@ let Controller = class Controller {
         this.app = app;
         this.http = http;
     }
+    get session() {
+        return this._session || (this._session = this.app.get('session')
+            .call([this.app.config.get.session])
+            .load(this.http.request, this.http.response));
+    }
 };
 __decorate([
     (0, di_1.injects)('entity')
