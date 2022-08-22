@@ -7,6 +7,8 @@ export type typeAppLoaderEntries = {
     [name: string]: typeof AppLoader
 }
 
+const _path = require('path')
+
 export abstract class AppLoader implements DependencyInterceptorInterface {
 
     protected _repository: string = ''
@@ -108,7 +110,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         if (!repo) return ''
 
-        const path = this._app.rootDir + '/' + repo
+        const path = _path.resolve(this._app.rootDir, repo)
 
         fs.isDir(path) || fs.mkdir(path)
 
@@ -121,12 +123,12 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         path = this.securePath(path)
 
-        return repo ? repo + '/' + $.trimPath(path) + this._pathSuffix : ''
+        return repo ? _path.resolve(repo, $.trimPath(path) + this._pathSuffix) : ''
     }
 
     isTarget(path: string) {
 
-        return fs.isFile(this._app.rootDir + '/' + $.trimPath(path), ['.ts', '.js'])
+        return fs.isFile(_path.resolve(this._app.rootDir, $.trimPath(path)), ['.ts', '.js'])
     }
 
     isSource(path: string) {

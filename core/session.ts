@@ -5,19 +5,19 @@ export const DEFAULT_SESSION_NAME = 'session'
 
 export class Session {
 
-    protected _client
+    readonly client
 
     protected _session
 
     protected _sessionName
 
     constructor(protected _config: typeAppSessionConfig) {
-        this._client = require("client-sessions")(_config)
+        this.client = require("client-sessions")(_config)
         this._sessionName = _config.cookieName || DEFAULT_SESSION_NAME
     }
 
     load(req: Http2ServerRequest, res: Http2ServerResponse) {
-        this._client(req, res, () => {
+        this.client(req, res, () => {
             this._session = req[this._sessionName]
         })
         return this

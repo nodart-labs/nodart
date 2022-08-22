@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppLoader = void 0;
 const utils_1 = require("../utils");
+const _path = require('path');
 class AppLoader {
     constructor(_app) {
         this._app = _app;
@@ -74,17 +75,17 @@ class AppLoader {
         const repo = this.repository;
         if (!repo)
             return '';
-        const path = this._app.rootDir + '/' + repo;
+        const path = _path.resolve(this._app.rootDir, repo);
         utils_1.fs.isDir(path) || utils_1.fs.mkdir(path);
         return path;
     }
     absPath(path) {
         const repo = this.getRepo();
         path = this.securePath(path);
-        return repo ? repo + '/' + utils_1.$.trimPath(path) + this._pathSuffix : '';
+        return repo ? _path.resolve(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
     }
     isTarget(path) {
-        return utils_1.fs.isFile(this._app.rootDir + '/' + utils_1.$.trimPath(path), ['.ts', '.js']);
+        return utils_1.fs.isFile(_path.resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['.ts', '.js']);
     }
     isSource(path) {
         return utils_1.fs.isFile(this.absPath(path), ['.ts', '.js']);

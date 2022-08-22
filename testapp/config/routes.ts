@@ -1,9 +1,12 @@
 export = {
     index: [
         {
+            name: 'index',
             path: '/',
-            redirects: {path: 'sample'}
         }
     ],
-    sample: 'sample'
+    sample: 'sample',
+    sample2: [
+        '/:foo?/:+id'
+    ]
 }

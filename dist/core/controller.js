@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Controller = exports.CONTROLLER_HTTP_ACTIONS = exports.CONTROLLER_INITIAL_ACTION = void 0;
 const di_1 = require("./di");
+const resource_1 = require("./resource");
 exports.CONTROLLER_INITIAL_ACTION = 'init';
 exports.CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head'];
 let Controller = class Controller {
@@ -16,9 +17,19 @@ let Controller = class Controller {
         this.http = http;
     }
     get session() {
-        return this._session || (this._session = this.app.get('session')
-            .call([this.app.config.get.session])
-            .load(this.http.request, this.http.response));
+        return this._session || (this._session = this.app.get('session').call().load(this.http.request, this.http.response));
+    }
+    get engine() {
+        return this._engine || (this._engine = this.app.get('engine').call());
+    }
+    get resource() {
+        return new resource_1.Resource(this.http.response);
+    }
+    get send() {
+        return {
+            data: (body, status, contentType) => this.resource.send(body, status, contentType),
+            view: (template, args) => this.resource.sendHtml(this.engine.view(template, args))
+        };
     }
 };
 __decorate([

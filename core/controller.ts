@@ -8,6 +8,7 @@ import {HttpAcceptorInterface} from "./interfaces/http_acceptor_interface";
 import {Session} from "./session";
 import {Engine} from "./engine";
 import {Model} from "./model";
+import {Resource} from "./resource";
 
 type typeDeepNestedGeneric<T> = T | { [key: string]: typeDeepNestedGeneric<T> }
 
@@ -47,9 +48,22 @@ export abstract class Controller implements HttpAcceptorInterface {
     abstract head(...args): any
 
     get session() {
-        return this._session ||= <Session>this.app.get('session')
-            .call([this.app.config.get.session])
-            .load(this.http.request, this.http.response)
+        return this._session ||= <Session>this.app.get('session').call().load(this.http.request, this.http.response)
+    }
+
+    get engine() {
+        return this._engine ||= <Engine>this.app.get('engine').call()
+    }
+
+    get resource() {
+        return new Resource(this.http.response)
+    }
+
+    get send() {
+        return {
+            data: (body: object | string, status?: number, contentType?: string) => this.resource.send(body, status, contentType),
+            view: (template: string, args?: object | Function) => this.resource.sendHtml(this.engine.view(template, args))
+        }
     }
 
 }

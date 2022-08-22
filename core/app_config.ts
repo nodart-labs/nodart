@@ -7,7 +7,7 @@ import {ModelLoader} from "../loaders/model_loader";
 import {StoreLoader} from "../loaders/store_loader";
 import {MiddlewareLoader} from "../loaders/middleware_loader";
 import {SessionLoader} from "../loaders/session_loader";
-import {typeReferenceEntries, typeReferencePayload} from "./di";
+import {typeReferenceEntries} from "./di";
 import {EngineLoader} from "../loaders/engine_loader";
 import {StaticLoader} from "../loaders/static_loader";
 
@@ -24,6 +24,7 @@ export type typeAppConfig = {
     loaders?: typeAppLoaderEntries,
     reference?: typeReferenceEntries,
     session?: typeAppSessionConfig,
+    engine?: typeAppEngineConfig,
     mimeType?: string,
     mimeTypes?: typeBaseEntry,
     static?: string,
@@ -39,13 +40,14 @@ export type typeAppLoaderKeys = 'controller'
     | 'engine'
     | 'static'
     | keyof typeAppLoaderEntries
+
 /**
- * https://github.com/mozilla/node-client-sessions
+ * See session supporting docs: https://github.com/mozilla/node-client-sessions
  */
 export type typeAppSessionConfig = {
     cookieName?: string,
     requestKey?: string, // requestKey overrides cookieName for the key name added to the request object.
-    secret: string, // should be a large unguessable string or Buffer
+    secret?: string, // should be a large unguessable string or Buffer
     duration?: number,
     activeDuration?: number, // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds
     // Advanced Cryptographic Options
@@ -63,6 +65,35 @@ export type typeAppSessionConfig = {
         [addon: string]: any,
     },
     [addon: string]: any,
+}
+
+/**
+ * See template engine docs: https://mozilla.github.io/nunjucks/api.html
+ */
+export type typeAppEngineConfig = {
+    views?: string, // Templates base path
+    options?: {
+        autoescape?: boolean, // (default: true) controls if output with dangerous characters are escaped automatically. See Autoescaping
+        throwOnUndefined?: boolean, // (default: false) throw errors when outputting a null/undefined value
+        trimBlocks?: boolean, // (default: false) automatically remove trailing newlines from a block/tag
+        lstripBlocks?: boolean, // (default: false) automatically remove leading whitespace from a block/tag
+        watch?: boolean, // (default: false) reload templates when they are changed (server-side). To use watch, make sure optional dependency chokidar is installed.
+        noCache?: boolean, // (default: false) never use a cache and recompile templates each time (server-side)
+        web?: { // an object for configuring loading templates in the browser:
+            useCache?: boolean, // (default: false) will enable cache and templates will never see updates.
+            async?: boolean, //(default: false) will load templates asynchronously instead of synchronously (requires use of the asynchronous API for rendering).
+        },
+        tags?: { // (default: see nunjucks syntax) defines the syntax for nunjucks tags. See Customizing Syntax
+            blockStart?: string,
+            blockEnd?: string,
+            variableStart?: string,
+            variableEnd?: string,
+            commentStart?: string,
+            commentEnd?: string,
+            [addon: string]: any,
+        },
+        [addon: string]: any,
+    }
 }
 
 export const SYSTEM_STORE: string = 'store' //system store repository name
@@ -105,12 +136,16 @@ export const DEFAULT_MIME_TYPES = Object.freeze({
     'wasm': 'application/wasm',
 })
 
+export const DEFAULT_ENGINE_VIEWS_REPOSITORY = 'views'
+
 export const APP_CONFIG: typeAppConfig = Object.freeze({
     rootDir: '',
     store: true,
     storeName: CLIENT_STORE_NAME,
     stateName: CLIENT_STATE_NAME,
     routes: {},
+    engine: {},
+    session: {},
     staticIndex: DEFAULT_STATIC_INDEX,
     loaders: {
         controller: ControllerLoader,
@@ -124,7 +159,6 @@ export const APP_CONFIG: typeAppConfig = Object.freeze({
     reference: {
         middleware: (app: App, target: string, props?: any[]) => app.get('middleware').require(target).call(props),
         model: (app: App, target: string, props?: any[]) => app.get('model').require(target).call(props),
-        strategy: (app: App, target: string, props?: any[]) => app.get('strategy').require(target).call(props),
     }
 })
 

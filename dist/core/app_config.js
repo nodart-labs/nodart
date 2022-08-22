@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_MIME_TYPES = exports.DEFAULT_MIME_TYPE = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.getSamples = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
+exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_MIME_TYPES = exports.DEFAULT_MIME_TYPE = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.getSamples = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const controller_loader_1 = require("../loaders/controller_loader");
 const model_loader_1 = require("../loaders/model_loader");
@@ -48,12 +48,15 @@ exports.DEFAULT_MIME_TYPES = Object.freeze({
     'otf': 'application/font-otf',
     'wasm': 'application/wasm',
 });
+exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = 'views';
 exports.APP_CONFIG = Object.freeze({
     rootDir: '',
     store: true,
     storeName: exports.CLIENT_STORE_NAME,
     stateName: exports.CLIENT_STATE_NAME,
     routes: {},
+    engine: {},
+    session: {},
     staticIndex: exports.DEFAULT_STATIC_INDEX,
     loaders: {
         controller: controller_loader_1.ControllerLoader,
@@ -67,7 +70,6 @@ exports.APP_CONFIG = Object.freeze({
     reference: {
         middleware: (app, target, props) => app.get('middleware').require(target).call(props),
         model: (app, target, props) => app.get('model').require(target).call(props),
-        strategy: (app, target, props) => app.get('strategy').require(target).call(props),
     }
 });
 class AppConfig {

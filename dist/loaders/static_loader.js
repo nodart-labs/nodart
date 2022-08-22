@@ -3,9 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StaticLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const app_config_1 = require("../core/app_config");
-const utils_1 = require("../utils");
-const fs = require('fs');
-const path = require('path');
+const resource_1 = require("../core/resource");
 class StaticLoader extends app_loader_1.AppLoader {
     constructor(_app) {
         var _a;
@@ -26,21 +24,8 @@ class StaticLoader extends app_loader_1.AppLoader {
         return target;
     }
     send(filePath, response) {
-        var _a;
-        const ext = utils_1.$.trim(path.extname(filePath), '.');
-        const mimeTypes = Object.assign(Object.assign({}, app_config_1.DEFAULT_MIME_TYPES), (_a = this._app.config.get.mimeTypes) !== null && _a !== void 0 ? _a : {});
-        const contentType = mimeTypes[ext] || this._app.config.get.mimeType || app_config_1.DEFAULT_MIME_TYPE;
-        fs.readFile(filePath, (err, content) => {
-            // todo: exception handler
-            if (err) {
-                response.writeHead(500);
-                response.end();
-            }
-            else {
-                response.writeHead(200, { 'Content-Type': contentType });
-                response.end(content, 'utf-8');
-            }
-        });
+        const conf = this._app.config.get;
+        return new resource_1.Resource(response).sendFile(filePath, conf.mimeTypes, conf.mimeType);
     }
 }
 exports.StaticLoader = StaticLoader;
