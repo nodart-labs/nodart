@@ -27,8 +27,12 @@ let Controller = class Controller {
     }
     get send() {
         return {
-            data: (body, status, contentType) => this.resource.send(body, status, contentType),
-            view: (template, args) => this.resource.sendHtml(this.engine.view(template, args))
+            data: (body, status, contentType) => {
+                this.resource.send(body, status, contentType);
+            },
+            view: (template, args, callback) => {
+                this.resource.sendHtml(this.engine.view(template, args, callback));
+            }
         };
     }
 };

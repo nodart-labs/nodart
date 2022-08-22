@@ -9,8 +9,8 @@ export class Engine {
         this.client.configure(_config.views, _config.options)
     }
 
-    view(template: string, args?: object | Function) {
-        return this.client.render(this.normalize(template), args)
+    view(template: string, args?: object, callback?: Function) {
+        return this.client.render(this.normalize(template), args, callback)
     }
 
     normalize(template: string) {

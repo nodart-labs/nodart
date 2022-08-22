@@ -7,8 +7,8 @@ class Engine {
         this.client = require('nunjucks'); // See template engine docs: https://mozilla.github.io/nunjucks/api.html
         this.client.configure(_config.views, _config.options);
     }
-    view(template, args) {
-        return this.client.render(this.normalize(template), args);
+    view(template, args, callback) {
+        return this.client.render(this.normalize(template), args, callback);
     }
     normalize(template) {
         template.match(/^(.*?)\.([^.]+)$/i) || (template += '.html');

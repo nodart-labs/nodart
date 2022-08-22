@@ -61,8 +61,12 @@ export abstract class Controller implements HttpAcceptorInterface {
 
     get send() {
         return {
-            data: (body: object | string, status?: number, contentType?: string) => this.resource.send(body, status, contentType),
-            view: (template: string, args?: object | Function) => this.resource.sendHtml(this.engine.view(template, args))
+            data: (body: object | string, status?: number, contentType?: string) => {
+                this.resource.send(body, status, contentType)
+            },
+            view: (template: string, args?: object, callback?: Function) => {
+                this.resource.sendHtml(this.engine.view(template, args, callback))
+            }
         }
     }
 
