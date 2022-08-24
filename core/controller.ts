@@ -1,5 +1,4 @@
 import {HttpClient} from "./http_client";
-import {Strategy} from "./strategy";
 import {Middleware} from "./middleware";
 import {uses, injects} from "./di";
 import {App} from './app'

@@ -17,6 +17,7 @@ class StaticLoader extends app_loader_1.AppLoader {
     _onGenerate(repository) {
     }
     require(path) {
+        path = decodeURIComponent(path);
         this.isFile(path) && (this._target = this.absPath(path));
         return this;
     }

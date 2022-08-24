@@ -21,6 +21,8 @@ export class StaticLoader extends AppLoader {
 
     require(path: string) {
 
+        path = decodeURIComponent(path)
+
         this.isFile(path) && (this._target = this.absPath(path))
 
         return this
