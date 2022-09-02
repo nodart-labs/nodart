@@ -1,8 +1,5 @@
 ## TYPESCRIPT BACKEND FRAMEWORK
 
-### <font color=orange> !!! UNDER CONSTRUCTION... </font>
-
----
 
 ### DOWNLOAD SAMPLE APPLICATION
 
@@ -23,9 +20,8 @@ npm run dev
 
 import {App} from 'nodart'
 const config = require('./config')
-const routes = require('./config/routes')
 
-new App({...config, routes}).init().then(app => app.serve(3000))
+new App({...config}).init().then(app => app.serve(3000))
 
 ```
 
