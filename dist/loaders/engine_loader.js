@@ -13,7 +13,8 @@ class EngineLoader extends app_loader_1.AppLoader {
         this._repository = (_b = (_a = _app.config.get.engine) === null || _a === void 0 ? void 0 : _a.views) !== null && _b !== void 0 ? _b : app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
     }
     _resolve(target, args) {
-        return new engine_1.Engine(this.getEngineConfig());
+        var _a;
+        return new engine_1.Engine((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this.getEngineConfig());
     }
     getEngineConfig() {
         var _a;

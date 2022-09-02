@@ -25,7 +25,7 @@ class HttpHandler {
         return __awaiter(this, void 0, void 0, function* () {
             route || (route = this.getRoute());
             httpClient || (httpClient = this.httpClient);
-            const { path, action } = HttpHandler.getControllerPathData(route, this.controllerLoader);
+            const { path, action } = HttpHandler.getRoutePathData(route, this.controllerLoader);
             if (path) {
                 this.action = action;
                 return yield this.controllerLoader.require(path).call([httpClient, route]);
@@ -33,27 +33,27 @@ class HttpHandler {
         });
     }
     runController(controller, action, args) {
-        var _a, _b;
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const target = controller !== null && controller !== void 0 ? controller : yield this.getController();
             if (!(target instanceof controller_1.Controller))
                 return;
-            action = this.getValidatedControllerAction(target, action || ((_a = target.route) === null || _a === void 0 ? void 0 : _a.data.action));
-            args || (args = ((_b = target.route) === null || _b === void 0 ? void 0 : _b.data) ? this.app.router.arrangeRouteParams(target.route.data) : []);
+            action = this.fetchControllerAction(target, action || ((_a = target.route) === null || _a === void 0 ? void 0 : _a.action));
+            args || (args = target.route ? this.app.router.arrangeRouteParams(target.route) : []);
             yield target[controller_1.CONTROLLER_INITIAL_ACTION]();
-            target.route && (target.route.data.action = action);
+            target.route && (target.route.action = action);
             if (target[action] instanceof Function)
                 return yield target[action].apply(target, args);
         });
     }
-    getValidatedControllerAction(controller, action) {
+    fetchControllerAction(controller, action) {
         const httpMethod = controller.http.request.method.toLowerCase();
         action || (action = this.action || httpMethod);
         if (controller_1.CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod)
             throw `The action "${action}" not responds to the HTTP method "${httpMethod.toUpperCase()}" in the "${controller.constructor.name}".`;
         return action;
     }
-    static getControllerPathData(route, loader) {
+    static getRoutePathData(route, loader) {
         const data = { path: '', action: '' };
         if (route.route) {
             data.path = route.route;

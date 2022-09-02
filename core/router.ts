@@ -1,13 +1,13 @@
 import {$} from '../utils'
 import {HttpClient} from "./http_client";
 
-export type typeRouteEntries = {
+export type typeRoute = {
     [name: string]: typeRoutePathData
 }
 
-type typeRoutePathData = string | Array<string | typeRoutePathObject>
+export type typeRoutePathData = string | Array<string | typeRoutePathObject>
 
-type typeRoutePathObject = {
+export declare type typeRoutePathObject = {
     path: string,
     name?: string,
     action?: string,
@@ -15,13 +15,9 @@ type typeRoutePathObject = {
         // determine which type should be attached to url path string parameter.
         [pathName: string]: typeof Number | RegExp | ((value: any) => any)
     },
-    redirects?: {
-        path?: string,
-        name?: string,
-    }
 }
 
-type typeParseRoutePathData = {
+export type typeParseRoutePathData = {
     pathName: string,
     param: string | undefined,
     isOptional: boolean,
@@ -31,7 +27,7 @@ type typeParseRoutePathData = {
     pathNames: string[]
 }
 
-export declare type typeDataRoute = {
+export type typeDataRoute = {
     route?: string,
     name?: string,
     path: string,
@@ -49,7 +45,7 @@ export class Router {
 
     protected _skipRouteEntryPointer: string = '*'
 
-    constructor(protected _routes: typeRouteEntries) {
+    constructor(protected _routes: typeRoute) {
     }
 
     httpRoute(http: HttpClient): typeDataRoute {

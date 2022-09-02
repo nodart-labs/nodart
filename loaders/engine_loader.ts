@@ -13,7 +13,8 @@ export class EngineLoader extends AppLoader {
     }
 
     protected _resolve(target?: any, args?: any[]): any {
-        return new Engine(this.getEngineConfig())
+
+        return new Engine(args?.[0] ?? this.getEngineConfig())
     }
 
     getEngineConfig() {

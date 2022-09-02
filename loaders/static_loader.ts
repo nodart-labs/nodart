@@ -1,8 +1,7 @@
 import {AppLoader} from "../core/app_loader";
 import {App} from "../core/app";
 import {DEFAULT_STATIC_REPOSITORY} from "../core/app_config";
-import {Http2ServerResponse} from "http2";
-import {Resource} from "../core/resource";
+import {HttpClient} from "../core/http_client";
 
 export class StaticLoader extends AppLoader {
 
@@ -33,11 +32,11 @@ export class StaticLoader extends AppLoader {
         return target
     }
 
-    send(filePath: string, response: Http2ServerResponse) {
+    send(filePath: string, http: HttpClient) {
 
         const conf = this._app.config.get
 
-        return new Resource(response).sendFile(filePath, conf.mimeTypes, conf.mimeType)
+        return http.sendFile(filePath, conf.mimeTypes, conf.mimeType)
     }
 
 }

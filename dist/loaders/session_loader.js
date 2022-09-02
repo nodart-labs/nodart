@@ -9,7 +9,8 @@ class SessionLoader extends app_loader_1.AppLoader {
     _onGenerate(repository) {
     }
     _resolve(target, args) {
-        return new session_1.Session(this._app.config.get.session);
+        var _a;
+        return new session_1.Session((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this._app.config.get.session);
     }
 }
 exports.SessionLoader = SessionLoader;

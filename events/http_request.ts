@@ -14,7 +14,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
     const file = staticLoader.require(urlPath).call()
 
-    if (file) return staticLoader.send(file, response)
+    if (file) return staticLoader.send(file, http)
 
     const handler = new HttpHandler(app, http)
 

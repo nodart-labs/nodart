@@ -16,7 +16,7 @@ module.exports = (app, request, response) => __awaiter(void 0, void 0, void 0, f
     const urlPath = http.parseURL.pathname === '/' ? app.config.get.staticIndex : http.parseURL.pathname;
     const file = staticLoader.require(urlPath).call();
     if (file)
-        return staticLoader.send(file, response);
+        return staticLoader.send(file, http);
     const handler = new http_handler_1.HttpHandler(app, http);
     if (app.httpHandler)
         return yield app.httpHandler(handler);

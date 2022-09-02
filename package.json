@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "typescript backend framework",
   "repository": {
     "type": "git",
@@ -8,7 +8,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon --loader ts-node/esm testapp",
+    "dev": "nodemon --loader ts-node/esm tests/app",
     "build": "concurrently \"tsc --build\" \"npm run post-build\"",
     "post-build": "node post-build.js",
     "clean": "tsc --build --clean",
@@ -17,8 +17,13 @@
   "author": "ArGab",
   "license": "MIT",
   "dependencies": {
+    "better-sqlite3": "^7.6.2",
     "client-sessions": "^0.8.0",
+    "knex": "^2.2.0",
+    "mysql": "^2.18.1",
     "nunjucks": "^3.2.3",
+    "pg": "^8.8.0",
+    "sqlite3": "^5.0.11",
     "ts-node": "^10.8.0"
   },
   "devDependencies": {
@@ -28,6 +33,7 @@
     "nodemon": "^2.0.15",
     "typescript": "^4.6.4"
   },
+  "types": "index.d.ts",
   "keywords": [
     "ts framework",
     "typescript framework",

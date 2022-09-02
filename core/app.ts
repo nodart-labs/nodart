@@ -1,4 +1,4 @@
-import {AppListener, AppStore} from "./app_store";
+import {AppListener, AppStore, typeState, typeStoreListenerArguments, typeStoreListeners} from "./app_store";
 import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig, typeAppConfig, typeAppLoaderKeys} from "./app_config";
 import {AppFactory} from "./app_factory";
 import {AppLoader} from "./app_loader";
@@ -6,6 +6,7 @@ import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {DIManager} from "./di";
 import {Router} from "./router";
 import {HttpHandler} from "./http_handler";
+import {Orm} from "./orm";
 
 const events = require('../store/system').events
 
@@ -38,6 +39,14 @@ export class App {
         return this.factory.createLoader(loader)
     }
 
+    get db() {
+        const orm = this.get('orm').call([this.config.get.orm]) as Orm
+        return {
+            query: orm.queryBuilder,
+            orm
+        }
+    }
+
     async init() {
         await this.factory.createApp()
         this.factory.createStore()
@@ -51,6 +60,7 @@ export class App {
             await App.system.set({event: {[events.HTTP_REQUEST]: [this, req, res]}})
         }).listen(port, function () {
             console.log(`server start at port ${port}`)
+            console.log(`http://localhost:${port}`)
         })
     }
 
@@ -73,14 +83,14 @@ export class App {
 
     static get system() {
         const store = AppStore.get(SYSTEM_STORE_NAME)
-        const state = AppStore.get(SYSTEM_STORE_NAME)?.get(SYSTEM_STATE_NAME)
+        const state = AppStore.get(SYSTEM_STORE_NAME)?.get(SYSTEM_STATE_NAME) ?? {}
 
         return {
             store,
             state,
-            set: async (data: object) => await store.set(SYSTEM_STATE_NAME, data),
-            setup: (data: object) => store.setup(SYSTEM_STATE_NAME, data),
-            on: (data: object) => store.on(SYSTEM_STATE_NAME, data),
+            setup: (data: typeState) => store.setup(SYSTEM_STATE_NAME, data),
+            set: async (data: typeStoreListenerArguments) => await store.set(SYSTEM_STATE_NAME, data),
+            on: (data: typeStoreListeners) => store.on(SYSTEM_STATE_NAME, data),
         }
     }
 

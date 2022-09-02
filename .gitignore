@@ -52,5 +52,6 @@ package-lock.json
 
 errlog
 
-/testapp/app/*
-!.gitkeep
+/tests/app/*
+!/tests/app/config
+!/tests/app/index.ts

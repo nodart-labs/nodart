@@ -2,31 +2,57 @@ const $ = require('./common')
 
 export = {
 
-    get (obj, path, def) {
-        return path.split('.').reduce((acc, part) => ($.isPlainObject(acc) && acc[part] !== undefined)
-                ? acc[part]
-                : (def !== undefined ? def : null)
-            , obj)
+    getProtoConstructor(target) {
+        return target instanceof Object ? target.prototype?.constructor : null
     },
 
-    has (obj, path) {
-        let has = path.split('.').reduce((acc, part) => ($.isPlainObject(acc) && acc[part] !== undefined)
-                ? acc[part]
-                : undefined
-            , obj)
-        return has !== undefined
+    isProtoConstructor(target, protoObject?: any) {
+        if (protoObject) {
+            const constructor = this.getProtoConstructor(protoObject)
+            const targetConstructor = this.getProtoConstructor(target)
+            return !!(constructor
+                && targetConstructor
+                && (targetConstructor === constructor || constructor.isPrototypeOf(targetConstructor)))
+        }
+        return !!this.getProtoConstructor(target)
     },
 
-    set (obj, path, value) {
-        if (!$.isPlainObject(obj)) return
-        const arr = path.split('.')
+    get(obj: object, dottedPath: string, def?: any) {
+        return dottedPath.split('.').reduce((acc, part) => {
+            return (acc instanceof Object && acc[part] !== undefined) ? acc[part] : (def !== undefined ? def : undefined)
+        }, obj)
+    },
+
+    has(obj: object, dottedPath: string) {
+        return this.get(obj, dottedPath) !== undefined
+    },
+
+    set(obj: object, dottedPath: string, value) {
+        const arr = dottedPath.split('.')
         for (let i = 0; i < arr.length - 1; i++) {
             obj = obj[arr[i]] = obj[arr[i]] !== undefined ? obj[arr[i]] : {}
         }
         obj[arr[arr.length - 1]] = value
     },
 
-    uniqBy (arr, key) {
+    /*
+    * Simple Deep merge of Objects.
+    * Not recommended on complicated objets. Use https://www.npmjs.com/package/deepmerge instead
+    * */
+    merge(target: object, source: object) {
+        Object.keys(source).forEach(key => {
+            const targetValue = target[key]
+            const sourceValue = source[key]
+
+            target[key] = $.isPlainObject(targetValue) && $.isPlainObject(sourceValue)
+                ? this.merge(Object.assign({}, targetValue), sourceValue)
+                : sourceValue
+        })
+
+        return target
+    },
+
+    uniqBy(arr, key: string | string[]) {
         return [...new Map(arr.map(item => {
             let uid = ''
             if (Array.isArray(key))
@@ -36,24 +62,24 @@ export = {
         })).values()]
     },
 
-    uniq (arr) {
+    uniq(arr: any[]) {
         return [...new Set(arr)]
     },
 
-    copy (obj) {
+    copy(obj: object) {
         return JSON.parse(JSON.stringify(obj))
     },
 
-    copyUnset (obj) {
-        return JSON.parse(this.stringifyUnset(obj))
+    copyUnset(obj: object) {
+        return JSON.parse(this.stringifyReplaceCircular(obj))
     },
 
-    stringify (obj) {
+    stringify(obj: object) {
         return JSON.stringify(obj, (key, val) => typeof val === 'function' ? val + '' : val)
     },
 
     // https://bobbyhadz.com/blog/javascript-typeerror-converting-circular-structure-to-json
-    stringifyUnset (obj) {
+    stringifyReplaceCircular(obj: object) {
         const getCircularReplacer = () => {
             const seen = new WeakSet()
             return (key, value) => {
@@ -69,7 +95,7 @@ export = {
         return JSON.stringify(obj, getCircularReplacer())
     },
 
-    sortObjects (list, attrName, asc = true) {
+    sortObjects(list: any[], attrName: string, asc: boolean = true) {
         list.sort((a, b) => {
             let aa = $.isPlainObject(a) ? this.get(a, attrName) : a
             let bb = $.isPlainObject(b) ? this.get(b, attrName) : b
@@ -78,11 +104,13 @@ export = {
         return list
     },
 
-    range (start, end, fill) {
-        return Array(end - start + 1).fill(fill).map((_, idx) => start + idx)
+    range(start: number, end: number, fill?: Function) {
+        const r = Array(end - start + 1)
+        fill && fill(r)
+        return r.map((_, idx) => start + idx)
     },
 
-    sortByWord (arr, word, sortKey) {
+    sortByWord(arr: any[], word: string, sortKey?: string) {
         word = word?.toString().toLowerCase() || ''
         return arr.sort((a, b) => {
             a = (sortKey !== undefined ? a[sortKey] : a)?.toLowerCase()

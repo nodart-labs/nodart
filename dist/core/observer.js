@@ -60,7 +60,7 @@ class Observable {
             },
             get: (t, p) => {
                 const isStackPointer = Observable.isStackPointer(source, p);
-                const isTarget = isStackPointer || !observer.isObject(source[p]);
+                const isTarget = isStackPointer || !observer.isObject(source[p]) || Object.keys(source[p]).length === 0;
                 isStackPointer || (path = setPath(p, path, pathDelim));
                 const handle = () => {
                     const prop = isStackPointer ? path.split(pathDelim).at(-1) : p;

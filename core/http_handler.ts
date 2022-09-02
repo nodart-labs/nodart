@@ -29,7 +29,7 @@ export class HttpHandler {
 
         httpClient ||= this.httpClient
 
-        const {path, action} = HttpHandler.getControllerPathData(route, this.controllerLoader)
+        const {path, action} = HttpHandler.getRoutePathData(route, this.controllerLoader)
 
         if (path) {
 
@@ -45,18 +45,18 @@ export class HttpHandler {
 
         if (!(target instanceof Controller)) return
 
-        action = this.getValidatedControllerAction(target, action || target.route?.data.action)
+        action = this.fetchControllerAction(target, action || target.route?.action)
 
-        args ||= (target.route?.data ? this.app.router.arrangeRouteParams(target.route.data) : [])
+        args ||= (target.route ? this.app.router.arrangeRouteParams(target.route) : [])
 
         await target[CONTROLLER_INITIAL_ACTION]()
 
-        target.route && (target.route.data.action = action)
+        target.route && (target.route.action = action)
 
         if (target[action] instanceof Function) return await target[action].apply(target, args)
     }
 
-    getValidatedControllerAction(controller: Controller, action?: string) {
+    fetchControllerAction(controller: Controller, action?: string) {
 
         const httpMethod = controller.http.request.method.toLowerCase()
 
@@ -69,7 +69,7 @@ export class HttpHandler {
         return action
     }
 
-    static getControllerPathData(route: typeDataRoute, loader: AppLoader) {
+    static getRoutePathData(route: typeDataRoute, loader: AppLoader) {
 
         const data = {path: '', action: ''}
 

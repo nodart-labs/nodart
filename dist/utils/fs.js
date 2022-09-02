@@ -2,25 +2,19 @@
 const index_1 = require("./index");
 const fs = require('fs');
 const stat = (path) => fs.existsSync(path) ? fs.statSync(path) : null;
-const dir = (dir) => {
-    if (!isDir(dir))
+const dir = (directory) => {
+    if (!isDir(directory))
         return [];
     let results = [];
-    const list = fs.readdirSync(dir);
+    const list = fs.readdirSync(directory);
     list.forEach(function (file) {
-        file = dir + '/' + file;
-        if (isDir(file)) {
-            results = results.concat(dir(file));
-        }
-        else if (isFile(file)) {
-            results.push(file);
-        }
+        file = directory + '/' + file;
+        isDir(file) ? results = results.concat(dir(file)) : (isFile(file) && results.push(file));
     });
     return results;
 };
-const write = (path, data) => {
-    var _a;
-    fs.writeFileSync(path, (_a = data === null || data === void 0 ? void 0 : data.toString()) !== null && _a !== void 0 ? _a : '');
+const write = (path, data = '') => {
+    fs.writeFileSync(path, data);
 };
 const isFile = (path, ext) => {
     var _a;
@@ -28,10 +22,37 @@ const isFile = (path, ext) => {
     return ext ? !!ext.some(ext => exists(path, ext)) : !!((_a = stat(path)) === null || _a === void 0 ? void 0 : _a.isFile());
 };
 const isDir = (path) => { var _a; return !!((_a = stat(path)) === null || _a === void 0 ? void 0 : _a.isDirectory()); };
-const json = (path) => isFile(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : null;
+const json = (path) => {
+    try {
+        if (isFile(path))
+            return JSON.parse(fs.readFileSync(path, 'utf8'));
+        return false;
+    }
+    catch (e) {
+        console.error(e);
+        return false;
+    }
+};
 const read = (path) => isFile(path) ? fs.readFileSync(path, 'utf8') : null;
 const mkdir = (path, chmod = 0o744) => fs.mkdirSync(path, chmod);
-const copy = (src, dest, callback, chmod) => isFile(src) ? fs.copyFile(src, dest, chmod, callback !== null && callback !== void 0 ? callback : (() => { })) : false;
+const mkDeepDir = (path, chmod = 0o744) => fs.mkdirSync(path, { recursive: true, mode: chmod });
+const copy = (src, dest, callback = (() => undefined), chmod) => {
+    if (isFile(src)) {
+        fs.copyFile(src, dest, chmod, callback);
+        return true;
+    }
+    return false;
+};
+const getSource = (path, sourceProtoObject) => {
+    const source = require(path);
+    if (!(source instanceof Object))
+        return;
+    for (let key of Object.keys(source)) {
+        if (index_1.object.isProtoConstructor(source[key], sourceProtoObject))
+            return source[key];
+    }
+    return source;
+};
 module.exports = {
     fs,
     stat,
@@ -39,9 +60,11 @@ module.exports = {
     write,
     json,
     read,
+    copy,
     isFile,
     isDir,
     mkdir,
-    copy
+    mkDeepDir,
+    getSource,
 };
 //# sourceMappingURL=fs.js.map

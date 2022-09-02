@@ -10,7 +10,8 @@ export class SessionLoader extends AppLoader {
     }
 
     protected _resolve(target?: any, args?: any[]): any {
-        return new Session(this._app.config.get.session)
+
+        return new Session(args?.[0] ?? this._app.config.get.session)
     }
 
 }

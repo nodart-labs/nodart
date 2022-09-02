@@ -376,7 +376,7 @@ export class DependencyInterceptor {
 
                 const {prop, path, source, isTarget} = descriptor
 
-                if (isTarget && source?.[prop]?.prototype?.constructor) {
+                if (isTarget) {
 
                     return this._interceptProperty(
                         property,

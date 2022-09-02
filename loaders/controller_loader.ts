@@ -2,17 +2,12 @@ import {AppLoader} from "../core/app_loader";
 import {Controller} from "../core/controller"
 import {HttpClient} from "../core/http_client";
 import {typeDataRoute} from "../core/router";
-import {Middleware} from "../core/middleware";
-import {Route} from "../middlewares/route";
-import {HttpHandler} from "../core/http_handler";
-import {fs} from "../utils";
+import {Service} from "../core/service";
 
-export type typeControllerLoaderConstruct = [
+export type typeControllerConstruct = [
     http: HttpClient,
     route: typeDataRoute,
 ]
-
-export const CONTROLLER_ROUTE_MIDDLEWARE_REPO = 'route'
 
 export class ControllerLoader extends AppLoader {
 
@@ -24,79 +19,39 @@ export class ControllerLoader extends AppLoader {
 
     protected _route: typeDataRoute
 
-    protected _controller: Controller
+    protected _target: Controller
 
-    get scope() {
-        return {
-            app: this._app,
-            http: this._http,
-            controller: this._controller,
-        }
+    protected get targetType() {
+
+        return Controller
     }
 
-    protected _onCall(controller?: typeof Controller, args?: typeControllerLoaderConstruct) {
+    protected _onCall(target?: typeof Controller, args?: typeControllerConstruct) {
 
-        if (!controller) return
+        if (!target) return
 
         const [http, route] = args ?? []
-
-        this._targetPath = HttpHandler.getControllerPathData(route, this).path
 
         this._route = route
 
         this._http = http
     }
 
-    protected _resolve(controller?: typeof Controller): any {
+    protected _resolve(target?: typeof Controller): any {
 
-        if (!controller) return
+        if (!target) return
 
-        this._controller = <Controller>(Reflect.construct(controller, [this._app, this._http]))
-
-        if (!(this._controller instanceof Controller)) return
-
-        this._controller.route instanceof Route || this.assignRouteMiddleware(this.getRouteMiddleware())
-
-        return this._controller
+        return this._target = Reflect.construct(target, [this._app, this._http, this._route])
     }
 
-    assignRouteMiddleware(route: Route) {
+    onGetDependency(target: any): void {
 
-        this._controller instanceof Controller && Object.assign(this._controller, {route})
+        this.serviceScope = {controller: this._target}
+
+        target instanceof Service && target.setScope(this.serviceScope)
     }
 
-    getRouteMiddleware(): Route {
-
-        const loader = this.intersectLoader('middleware', CONTROLLER_ROUTE_MIDDLEWARE_REPO)
-
-        let routeMiddleware = <Route>loader?.call([this._route, this.scope])
-
-        routeMiddleware instanceof Route || (routeMiddleware = new Route(this._route, this.scope))
-
-        if (!routeMiddleware.data) {
-
-            routeMiddleware.data = this._route
-
-            routeMiddleware.setScope(this.scope)
-        }
-
-        return routeMiddleware
-    }
-
-    onGetDependency = (target: any) => {
-
-        target instanceof Middleware && target.setScope(this.scope)
-    }
-
-    protected _onGenerate(repository: string) {
-
-        const middlewareLoader = this._app.get('middleware')
-
-        const middlewareRepo = middlewareLoader.getRepo()
-
-        const routeMiddlewareRepo = middlewareRepo + '/' + CONTROLLER_ROUTE_MIDDLEWARE_REPO
-
-        middlewareRepo && !fs.isDir(routeMiddlewareRepo) && fs.mkdir(routeMiddlewareRepo)
+    protected _onGenerate(repository: string): void {
     }
 
 }

@@ -18,6 +18,13 @@ class AppLoader {
         this._repository = '';
         this._pathSuffix = '';
         this._targetPath = '';
+        this._serviceScope = {};
+    }
+    get serviceScope() {
+        return Object.assign(Object.assign({}, this._serviceScope), { app: this._app });
+    }
+    set serviceScope(scope) {
+        Object.assign(this._serviceScope, scope);
     }
     _resolve(target, args) {
         var _a;
@@ -54,11 +61,13 @@ class AppLoader {
     intercept() {
         this._app.di.interceptor(this).intercept();
     }
-    require(path) {
+    require(path, targetObjectType) {
         this._target = undefined;
-        this.isSource(path) && (this._target = require(this.absPath(path)));
-        utils_1.$.isPlainObject(this._target) && (this._target = this._target[Object.keys(this._target)[0]]);
+        this.isSource(path) && (this._target = utils_1.fs.getSource(this.absPath(path), targetObjectType || this.targetType));
         return this;
+    }
+    get targetType() {
+        return undefined;
     }
     call(args = []) {
         this._onCall(this._target, args);
@@ -67,8 +76,7 @@ class AppLoader {
     }
     generate() {
         return __awaiter(this, void 0, void 0, function* () {
-            this._onGenerate(this.getRepo());
-            yield this._resolve();
+            yield this._onGenerate(this.getRepo());
         });
     }
     getRepo() {
@@ -76,7 +84,7 @@ class AppLoader {
         if (!repo)
             return '';
         const path = _path.resolve(this._app.rootDir, repo);
-        utils_1.fs.isDir(path) || utils_1.fs.mkdir(path);
+        utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
         return path;
     }
     absPath(path) {
@@ -85,10 +93,10 @@ class AppLoader {
         return repo ? _path.resolve(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
     }
     isTarget(path) {
-        return utils_1.fs.isFile(_path.resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['.ts', '.js']);
+        return utils_1.fs.isFile(_path.resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
     }
     isSource(path) {
-        return utils_1.fs.isFile(this.absPath(path), ['.ts', '.js']);
+        return utils_1.fs.isFile(this.absPath(path), ['ts', 'js']);
     }
     isFile(path) {
         return utils_1.fs.isFile(this.absPath(path));

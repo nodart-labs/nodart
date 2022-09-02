@@ -226,9 +226,8 @@ class DependencyInterceptor {
     _observe(property, value, reference) {
         const observer = new observer_1.Observer(value, {
             get: (key, descriptor) => {
-                var _a, _b;
                 const { prop, path, source, isTarget } = descriptor;
-                if (isTarget && ((_b = (_a = source === null || source === void 0 ? void 0 : source[prop]) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.constructor)) {
+                if (isTarget) {
                     return this._interceptProperty(property, source, reference + '/' + (path.length ? path.join('/') + '/' : '') + prop.toString());
                 }
                 return source === null || source === void 0 ? void 0 : source[prop];

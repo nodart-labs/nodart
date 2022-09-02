@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StaticLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const app_config_1 = require("../core/app_config");
-const resource_1 = require("../core/resource");
 class StaticLoader extends app_loader_1.AppLoader {
     constructor(_app) {
         var _a;
@@ -24,9 +23,9 @@ class StaticLoader extends app_loader_1.AppLoader {
     _resolve(target, args) {
         return target;
     }
-    send(filePath, response) {
+    send(filePath, http) {
         const conf = this._app.config.get;
-        return new resource_1.Resource(response).sendFile(filePath, conf.mimeTypes, conf.mimeType);
+        return http.sendFile(filePath, conf.mimeTypes, conf.mimeType);
     }
 }
 exports.StaticLoader = StaticLoader;

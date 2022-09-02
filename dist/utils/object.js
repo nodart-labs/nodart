@@ -1,25 +1,48 @@
 "use strict";
 const $ = require('./common');
 module.exports = {
-    get(obj, path, def) {
-        return path.split('.').reduce((acc, part) => ($.isPlainObject(acc) && acc[part] !== undefined)
-            ? acc[part]
-            : (def !== undefined ? def : null), obj);
+    getProtoConstructor(target) {
+        var _a;
+        return target instanceof Object ? (_a = target.prototype) === null || _a === void 0 ? void 0 : _a.constructor : null;
     },
-    has(obj, path) {
-        let has = path.split('.').reduce((acc, part) => ($.isPlainObject(acc) && acc[part] !== undefined)
-            ? acc[part]
-            : undefined, obj);
-        return has !== undefined;
+    isProtoConstructor(target, protoObject) {
+        if (protoObject) {
+            const constructor = this.getProtoConstructor(protoObject);
+            const targetConstructor = this.getProtoConstructor(target);
+            return !!(constructor
+                && targetConstructor
+                && (targetConstructor === constructor || constructor.isPrototypeOf(targetConstructor)));
+        }
+        return !!this.getProtoConstructor(target);
     },
-    set(obj, path, value) {
-        if (!$.isPlainObject(obj))
-            return;
-        const arr = path.split('.');
+    get(obj, dottedPath, def) {
+        return dottedPath.split('.').reduce((acc, part) => {
+            return (acc instanceof Object && acc[part] !== undefined) ? acc[part] : (def !== undefined ? def : undefined);
+        }, obj);
+    },
+    has(obj, dottedPath) {
+        return this.get(obj, dottedPath) !== undefined;
+    },
+    set(obj, dottedPath, value) {
+        const arr = dottedPath.split('.');
         for (let i = 0; i < arr.length - 1; i++) {
             obj = obj[arr[i]] = obj[arr[i]] !== undefined ? obj[arr[i]] : {};
         }
         obj[arr[arr.length - 1]] = value;
+    },
+    /*
+    * Simple Deep merge of Objects.
+    * Not recommended on complicated objets. Use https://www.npmjs.com/package/deepmerge instead
+    * */
+    merge(target, source) {
+        Object.keys(source).forEach(key => {
+            const targetValue = target[key];
+            const sourceValue = source[key];
+            target[key] = $.isPlainObject(targetValue) && $.isPlainObject(sourceValue)
+                ? this.merge(Object.assign({}, targetValue), sourceValue)
+                : sourceValue;
+        });
+        return target;
     },
     uniqBy(arr, key) {
         return [...new Map(arr.map(item => {
@@ -39,13 +62,13 @@ module.exports = {
         return JSON.parse(JSON.stringify(obj));
     },
     copyUnset(obj) {
-        return JSON.parse(this.stringifyUnset(obj));
+        return JSON.parse(this.stringifyReplaceCircular(obj));
     },
     stringify(obj) {
         return JSON.stringify(obj, (key, val) => typeof val === 'function' ? val + '' : val);
     },
     // https://bobbyhadz.com/blog/javascript-typeerror-converting-circular-structure-to-json
-    stringifyUnset(obj) {
+    stringifyReplaceCircular(obj) {
         const getCircularReplacer = () => {
             const seen = new WeakSet();
             return (key, value) => {
@@ -69,7 +92,9 @@ module.exports = {
         return list;
     },
     range(start, end, fill) {
-        return Array(end - start + 1).fill(fill).map((_, idx) => start + idx);
+        const r = Array(end - start + 1);
+        fill && fill(r);
+        return r.map((_, idx) => start + idx);
     },
     sortByWord(arr, word, sortKey) {
         word = (word === null || word === void 0 ? void 0 : word.toString().toLowerCase()) || '';

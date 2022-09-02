@@ -95,7 +95,7 @@ class Observable {
             get: (t: any, p: string): any => {
 
                 const isStackPointer = Observable.isStackPointer(source, p)
-                const isTarget = isStackPointer || !observer.isObject(source[p])
+                const isTarget = isStackPointer || !observer.isObject(source[p]) || Object.keys(source[p]).length === 0
 
                 isStackPointer || (path = setPath(p, path, pathDelim))
 
