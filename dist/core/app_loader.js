@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppLoader = void 0;
 const utils_1 = require("../utils");
-const _path = require('path');
+const service_1 = require("./service");
 class AppLoader {
     constructor(_app) {
         this._app = _app;
@@ -39,6 +39,7 @@ class AppLoader {
         return this._target;
     }
     onGetDependency(target) {
+        target instanceof service_1.Service && target.setScope(this.serviceScope);
     }
     onGetProperty(property, value, reference) {
     }
@@ -83,17 +84,17 @@ class AppLoader {
         const repo = this.repository;
         if (!repo)
             return '';
-        const path = _path.resolve(this._app.rootDir, repo);
+        const path = require('path').resolve(this._app.rootDir, repo);
         utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
         return path;
     }
     absPath(path) {
         const repo = this.getRepo();
         path = this.securePath(path);
-        return repo ? _path.resolve(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
+        return repo ? require('path').resolve(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
     }
     isTarget(path) {
-        return utils_1.fs.isFile(_path.resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
+        return utils_1.fs.isFile(require('path').resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
     }
     isSource(path) {
         return utils_1.fs.isFile(this.absPath(path), ['ts', 'js']);

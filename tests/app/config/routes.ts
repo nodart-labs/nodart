@@ -1,6 +1,6 @@
-import {typeRoute} from "../../../core/router";
+import {RouteEntry} from "../../../interfaces/router";
 
-export = <typeRoute>{
+export = <RouteEntry>{
     index: [
         {
             name: 'index',

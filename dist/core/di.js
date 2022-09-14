@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.injects = exports.uses = exports.refs = exports.DIManager = exports.DependencyInterceptor = exports.DIReference = exports.DIContainerDependency = exports.DIContainer = exports.CONTAINER_PREFIX_NAME = void 0;
 const utils_1 = require("../utils");
 const observer_1 = require("./observer");
+const exception_1 = require("./exception");
 exports.CONTAINER_PREFIX_NAME = 'di_container_';
 class DIContainer {
     constructor(target) {
@@ -11,7 +12,7 @@ class DIContainer {
         this._references = {};
         this.prototype = target === null || target === void 0 ? void 0 : target.prototype;
         if (!((_a = this.prototype) === null || _a === void 0 ? void 0 : _a.constructor))
-            throw 'The DI Container must be applied to a valid Class prototype\'s constructor.';
+            throw new exception_1.RuntimeException('The DI Container must be applied to a valid Class prototype\'s constructor.');
     }
     get references() {
         return Object.assign({}, this._references);

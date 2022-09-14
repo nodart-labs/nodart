@@ -1,11 +1,11 @@
-import {typeOrmConfig} from "../../../core/orm";
+import {OrmConfig} from "../../../interfaces/orm";
 
 const _path = require('path')
 
 /**
  * See ORM supporting docs: https://knexjs.org/guide/
  */
-export = <typeOrmConfig>Object.freeze({
+export = <OrmConfig>Object.freeze({
     // SQLite
     client: 'better-sqlite3', // or 'sqlite3'
     connection: {

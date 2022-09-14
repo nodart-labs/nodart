@@ -1,14 +1,9 @@
 import {$, fs} from '../utils'
 import {App} from './app'
-import {DependencyInterceptorInterface} from "./di";
-import {typeAppLoaderKeys} from "./app_config";
-import {typeServiceScope} from "./service";
-
-export type typeAppLoaderEntries = {
-    [name: string]: typeof AppLoader
-}
-
-const _path = require('path')
+import {DependencyInterceptorInterface} from "../interfaces/di";
+import {Service} from "./service";
+import {ServiceScope} from "../interfaces/service";
+import {AppLoaders} from "../interfaces/app";
 
 export abstract class AppLoader implements DependencyInterceptorInterface {
 
@@ -20,14 +15,14 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
     protected _targetPath: string = ''
 
-    protected _serviceScope: typeServiceScope = {}
+    protected _serviceScope: ServiceScope = {}
 
     get serviceScope() {
 
         return {...this._serviceScope, ...{app: this._app}}
     }
 
-    set serviceScope(scope: typeServiceScope) {
+    set serviceScope(scope: ServiceScope) {
 
         Object.assign(this._serviceScope, scope)
     }
@@ -57,6 +52,8 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
     }
 
     onGetDependency(target: any): void {
+
+        target instanceof Service && target.setScope(this.serviceScope)
     }
 
     onGetProperty(property: string, value: any, reference?: string): any {
@@ -124,7 +121,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         if (!repo) return ''
 
-        const path = _path.resolve(this._app.rootDir, repo)
+        const path = require('path').resolve(this._app.rootDir, repo)
 
         fs.isDir(path) || fs.mkDeepDir(path)
 
@@ -137,12 +134,12 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         path = this.securePath(path)
 
-        return repo ? _path.resolve(repo, $.trimPath(path) + this._pathSuffix) : ''
+        return repo ? require('path').resolve(repo, $.trimPath(path) + this._pathSuffix) : ''
     }
 
     isTarget(path: string) {
 
-        return fs.isFile(_path.resolve(this._app.rootDir, $.trimPath(path)), ['ts', 'js'])
+        return fs.isFile(require('path').resolve(this._app.rootDir, $.trimPath(path)), ['ts', 'js'])
     }
 
     isSource(path: string) {
@@ -160,7 +157,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
         return path.replace('../', '').replace('..\\', '')
     }
 
-    intersectLoader(loaderName: typeAppLoaderKeys, subRepo?: string, targetPath?: string) {
+    intersectLoader(loaderName: AppLoaders, subRepo?: string, targetPath?: string) {
 
         subRepo ||= ''
 

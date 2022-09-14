@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMigrationSource = exports.Orm = void 0;
 const knex_1 = require("knex");
 const utils_1 = require("../utils");
+const exception_1 = require("./exception");
 class Orm {
     constructor(config) {
         this.config = config;
@@ -104,8 +105,7 @@ class OrmMigrator {
             return utils_1.fs.getSource(require('path').resolve(this.orm.sources(), name), OrmMigrationSource);
         }
         catch (e) {
-            console.error(e.message);
-            throw `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`;
+            throw new exception_1.RuntimeException(`The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`);
         }
     }
     assignSource() {
@@ -244,8 +244,7 @@ class OrmSeeder {
             return utils_1.fs.getSource(require('path').resolve(this.orm.seedSources(), name), OrmSeedSource);
         }
         catch (e) {
-            console.error(e.message);
-            throw `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`;
+            throw new exception_1.RuntimeException(`The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`);
         }
     }
     assignSource() {

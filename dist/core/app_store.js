@@ -11,13 +11,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppListener = exports.AppStore = void 0;
 const utils_1 = require("../utils");
+const exception_1 = require("./exception");
 class AppStore {
     static add(store, storeDir) {
         var _a;
         if (!utils_1.fs.isDir(storeDir))
-            throw `The store repository "${storeDir}" does not exist.`;
+            throw new exception_1.RuntimeException(`AppStore: The store repository "${storeDir}" does not exist.`);
         if (AppStore.stores[store])
-            console.info(`The store name "${store}" already has been registered in store.`);
+            console.info(`AppStore: The store name "${store}" already has been registered in store.`);
         (_a = AppStore.stores)[store] || (_a[store] = new AppListener(storeDir));
     }
     static get(store) {
@@ -32,19 +33,14 @@ class AppListener {
         this._states = {};
     }
     getStore(storeName) {
-        try {
-            if (this._states[storeName])
-                return this._states[storeName];
-            const storeObject = require(this.repo + '/' + storeName);
-            const store = storeObject instanceof Object ? utils_1.object.copy(storeObject) : {};
-            store.states || (store.states = {});
-            store.events || (store.events = {});
-            store.listeners || (store.listeners = []);
-            return this._states[storeName] = store;
-        }
-        catch (e) {
-            console.error(e);
-        }
+        if (this._states[storeName])
+            return this._states[storeName];
+        const storeObject = utils_1.fs.include(this.repo + '/' + storeName);
+        const store = storeObject instanceof Object ? utils_1.object.copy(storeObject) : {};
+        store.states || (store.states = {});
+        store.events || (store.events = {});
+        store.listeners || (store.listeners = []);
+        return this._states[storeName] = store;
     }
     setState(storeName, state) {
         const store = this.getStore(storeName);

@@ -1,14 +1,10 @@
-import {BaseModelInterface} from "./interfaces/base_orm_interface";
-import {typeOrmQueryBuilder} from "./orm";
+import {BaseModelInterface, OrmQueryBuilder} from "../interfaces/orm";
 import {Orm} from "./orm";
 
 export abstract class Model implements BaseModelInterface {
-
-    queryBuilder: typeOrmQueryBuilder
-
+    queryBuilder: OrmQueryBuilder
     orm: Orm
-
-    get query(): typeOrmQueryBuilder {
+    get query(): OrmQueryBuilder {
         return this.queryBuilder
     }
 }

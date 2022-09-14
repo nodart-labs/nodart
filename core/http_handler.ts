@@ -1,10 +1,11 @@
 import {App} from "./app";
 import {HttpClient} from "./http_client";
-import {typeDataRoute} from "./router";
+import {RouteData} from "../interfaces/router";
 import {Controller, CONTROLLER_INITIAL_ACTION, CONTROLLER_HTTP_ACTIONS} from "./controller";
 import {DEFAULT_CONTROLLER_NAME} from "./app_config";
 import {AppLoader} from "./app_loader";
 import {ControllerLoader} from "../loaders/controller_loader";
+import {HttpException} from "./exception";
 
 export class HttpHandler {
 
@@ -23,7 +24,7 @@ export class HttpHandler {
         return this.app.router.httpRoute(this.httpClient)
     }
 
-    async getController(route?: typeDataRoute, httpClient?: HttpClient): Promise<Controller | void> {
+    async getController(route?: RouteData, httpClient?: HttpClient): Promise<Controller | void> {
 
         route ||= this.getRoute()
 
@@ -41,19 +42,22 @@ export class HttpHandler {
 
     async runController(controller?: Controller, action?: string, args?: any[]): Promise<any> {
 
-        const target = controller ?? await this.getController()
+        controller ||= await this.getController() as Controller
 
-        if (!(target instanceof Controller)) return
+        if (!(controller instanceof Controller)) {
 
-        action = this.fetchControllerAction(target, action || target.route?.action)
+            throw new HttpException(this.httpClient.getHttpResponse({status: 404}))
+        }
 
-        args ||= (target.route ? this.app.router.arrangeRouteParams(target.route) : [])
+        action = this.fetchControllerAction(controller, action || controller.route?.action)
 
-        await target[CONTROLLER_INITIAL_ACTION]()
+        args ||= (controller.route ? this.app.router.arrangeRouteParams(controller.route) : [])
 
-        target.route && (target.route.action = action)
+        await controller[CONTROLLER_INITIAL_ACTION]()
 
-        if (target[action] instanceof Function) return await target[action].apply(target, args)
+        controller.route && (controller.route.action = action)
+
+        if (controller[action] instanceof Function) return await controller[action].apply(controller, args)
     }
 
     fetchControllerAction(controller: Controller, action?: string) {
@@ -62,14 +66,15 @@ export class HttpHandler {
 
         action ||= (this.action || httpMethod)
 
-        if (CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod)
+        if (CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod) {
 
-            throw `The action "${action}" not responds to the HTTP method "${httpMethod.toUpperCase()}" in the "${controller.constructor.name}".`
+            throw new HttpException(this.httpClient.getHttpResponse({status: 400}))
+        }
 
         return action
     }
 
-    static getRoutePathData(route: typeDataRoute, loader: AppLoader) {
+    static getRoutePathData(route: RouteData, loader: AppLoader) {
 
         const data = {path: '', action: ''}
 

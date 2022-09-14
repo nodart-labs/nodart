@@ -34,9 +34,7 @@ export class StaticLoader extends AppLoader {
 
     send(filePath: string, http: HttpClient) {
 
-        const conf = this._app.config.get
-
-        return http.sendFile(filePath, conf.mimeTypes, conf.mimeType)
+        return http.sendFile(filePath, this._app.config.get.httpClient.fileMimeType)
     }
 
 }

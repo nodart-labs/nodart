@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ControllerLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const controller_1 = require("../core/controller");
-const service_1 = require("../core/service");
 class ControllerLoader extends app_loader_1.AppLoader {
     constructor() {
         super(...arguments);
@@ -27,7 +26,7 @@ class ControllerLoader extends app_loader_1.AppLoader {
     }
     onGetDependency(target) {
         this.serviceScope = { controller: this._target };
-        target instanceof service_1.Service && target.setScope(this.serviceScope);
+        super.onGetDependency(target);
     }
     _onGenerate(repository) {
     }

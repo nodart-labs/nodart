@@ -1,13 +1,7 @@
 import {AppLoader} from "../core/app_loader";
 import {Controller} from "../core/controller"
 import {HttpClient} from "../core/http_client";
-import {typeDataRoute} from "../core/router";
-import {Service} from "../core/service";
-
-export type typeControllerConstruct = [
-    http: HttpClient,
-    route: typeDataRoute,
-]
+import {RouteData} from "../interfaces/router";
 
 export class ControllerLoader extends AppLoader {
 
@@ -17,7 +11,7 @@ export class ControllerLoader extends AppLoader {
 
     protected _http: HttpClient
 
-    protected _route: typeDataRoute
+    protected _route: RouteData
 
     protected _target: Controller
 
@@ -26,7 +20,7 @@ export class ControllerLoader extends AppLoader {
         return Controller
     }
 
-    protected _onCall(target?: typeof Controller, args?: typeControllerConstruct) {
+    protected _onCall(target?: typeof Controller, args?: [http: HttpClient, route: RouteData]) {
 
         if (!target) return
 
@@ -48,7 +42,7 @@ export class ControllerLoader extends AppLoader {
 
         this.serviceScope = {controller: this._target}
 
-        target instanceof Service && target.setScope(this.serviceScope)
+        super.onGetDependency(target)
     }
 
     protected _onGenerate(repository: string): void {

@@ -1,26 +1,16 @@
-export type typeObserverDescriptor = {
-    source: any,
-    prop: string | number,
-    path: string[],
-    isTarget?: boolean,
-    value?: any,
-    old?: any
-}
-
-export type typeObserverGetter = (key: string | number, descriptor: typeObserverDescriptor) => any
-export type typeObserverSetter = (key: string | number, value: any, descriptor: typeObserverDescriptor) => any
-
-export type typeObserverHandlers = {
-    set?: typeObserverSetter,
-    get?: typeObserverGetter,
-}
+import {
+    ObserverDescriptor,
+    ObserverHandlers,
+    ObserverSetter,
+    ObserverGetter
+} from "../interfaces/observer";
 
 export class Observer {
 
-    protected _setter: typeObserverSetter = undefined
-    protected _getter: typeObserverGetter = undefined
+    protected _setter: ObserverSetter = undefined
+    protected _getter: ObserverGetter = undefined
 
-    constructor(readonly observable: any = {}, handlers?: typeObserverHandlers) {
+    constructor(readonly observable: any = {}, handlers?: ObserverHandlers) {
         handlers && this.handlers(handlers)
     }
 
@@ -32,15 +22,15 @@ export class Observer {
         return this._setter
     }
 
-    set getter(get: typeObserverGetter) {
+    set getter(get: ObserverGetter) {
         this._getter = get
     }
 
-    set setter(set: typeObserverSetter) {
+    set setter(set: ObserverSetter) {
         this._setter = set
     }
 
-    handlers(hdr: typeObserverHandlers) {
+    handlers(hdr: ObserverHandlers) {
         hdr.set && (this._setter = hdr.set)
         hdr.get && (this._getter = hdr.get)
         return this
@@ -50,12 +40,12 @@ export class Observer {
         return Observable.get(this.observable, this)
     }
 
-    pull(data: typeObserverDescriptor) {
+    pull(data: ObserverDescriptor) {
         let {prop, source} = data
         return this._getter ? this._getter(prop, data) : Array.isArray(source) ? source[prop] : source
     }
 
-    push(data: typeObserverDescriptor) {
+    push(data: ObserverDescriptor) {
         let {prop, value} = data
         return this._setter ? this._setter(prop, value, data) : value
     }
@@ -138,7 +128,7 @@ export function observe() {
     }
 }
 
-export function observable(handlers: typeObserverHandlers) {
+export function observable(handlers: ObserverHandlers) {
     return function (target: any, propertyKey: string) {
         const value = target[propertyKey]
         Object.defineProperty(target, propertyKey, {

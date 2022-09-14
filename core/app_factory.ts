@@ -1,6 +1,7 @@
 import {App} from './app'
 import {AppStore} from "./app_store";
-import {CLIENT_STORE, SYSTEM_EVENTS, SYSTEM_STORE, SYSTEM_STORE_NAME, typeAppLoaderKeys} from "./app_config";
+import {CLIENT_STORE, SYSTEM_LISTENERS, SYSTEM_STORE, SYSTEM_STORE_NAME} from "./app_config";
+import {AppLoaders} from "../interfaces/app";
 import {AppLoader} from "./app_loader";
 
 const events = require('../store/system').events
@@ -25,7 +26,7 @@ export class AppFactory {
 
     async createApp() {
         for (const loader of Object.keys(this._app.config.getStrict('loaders'))) {
-            await this.createLoader(<typeAppLoaderKeys>loader).generate()
+            await this.createLoader(loader as AppLoaders).generate()
         }
     }
 
@@ -40,10 +41,15 @@ export class AppFactory {
     }
 
     createEventListener() {
-        App.system.on({event: {[events.HTTP_REQUEST]: SYSTEM_EVENTS.httpRequest}})
+        App.system.on({
+            event: {
+                [events.HTTP_REQUEST]: SYSTEM_LISTENERS[events.HTTP_REQUEST],
+                [events.HTTP_RESPONSE]: SYSTEM_LISTENERS[events.HTTP_RESPONSE]
+            }
+        })
     }
 
-    createLoader(name: typeAppLoaderKeys): AppLoader {
+    createLoader(name: AppLoaders): AppLoader {
         const loader = this._app.config.getStrict(`loaders.${name}`)
         return Reflect.construct(loader, [this._app])
     }

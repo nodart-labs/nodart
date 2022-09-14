@@ -1,5 +1,5 @@
 import {AppLoader} from "../core/app_loader";
-import {BaseModelInterface} from "../core/interfaces/base_orm_interface";
+import {BaseModelInterface} from "../interfaces/orm";
 import {Orm} from "../core/orm";
 import {Model} from "../core/model";
 

@@ -1,14 +1,13 @@
 import {App} from './app'
 import {HttpClient} from "./http_client";
-import {HttpAcceptorInterface} from "./interfaces/http_acceptor_interface";
+import {HttpAcceptorInterface} from "../interfaces/http";
 import {Service} from "./service";
 import {Session} from "./session";
 import {Engine} from "./engine";
 import {Model} from "./model";
 import {uses, injects} from "./di";
-import {typeDataRoute} from "./router";
-
-type typeDeepNestedGeneric<T> = { [key: string]: typeDeepNestedGeneric<T> } | T
+import {RouteData} from "../interfaces/router";
+import {JSONObjectInterface, ObjectDeepNestedGeneric} from "../interfaces/object";
 
 export const CONTROLLER_INITIAL_ACTION = 'init'
 export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head']
@@ -18,15 +17,18 @@ export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete',
 
 export abstract class Controller implements HttpAcceptorInterface {
 
-    @injects('service') readonly service: typeDeepNestedGeneric<Service | typeof Service>
+    @injects('service') readonly service: ObjectDeepNestedGeneric<Service | typeof Service>
 
-    @injects('model') readonly model: typeDeepNestedGeneric<Model | typeof Model>
+    @injects('model') readonly model: ObjectDeepNestedGeneric<Model | typeof Model>
 
     protected _session: Session
 
     protected _engine: Engine
 
-    protected constructor(readonly app?: App, readonly http?: HttpClient, readonly route?: typeDataRoute) {
+    protected constructor(
+        readonly app?: App,
+        readonly http?: HttpClient,
+        readonly route?: RouteData) {
     }
 
     abstract init(): any
@@ -53,7 +55,7 @@ export abstract class Controller implements HttpAcceptorInterface {
 
     get send() {
         return {
-            data: (body: object | string, status?: number, contentType?: string) => {
+            data: (body: JSONObjectInterface | string, status?: number, contentType?: string) => {
                 this.http.send(body, status, contentType)
             },
             view: (template: string, args?: object, status?: number, callback?: Function) => {

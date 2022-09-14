@@ -17,7 +17,7 @@ class StoreLoader extends app_loader_1.AppLoader {
             return;
         const state = utils_1.$.trimPath(this._app.config.get.stateName) || app_config_1.CLIENT_STATE_NAME;
         const dest = repository + '/' + state + '.ts';
-        (0, app_config_1.getSamples)('store').forEach(samp => utils_1.fs.isFile(samp) && !utils_1.fs.isFile(dest) && utils_1.fs.copy(samp, dest));
+        utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)('store/app.ts'), dest);
     }
 }
 exports.StoreLoader = StoreLoader;

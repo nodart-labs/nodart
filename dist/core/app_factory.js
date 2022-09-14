@@ -45,7 +45,12 @@ class AppFactory {
         app_1.App.system.state.app || app_1.App.system.setup({ app: this._app });
     }
     createEventListener() {
-        app_1.App.system.on({ event: { [events.HTTP_REQUEST]: app_config_1.SYSTEM_EVENTS.httpRequest } });
+        app_1.App.system.on({
+            event: {
+                [events.HTTP_REQUEST]: app_config_1.SYSTEM_LISTENERS[events.HTTP_REQUEST],
+                [events.HTTP_RESPONSE]: app_config_1.SYSTEM_LISTENERS[events.HTTP_RESPONSE]
+            }
+        });
     }
     createLoader(name) {
         const loader = this._app.config.getStrict(`loaders.${name}`);

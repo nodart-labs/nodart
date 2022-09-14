@@ -1,9 +1,0 @@
-export = {
-    index: [
-        {
-            path: '/',
-            redirects: {name: 'sample'}
-        }
-    ],
-    sample: 'sample'
-}

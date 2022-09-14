@@ -1,41 +1,6 @@
 import {$} from '../utils'
 import {HttpClient} from "./http_client";
-
-export type typeRoute = {
-    [name: string]: typeRoutePathData
-}
-
-export type typeRoutePathData = string | Array<string | typeRoutePathObject>
-
-export declare type typeRoutePathObject = {
-    path: string,
-    name?: string,
-    action?: string,
-    types?: {
-        // determine which type should be attached to url path string parameter.
-        [pathName: string]: typeof Number | RegExp | ((value: any) => any)
-    },
-}
-
-export type typeParseRoutePathData = {
-    pathName: string,
-    param: string | undefined,
-    isOptional: boolean,
-    isSkip: boolean,
-    isNumber: boolean,
-    index: number,
-    pathNames: string[]
-}
-
-export type typeDataRoute = {
-    route?: string,
-    name?: string,
-    path: string,
-    pathname: string,
-    params?: object,
-    action?: string,
-    [addon: string]: any
-}
+import {Route, RouteEntryData, RouteEntry, RouteEntryObject, RouteData} from "../interfaces/router";
 
 export class Router {
 
@@ -45,10 +10,10 @@ export class Router {
 
     protected _skipRouteEntryPointer: string = '*'
 
-    constructor(protected _routes: typeRoute) {
+    constructor(protected _routes: RouteEntry) {
     }
 
-    httpRoute(http: HttpClient): typeDataRoute {
+    httpRoute(http: HttpClient): RouteData {
         const {pathname} = http.parseURL
         let route = undefined
 
@@ -73,12 +38,12 @@ export class Router {
         }
     }
 
-    findRoute(routeData: typeRoutePathData, pathname: string): typeDataRoute | null {
+    findRoute(routeData: Route, pathname: string): RouteData | null {
 
         pathname = $.trimPath(pathname)
 
         const targetPath = pathname.split('/')
-        const getMatch = (routeObject: typeRoutePathObject) => this.getRouteObject(routeObject, pathname, targetPath)
+        const getMatch = (routeObject: RouteEntryObject) => this.getRouteObject(routeObject, pathname, targetPath)
 
         let match = null
 
@@ -89,7 +54,7 @@ export class Router {
         return match
     }
 
-    getRouteObject(routeData: typeRoutePathObject, pathname: string, targetPath: any[]): typeDataRoute | null {
+    getRouteObject(routeData: RouteEntryObject, pathname: string, targetPath: any[]): RouteData | null {
 
         let {path, types} = routeData
 
@@ -102,7 +67,7 @@ export class Router {
 
         let isMatch = undefined
 
-        const params = this.getRouteParams(path, (args: typeParseRoutePathData) => {
+        const params = this.getRouteParams(path, (args: RouteEntryData) => {
             const value = this.getValidatedRouteParamValue(args, targetPath, types)
             isMatch === false || value === undefined || (isMatch = value !== false)
             return value
@@ -111,7 +76,7 @@ export class Router {
         return isMatch ? {...routeData, path, params, pathname} : null
     }
 
-    getRouteParams(routePath: string, assignParamValueCallback: (args: typeParseRoutePathData) => any) {
+    getRouteParams(routePath: string, assignParamValueCallback: (args: RouteEntryData) => any) {
 
         routePath = $.trimPath(routePath)
         const params = {}
@@ -141,7 +106,7 @@ export class Router {
         }
     }
 
-    getRouteParamValue(args: typeParseRoutePathData,
+    getRouteParamValue(args: RouteEntryData,
         targetPath: any[],
         paramTypes: object = {}): undefined | string | number | boolean {
 
@@ -160,7 +125,7 @@ export class Router {
         return param ? (value ?? target) : pathName
     }
 
-    getValidatedRouteParamValue(args: typeParseRoutePathData,
+    getValidatedRouteParamValue(args: RouteEntryData,
         targetPath: any[],
         paramTypes: object = {}): undefined | string | number | boolean {
 
@@ -173,7 +138,7 @@ export class Router {
         return value
     }
 
-    arrangeRouteParams(data: typeDataRoute) {
+    arrangeRouteParams(data: RouteData) {
 
         const {path, params} = data
         const arrange = []

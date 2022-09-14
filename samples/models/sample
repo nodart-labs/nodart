@@ -1,5 +1,0 @@
- import {Model} from "nodart";
-
- export class SampleModel extends Model {
-
- }

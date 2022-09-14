@@ -9,12 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.App = void 0;
+exports.AppExceptionResolve = exports.App = void 0;
 const app_store_1 = require("./app_store");
-const app_config_1 = require("./app_config");
 const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
+const app_config_1 = require("./app_config");
+const exception_1 = require("./exception");
 const events = require('../store/system').events;
 class App {
     constructor(config) {
@@ -45,20 +46,40 @@ class App {
             return this;
         });
     }
-    serve(port = 3000, protocol = 'http') {
-        require(protocol).createServer((req, res) => __awaiter(this, void 0, void 0, function* () {
-            yield App.system.set({ event: { [events.HTTP_REQUEST]: [this, req, res] } });
-        })).listen(port, function () {
-            console.log(`server start at port ${port}`);
-            console.log(`http://localhost:${port}`);
+    serve(port = 3000, protocol = 'http', host) {
+        require(protocol).createServer((req, res) => {
+            (() => __awaiter(this, void 0, void 0, function* () {
+                this.requestPayload && (yield this.requestPayload(req, res));
+                yield App.system.listen({ event: { [events.HTTP_REQUEST]: [this, req, res] } }).catch(exception => {
+                    const resolve = this.config.get.exception.resolve || AppExceptionResolve;
+                    new resolve(this, exception).resolveOnHttp(req, res);
+                });
+            }))();
+        }).listen(port, host, function () {
+            console.log(`server start at port ${port}.`, host ? `host: ${host}` : '');
+            console.log(`${protocol}://${host ? host : 'localhost'}:${port}`);
         });
     }
-    setHttpHandler(handler) {
-        this._httpHandler = handler;
+    setHttpRequestPayload(payload) {
+        this._requestPayload = payload;
         return this;
     }
-    get httpHandler() {
-        return this._httpHandler;
+    setHttpHandlerPayload(payload) {
+        this._httpHandlerPayload = payload;
+        return this;
+    }
+    setHttpExceptionPayload(payload) {
+        this._exceptionPayload = payload;
+        return this;
+    }
+    get requestPayload() {
+        return this._requestPayload;
+    }
+    get httpHandlerPayload() {
+        return this._httpHandlerPayload;
+    }
+    get exceptionPayload() {
+        return this._exceptionPayload;
     }
     static store(storeName) {
         return app_store_1.AppStore.get(storeName);
@@ -71,13 +92,49 @@ class App {
         const store = app_store_1.AppStore.get(app_config_1.SYSTEM_STORE_NAME);
         const state = (_b = (_a = app_store_1.AppStore.get(app_config_1.SYSTEM_STORE_NAME)) === null || _a === void 0 ? void 0 : _a.get(app_config_1.SYSTEM_STATE_NAME)) !== null && _b !== void 0 ? _b : {};
         return {
+            events,
             store,
             state,
             setup: (data) => store.setup(app_config_1.SYSTEM_STATE_NAME, data),
             set: (data) => __awaiter(this, void 0, void 0, function* () { return yield store.set(app_config_1.SYSTEM_STATE_NAME, data); }),
+            listen: (data) => __awaiter(this, void 0, void 0, function* () { return yield store.listen(app_config_1.SYSTEM_STATE_NAME, data); }),
             on: (data) => store.on(app_config_1.SYSTEM_STATE_NAME, data),
         };
     }
 }
 exports.App = App;
+class AppExceptionResolve {
+    constructor(app, exception) {
+        this.app = app;
+        this.exception = exception;
+    }
+    getHandler() {
+        return this._handler || (this._handler = this.app.get('exception_handler').call([this.exception]));
+    }
+    getLog() {
+        return this._log || (this._log = this.app.get('exception_log').call([this.exception]));
+    }
+    sendHttpException(request, response) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const responseData = this.getLog().getHttpResponseData(request, response);
+            this.app.exceptionPayload && Object.assign(responseData, this.app.exceptionPayload(responseData));
+            const { status, contentType, content } = responseData;
+            this._handler && (yield this._handler.resolve());
+            response.writeHead(status, { 'Content-Type': contentType });
+            response.end(content);
+        });
+    }
+    resolveOnHttp(request, response) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const handler = this.getHandler();
+            handler && (this.exception = handler);
+            const log = this.getLog();
+            log.onHttp(request, response).dump();
+            if (handler instanceof exception_1.HttpExceptionHandler)
+                return yield handler.resolve();
+            yield this.sendHttpException(request, response);
+        });
+    }
+}
+exports.AppExceptionResolve = AppExceptionResolve;
 //# sourceMappingURL=app.js.map

@@ -1,56 +1,40 @@
-import {Knex, knex} from 'knex'
-import {ConnectionManagerInterface} from "./interfaces/base_orm_interface";
+import {knex} from 'knex'
+import {
+    OrmConfig,
+    OrmSeederConfig,
+    OrmMigratorConfig,
+    OrmMigration,
+    OrmClient,
+    OrmSeed,
+    OrmQueryBuilder,
+    OrmSeedInterface,
+    OrmMigrationInterface,
+    ConnectionManagerInterface
+} from "../interfaces/orm";
 import {fs} from "../utils";
-
-/**
- * See ORM docs: https://knexjs.org/guide/
- */
-export type typeOrmConfig = Knex.Config
-
-export type typeOrmMigratorConfig = Knex.MigratorConfig
-
-export type typeOrmClient = Knex
-
-export type typeOrmQueryBuilder = Knex.QueryBuilder
-
-export type typeOrmMigration = Knex.Migration
-
-export type typeOrmSeed = Knex.Seed
-
-export type typeOrmSeederConfig = Knex.SeederConfig
-
-export interface OrmMigrationInterface {
-    [name: string]: {
-        up(client: typeOrmClient): any,
-        down(client: typeOrmClient): any,
-    }
-}
-
-export interface OrmSeedInterface {
-    [name: string]: (client: typeOrmClient) => any
-}
+import {RuntimeException} from "./exception";
 
 export class Orm implements ConnectionManagerInterface {
 
-    readonly client: typeOrmClient
+    readonly client: OrmClient
 
     protected _sources: string = '' // Migration sources directory
 
     protected _seedSources: string = '' // Seed sources directory
 
-    constructor(readonly config: typeOrmConfig) {
+    constructor(readonly config: OrmConfig) {
         this.client = this.connect(config)
     }
 
-    connect(config: typeOrmConfig) {
+    connect(config: OrmConfig) {
         return knex(config)
     }
 
-    get queryBuilder(): typeOrmQueryBuilder {
+    get queryBuilder(): OrmQueryBuilder {
         return this.client.queryBuilder()
     }
 
-    migrator(config?: typeOrmMigratorConfig) {
+    migrator(config?: OrmMigratorConfig) {
         return new OrmMigrator(this, config)
     }
 
@@ -58,7 +42,7 @@ export class Orm implements ConnectionManagerInterface {
         return this._sources
     }
 
-    seeder(config?: typeOrmSeederConfig) {
+    seeder(config?: OrmSeederConfig) {
         return new OrmSeeder(this, config)
     }
 
@@ -98,15 +82,15 @@ export abstract class OrmMigrationSource {
         return migration;
     }
 
-    async getMigration(migration: string): Promise<typeOrmMigration> {
+    async getMigration(migration: string): Promise<OrmMigration> {
 
         const target = this.migrations?.[migration]
 
         return {
-            async up(client: typeOrmClient) {
+            async up(client: OrmClient) {
                 await target?.up(client)
             },
-            async down(client: typeOrmClient) {
+            async down(client: OrmClient) {
                 await target?.down(client)
             },
         }
@@ -118,18 +102,18 @@ export abstract class OrmMigrationSource {
  */
 export class OrmMigrator {
 
-    client: typeOrmClient
+    client: OrmClient
 
-    config: typeOrmMigratorConfig
+    config: OrmMigratorConfig
 
     protected _source: OrmMigrationSource
 
-    constructor(readonly orm: Orm, config?: typeOrmMigratorConfig) {
+    constructor(readonly orm: Orm, config?: OrmMigratorConfig) {
 
         this._connect(config)
     }
 
-    protected _connect(config?: typeOrmMigratorConfig) {
+    protected _connect(config?: OrmMigratorConfig) {
 
         this.config = {...this.orm.config.migrations ?? {}, ...config ?? {}}
 
@@ -147,8 +131,9 @@ export class OrmMigrator {
                 OrmMigrationSource
             ) as typeof OrmMigrationSource
         } catch (e) {
-            console.error(e.message)
-            throw `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
+            throw new RuntimeException(
+                `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
+            )
         }
     }
 
@@ -255,10 +240,10 @@ export abstract class OrmSeedSource {
         return Promise.resolve(this.seedList)
     }
 
-    async getSeed(seed: string): Promise<typeOrmSeed> {
+    async getSeed(seed: string): Promise<OrmSeed> {
 
         return {
-            seed: async (client: typeOrmClient) => {
+            seed: async (client: OrmClient) => {
                 await this.seeds?.[seed]?.(client)
             }
         }
@@ -267,18 +252,18 @@ export abstract class OrmSeedSource {
 
 export class OrmSeeder {
 
-    client: typeOrmClient
+    client: OrmClient
 
-    config: typeOrmSeederConfig
+    config: OrmSeederConfig
 
     protected _source: OrmSeedSource
 
-    constructor(readonly orm: Orm, config?: typeOrmSeederConfig) {
+    constructor(readonly orm: Orm, config?: OrmSeederConfig) {
 
         this._connect(config)
     }
 
-    protected _connect(config?: typeOrmSeederConfig) {
+    protected _connect(config?: OrmSeederConfig) {
 
         this.config = {...this.orm.config.seeds ?? {}, ...config ?? {}}
 
@@ -296,8 +281,9 @@ export class OrmSeeder {
                 OrmSeedSource
             ) as typeof OrmSeedSource
         } catch (e) {
-            console.error(e.message)
-            throw `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
+            throw new RuntimeException(
+                `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
+            )
         }
     }
 

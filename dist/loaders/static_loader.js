@@ -24,8 +24,7 @@ class StaticLoader extends app_loader_1.AppLoader {
         return target;
     }
     send(filePath, http) {
-        const conf = this._app.config.get;
-        return http.sendFile(filePath, conf.mimeTypes, conf.mimeType);
+        return http.sendFile(filePath, this._app.config.get.httpClient.fileMimeType);
     }
 }
 exports.StaticLoader = StaticLoader;

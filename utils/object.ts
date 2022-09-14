@@ -127,4 +127,47 @@ export = {
         })
     },
 
+    getFuncArguments(func: Function): string[] {
+        return func.toString().replace(/[\r\n\s]+/g, ' ')
+            ?.match(/(?:[^(]+)?\s*(?:\((.*?)\)|([^\s]+))/)
+            ?.slice(1,3)
+            ?.join('')
+            ?.split(/\s*,\s*/) ?? []
+    },
+
+    arrangeFuncArguments(func: Function, parseDefaultValues: boolean = false) {
+        const args = this.getFuncArguments(func)
+        const order: {
+            arg: string,
+            default: any,
+            required: boolean,
+            src: string
+        }[] = []
+
+        args.forEach(arg => {
+            const data = arg.split('=')
+
+            let def = undefined
+
+            if (parseDefaultValues) {
+                def = data[1]?.trim()
+
+                try {
+                    !isNaN(parseFloat(def)) ? def = parseFloat(def) : def = JSON.parse(def)
+                } catch(e) {
+                    def = data[1]?.trim()
+                }
+            }
+
+            order.push({
+                arg: data[0].trim(),
+                default: def,
+                required: data.length === 1,
+                src: arg
+            })
+        })
+
+        return order
+    }
+
 }

@@ -7,12 +7,12 @@ class Engine {
         this.client = require('nunjucks');
         this.client.configure(config.views, config.options);
     }
-    view(template, args, callback) {
-        return this.client.render(this.normalize(template), args, callback);
+    view(templatePath, args, callback) {
+        return this.client.render(this.normalize(templatePath), args, callback);
     }
-    normalize(template) {
-        template.match(/^(.*?)\.([^.]+)$/i) || (template += '.html');
-        return template;
+    normalize(templatePath) {
+        templatePath.match(/^(.*?)\.([^.]+)$/i) || (templatePath += '.html');
+        return templatePath;
     }
 }
 exports.Engine = Engine;

@@ -1,23 +1,16 @@
 import {object} from "../utils";
-import {App} from "./app";
-import {Controller} from "./controller";
-
-export type typeServiceScope = {
-    app?: App,
-    controller?: Controller,
-    [key: string]: any
-}
+import {ServiceScope} from "../interfaces/service";
 
 export abstract class Service {
 
-    protected constructor(protected _scope: typeServiceScope = {}) {
+    protected constructor(protected _scope: ServiceScope = {}) {
     }
 
-    setScope(scope: typeServiceScope) {
+    setScope(scope: ServiceScope) {
         Object.assign(this._scope, scope)
     }
 
-    mergeScope(scope: typeServiceScope) {
+    mergeScope(scope: ServiceScope) {
         this._scope = object.merge(this._scope, scope)
     }
 
@@ -25,7 +18,7 @@ export abstract class Service {
         return object.get(this._scope, pathDot, def)
     }
 
-    get scope(): typeServiceScope {
+    get scope(): ServiceScope {
         return this._scope
     }
 }

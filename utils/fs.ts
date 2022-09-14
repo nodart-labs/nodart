@@ -1,6 +1,7 @@
 import {$, object} from './index'
 
 const fs = require('fs')
+const _path = require("path")
 
 const stat = (path: string) => fs.existsSync(path) ? fs.statSync(path) : null
 
@@ -50,23 +51,42 @@ const copy = (src: string, dest: string, callback: Function = (() => undefined),
     return false
 }
 
-const getSource = (path: string, sourceProtoObject?: any): any | void => {
+const include = (path: string, silent: boolean = false): any | null => {
+    try {
+        return require(path)
+    } catch (e) {
+        silent || console.error(`Failed to load data from path "${path}".`)
+        silent || console.error(e)
+        return null
+    }
+}
+
+const getSource = (path: string, sourceProtoObject?: any): any | null => {
 
     const source = require(path)
 
-    if (!(source instanceof Object)) return
+    if (!(source instanceof Object)) return null
 
     for (let key of Object.keys(source)) {
 
         if (object.isProtoConstructor(source[key], sourceProtoObject)) return source[key]
     }
 
-    return source
+    return null
 }
 
+const filename = (path: string) => isFile(path) ? _path.basename(path) : null
+
+const parseFile = (path: string): object => isFile(path) ? _path.parse(path) : {}
+
+const formatPath = (path: string) => $.trimPath(path).replace('\\', '/')
+
 export = {
-    fs,
+    system: fs,
     stat,
+    filename,
+    parseFile,
+    formatPath,
     dir,
     write,
     json,
@@ -77,4 +97,5 @@ export = {
     mkdir,
     mkDeepDir,
     getSource,
+    include
 }

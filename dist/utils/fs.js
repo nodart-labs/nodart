@@ -1,6 +1,7 @@
 "use strict";
 const index_1 = require("./index");
 const fs = require('fs');
+const _path = require("path");
 const stat = (path) => fs.existsSync(path) ? fs.statSync(path) : null;
 const dir = (directory) => {
     if (!isDir(directory))
@@ -43,19 +44,35 @@ const copy = (src, dest, callback = (() => undefined), chmod) => {
     }
     return false;
 };
+const include = (path, silent = false) => {
+    try {
+        return require(path);
+    }
+    catch (e) {
+        silent || console.error(`Failed to load data from path "${path}".`);
+        silent || console.error(e);
+        return null;
+    }
+};
 const getSource = (path, sourceProtoObject) => {
     const source = require(path);
     if (!(source instanceof Object))
-        return;
+        return null;
     for (let key of Object.keys(source)) {
         if (index_1.object.isProtoConstructor(source[key], sourceProtoObject))
             return source[key];
     }
-    return source;
+    return null;
 };
+const filename = (path) => isFile(path) ? _path.basename(path) : null;
+const parseFile = (path) => isFile(path) ? _path.parse(path) : {};
+const formatPath = (path) => index_1.$.trimPath(path).replace('\\', '/');
 module.exports = {
-    fs,
+    system: fs,
     stat,
+    filename,
+    parseFile,
+    formatPath,
     dir,
     write,
     json,
@@ -66,5 +83,6 @@ module.exports = {
     mkdir,
     mkDeepDir,
     getSource,
+    include
 };
 //# sourceMappingURL=fs.js.map

@@ -8,7 +8,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
     const staticLoader = <StaticLoader>app.get('static')
 
-    const http = new HttpClient(request, response)
+    const http = app.get('http').call([request, response]) as HttpClient
 
     const urlPath = http.parseURL.pathname === '/' ? app.config.get.staticIndex : http.parseURL.pathname
 
@@ -18,7 +18,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
     const handler = new HttpHandler(app, http)
 
-    if (app.httpHandler) return await app.httpHandler(handler)
+    if (app.httpHandlerPayload) return await app.httpHandlerPayload(handler)
 
     await handler.runController()
 }

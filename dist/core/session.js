@@ -18,8 +18,7 @@ class Session {
         return (_a = this._session) !== null && _a !== void 0 ? _a : {};
     }
     set(data) {
-        const session = this.get;
-        Object.entries(data).forEach(([key, value]) => session[key] = value);
+        Object.assign(this.get, data);
     }
 }
 exports.Session = Session;

@@ -141,6 +141,25 @@ module.exports = {
     },
     log(data) {
         console.log(data);
+    },
+    hyphen2Camel(str, delimiters) {
+        if (!str)
+            return '';
+        const pattern = /[-_]+(.)?/g;
+        function toUpper(match, group1) {
+            return group1 ? group1.toUpperCase() : '';
+        }
+        return str.replace(delimiters ? new RegExp('[' + delimiters + ']+(.)?', 'g') : pattern, toUpper);
+    },
+    get date() {
+        return {
+            currentDateTime() {
+                const today = new Date();
+                const date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+                const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+                return date + ' ' + time;
+            }
+        };
     }
 };
 //# sourceMappingURL=common.js.map

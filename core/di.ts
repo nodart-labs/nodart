@@ -1,33 +1,27 @@
 import {$} from "../utils";
-import {Observer, typeObserverDescriptor} from "./observer";
-
-export type typeDIContainerDependencyPayload = (instance: any, property: string, value?: any) => any
-
-export type typeDIContainerAssignData = {
-    reference: string,
-    payload?: typeDIContainerDependencyPayload
-}
-
-export type typeDIContainerReferenceEntries = {
-    [reference: string]: typeDIContainerDependencyPayload
-}
-
-export type typeDIOriginContainers = {
-    [key: string]: {
-        constructor: any,
-        container: DIContainer
-    }
-}
+import {Observer} from "./observer";
+import {ObserverDescriptor} from "../interfaces/observer";
+import {
+    DependencyInterceptorInterface,
+    PropertyInterceptorInterface,
+    DIContainerDependencyPayload,
+    DIOriginContainers,
+    DIContainerReferenceEntries,
+    DIContainerAssignData,
+    DIReferenceEntries,
+    DISearchReferenceProps,
+} from "../interfaces/di";
+import {RuntimeException} from "./exception";
 
 export const CONTAINER_PREFIX_NAME = 'di_container_'
 
 export class DIContainer implements PropertyInterceptorInterface {
 
-    private static origin: typeDIOriginContainers = {}
+    private static origin: DIOriginContainers = {}
 
     readonly prototype: any
 
-    protected _references: typeDIContainerReferenceEntries = {}
+    protected _references: DIContainerReferenceEntries = {}
 
     onGetProperty: undefined
 
@@ -35,18 +29,20 @@ export class DIContainer implements PropertyInterceptorInterface {
 
         this.prototype = target?.prototype
 
-        if (!this.prototype?.constructor) throw 'The DI Container must be applied to a valid Class prototype\'s constructor.'
+        if (!this.prototype?.constructor)
+
+            throw new RuntimeException('The DI Container must be applied to a valid Class prototype\'s constructor.')
     }
 
     get references() {
         return {...this._references}
     }
 
-    setReferences(references: typeDIContainerReferenceEntries) {
+    setReferences(references: DIContainerReferenceEntries) {
         Object.assign(this._references, references)
     }
 
-    assignData(data: typeDIContainerAssignData) {
+    assignData(data: DIContainerAssignData) {
         this._references[data.reference] = data.payload
         const {key, container} = DIContainer.getOrigin(this.prototype)
         key && container && DIContainer.setOrigin(key, this.prototype.constructor, this)
@@ -113,7 +109,7 @@ export class DIContainerDependency {
         return this._container ||= DIContainer.getOrigin(this.target).container
     }
 
-    static apply(target: any, property: string, referenceOrPayload: string | typeDIContainerDependencyPayload) {
+    static apply(target: any, property: string, referenceOrPayload: string | DIContainerDependencyPayload) {
 
         const dep = new DIContainerDependency
 
@@ -125,7 +121,7 @@ export class DIContainerDependency {
         })
     }
 
-    protected _getter(property: string, referenceOrPayload: string | typeDIContainerDependencyPayload) {
+    protected _getter(property: string, referenceOrPayload: string | DIContainerDependencyPayload) {
 
         const dep = this
 
@@ -200,26 +196,14 @@ export class DIContainerDependency {
     }
 }
 
-export type typeReferenceEntries = {
-    [referencePathLike: string]: typeReferencePayload
-}
-
-export type typeSearchReferenceFilterData = { target: string, reference: string, entry: string }
-
-export type typeSearchReferenceProps = {
-    filter?: (data: typeSearchReferenceFilterData) => typeSearchReferenceFilterData,
-}
-
-export type typeReferencePayload = (mediator: any, target: string, targetProps?: any[]) => any
-
 export class DIReference {
 
     constructor(
-        readonly references: typeReferenceEntries,
+        readonly references: DIReferenceEntries,
         readonly mediator?: any) {
     }
 
-    setReferences(references: typeReferenceEntries) {
+    setReferences(references: DIReferenceEntries) {
 
         Object.assign(this.references, references)
     }
@@ -229,7 +213,7 @@ export class DIReference {
      * @param referencePathLike
      * @param props
      */
-    search(referencePathLike: string, props?: typeSearchReferenceProps) {
+    search(referencePathLike: string, props?: DISearchReferenceProps) {
 
         const {target, reference, entry} = DIReference.getReferenceEntry(referencePathLike, this.references)
 
@@ -256,7 +240,7 @@ export class DIReference {
         if (entry) return this.getDependency(entry, target, props)
     }
 
-    static getReferenceEntry(referencePathLike: string, references: typeReferenceEntries) {
+    static getReferenceEntry(referencePathLike: string, references: DIReferenceEntries) {
 
         const output = {
             reference: $.trimPath(referencePathLike),
@@ -276,24 +260,6 @@ export class DIReference {
         return output
     }
 
-}
-
-export interface PropertyInterceptorInterface {
-
-    onGetProperty: (property: string, value: any, reference?: string) => any
-}
-
-export interface DependencyInterceptorInterface extends PropertyInterceptorInterface {
-
-    getTarget(): any
-
-    onGetDependency: (target: any) => void
-
-    getReferenceTarget: (reference: string) => string | void
-
-    getReferenceProps: (reference: string) => any[] | void
-
-    intercept(): void
 }
 
 export class DependencyInterceptor {
@@ -372,7 +338,7 @@ export class DependencyInterceptor {
 
         const observer = new Observer(value, {
 
-            get: (key: string, descriptor: typeObserverDescriptor) => {
+            get: (key: string, descriptor: ObserverDescriptor) => {
 
                 const {prop, path, source, isTarget} = descriptor
 
@@ -397,19 +363,19 @@ export class DIManager {
 
     protected _reference?: DIReference
 
-    constructor(references?: typeReferenceEntries, mediator?: any) {
+    constructor(references?: DIReferenceEntries, mediator?: any) {
 
         references && (this._reference = new DIReference(references, mediator))
     }
 
-    setReferences(references: typeReferenceEntries) {
+    setReferences(references: DIReferenceEntries) {
 
         this._reference?.setReferences(references)
     }
 
-    reference(references: typeReferenceEntries, mediator?: any) {
+    reference(references: DIReferenceEntries, mediator?: any) {
 
-        return new DIReference(references,  mediator ?? this._reference?.mediator)
+        return new DIReference(references, mediator ?? this._reference?.mediator)
     }
 
     container(target: any): DIContainer | undefined {
@@ -422,14 +388,14 @@ export class DIManager {
         return new DependencyInterceptor(interceptor, reference ?? this._reference)
     }
 
-    use(target: any, reference: string, payload?: typeDIContainerDependencyPayload) {
+    use(target: any, reference: string, payload?: DIContainerDependencyPayload) {
 
-        DIContainer.getOriginOrCreate(target).assignData(<typeDIContainerAssignData>{reference, payload})
+        DIContainer.getOriginOrCreate(target).assignData(<DIContainerAssignData>{reference, payload})
 
         return this
     }
 
-    inject(target: any, property: string, referenceOrPayload: string | typeDIContainerDependencyPayload) {
+    inject(target: any, property: string, referenceOrPayload: string | DIContainerDependencyPayload) {
 
         DIContainerDependency.apply(target, property, referenceOrPayload)
 
@@ -438,19 +404,19 @@ export class DIManager {
 
 }
 
-export function refs(references: typeDIContainerReferenceEntries) {
+export function refs(references: DIContainerReferenceEntries) {
     return function (constructor: any) {
         DIContainer.getOriginOrCreate(constructor).setReferences(references)
     }
 }
 
-export function uses(reference: string, payload?: typeDIContainerDependencyPayload) {
+export function uses(reference: string, payload?: DIContainerDependencyPayload) {
     return function (constructor: any) {
-        DIContainer.getOriginOrCreate(constructor).assignData(<typeDIContainerAssignData>{reference, payload})
+        DIContainer.getOriginOrCreate(constructor).assignData(<DIContainerAssignData>{reference, payload})
     }
 }
 
-export function injects(referenceOrPayload: string | typeDIContainerDependencyPayload) {
+export function injects(referenceOrPayload: string | DIContainerDependencyPayload) {
     return function (target: any, propertyKey: string) {
         DIContainerDependency.apply(target, propertyKey, referenceOrPayload)
     }
