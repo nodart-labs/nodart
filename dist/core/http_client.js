@@ -71,11 +71,7 @@ class HttpClient {
         http.responseData.status = (_c = (_b = (_a = assignData === null || assignData === void 0 ? void 0 : assignData.status) !== null && _a !== void 0 ? _a : http.responseData.status) !== null && _b !== void 0 ? _b : http.response.statusCode) !== null && _c !== void 0 ? _c : http_1.HTTP_STATUS_CODES.OK;
         http.responseData.contentType = (_e = (_d = assignData === null || assignData === void 0 ? void 0 : assignData.contentType) !== null && _d !== void 0 ? _d : http.responseData.contentType) !== null && _e !== void 0 ? _e : http.response.getHeader('content-type');
         HttpClient.getHttpResponseDataContent(http.responseData);
-        return {
-            status: http.responseData.status,
-            contentType: http.responseData.contentType,
-            content: http.responseData.content
-        };
+        return http.responseData;
     }
     static getHttpResponseDataContent(data) {
         data.content || (data.content = { json: '' });

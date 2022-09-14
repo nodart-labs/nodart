@@ -105,11 +105,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
 
         HttpClient.getHttpResponseDataContent(http.responseData)
 
-        return {
-            status: http.responseData.status,
-            contentType: http.responseData.contentType,
-            content: http.responseData.content
-        }
+        return http.responseData
     }
 
     static getHttpResponseDataContent(data: HttpResponseData) {

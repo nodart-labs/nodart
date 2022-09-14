@@ -4,38 +4,6 @@ const path = require('path')
 const fs = require('fs')
 const copydir = require('copy-dir')
 const exclude = ['.idea', '.git', 'node_modules']
-const target =  path.resolve(__dirname, '../nodart-github')
-
-if (fs.existsSync(target)) {
-
-    fs.readdirSync(target).filter(src => {
-
-        const _path = path.join(target, src)
-
-        const stat = fs.statSync(_path)
-
-        if (stat.isDirectory()) {
-
-            if (exclude.some(item => _path.includes(item))) return false
-
-            fs.rmSync(_path, { recursive: true, force: true })
-
-            return
-        }
-
-        fs.unlinkSync(_path)
-    })
-
-    copydir.sync(__dirname, target, {
-        utimes: true,  // keep add time and modify time
-        mode: true,    // keep file mode
-        cover: true,    // cover file when exists, default is true
-        filter: function(stat, filepath) {
-            if (stat === 'directory') return false === exclude.some(item => filepath.includes(item))
-            return true
-        }
-    })
-}
 
 const app =  path.resolve(__dirname, '../nodart-github-app')
 const appCli =  path.resolve(__dirname, '../nodart-cli-app')
@@ -90,6 +58,39 @@ if (fs.existsSync(appCli + '/package.json')) {
         fs.rmdirSync(targetZip, {recursive: true})
 
     }
+}
+
+const target =  path.resolve(__dirname, '../nodart-github')
+
+if (fs.existsSync(target)) {
+
+    fs.readdirSync(target).filter(src => {
+
+        const _path = path.join(target, src)
+
+        const stat = fs.statSync(_path)
+
+        if (stat.isDirectory()) {
+
+            if (exclude.some(item => _path.includes(item))) return false
+
+            fs.rmSync(_path, { recursive: true, force: true })
+
+            return
+        }
+
+        fs.unlinkSync(_path)
+    })
+
+    copydir.sync(__dirname, target, {
+        utimes: true,  // keep add time and modify time
+        mode: true,    // keep file mode
+        cover: true,    // cover file when exists, default is true
+        filter: function(stat, filepath) {
+            if (stat === 'directory') return false === exclude.some(item => filepath.includes(item))
+            return true
+        }
+    })
 }
 
 process.exit()
