@@ -7,10 +7,9 @@ import {Router} from "./router";
 import {Orm} from "./orm";
 import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig} from "./app_config";
 import {AppConfigInterface, AppLoaders} from "../interfaces/app";
-import {HttpResponseStatusCodeData} from "../interfaces/http";
+import {HttpResponseResolveData} from "../interfaces/http";
 import {StoreState, StoreListenerArguments, StoreListeners} from "../interfaces/store";
 import {ExceptionHandler, ExceptionLog} from "./exception";
-import {HttpExceptionHandler} from "./exception";
 import {HttpHandler} from "./http_handler";
 
 const events = require('../store/system').events
@@ -21,7 +20,7 @@ export class App {
 
     protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
 
-    protected _exceptionPayload: (data: HttpResponseStatusCodeData) => HttpResponseStatusCodeData
+    protected _exceptionPayload: (data: HttpResponseResolveData) => HttpResponseResolveData
 
     readonly config: AppConfig
 
@@ -87,7 +86,7 @@ export class App {
         return this
     }
 
-    setHttpExceptionPayload(payload: (data: HttpResponseStatusCodeData) => HttpResponseStatusCodeData) {
+    setHttpExceptionPayload(payload: (data: HttpResponseResolveData) => HttpResponseResolveData) {
         this._exceptionPayload = payload
         return this
     }
@@ -135,6 +134,8 @@ export class AppExceptionResolve {
 
     protected _log: ExceptionLog
 
+    protected _httpResponseData: HttpResponseResolveData
+
     constructor(readonly app, public exception: any) {
     }
 
@@ -148,34 +149,32 @@ export class AppExceptionResolve {
         return this._log ||= this.app.get('exception_log').call([this.exception]) as ExceptionLog
     }
 
-    async sendHttpException(request: Http2ServerRequest, response: Http2ServerResponse) {
-
-        const responseData = this.getLog().getHttpResponseData(request, response)
-
-        this.app.exceptionPayload && Object.assign(responseData, this.app.exceptionPayload(responseData))
-
-        const {status, contentType, content} = responseData
-
-        this._handler && await this._handler.resolve()
-
-        response.writeHead(status, {'Content-Type': contentType})
-
-        response.end(content)
-    }
-
     async resolveOnHttp(request: Http2ServerRequest, response: Http2ServerResponse) {
 
         const handler = this.getHandler()
 
-        handler && (this.exception = handler)
+        handler && (this.exception = handler) && await handler.resolve()
 
-        const log = this.getLog()
+        const exceptionLog = this.getLog()
 
-        log.onHttp(request, response).dump()
+        this._httpResponseData = exceptionLog.onHttp(request, response).getHttpResponseData(request, response)
 
-        if (handler instanceof HttpExceptionHandler) return await handler.resolve()
+        exceptionLog.dump()
 
-        await this.sendHttpException(request, response)
+        this._sendHttpException(request, response)
+    }
+
+    protected _sendHttpException(request: Http2ServerRequest, response: Http2ServerResponse) {
+
+        const data = this._httpResponseData
+
+        this.app.exceptionPayload && Object.assign(data ?? {}, this.app.exceptionPayload(data) ?? {})
+
+        const {status, contentType, content} = data ?? {}
+
+        response.writeHead(status, {'Content-Type': contentType})
+
+        response.end(content)
     }
 
 }

@@ -1,23 +1,28 @@
 import {BaseExceptionHandlerInterface, BaseExceptionInterface} from "../interfaces/exception";
-import {BaseHttpResponseInterface, HTTP_STATUS_CODES, HttpResponseStatusCodeData} from "../interfaces/http";
+import {BaseHttpResponseInterface, HTTP_STATUS_CODES, HttpResponseResolveData} from "../interfaces/http";
 import {HttpClient} from "./http_client";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {$} from "../utils"
+import {JSONObjectInterface} from "../interfaces/object";
 
 export abstract class Exception {
 
-    private _exception: BaseExceptionInterface = {
+    protected _exception: BaseExceptionInterface = {
         exceptionMessage: '',
         exceptionData: undefined
     }
 
-    constructor(exception: string | BaseExceptionInterface) {
+    constructor(exception: string | JSONObjectInterface | BaseExceptionInterface, protected _assign?: any) {
 
-        typeof exception === 'string'
+        if (exception instanceof Object && !exception.hasOwnProperty('exceptionMessage'))
 
-            ? this._exception = {exceptionMessage: exception, exceptionData: undefined}
+            exception = JSON.stringify(exception)
 
-            : this.exception = exception
+        this.exception = typeof exception === 'string'
+
+            ? {exceptionMessage: exception, exceptionData: undefined}
+
+            : exception as BaseExceptionInterface
     }
 
     get exception(): BaseExceptionInterface {
@@ -27,7 +32,7 @@ export abstract class Exception {
 
     set exception(exception: BaseExceptionInterface) {
 
-        this._exception = this._onSetException(exception)
+        Object.assign(this._exception, this._onSetException(exception))
     }
 
     protected abstract _onSetException(exception: BaseExceptionInterface): BaseExceptionInterface
@@ -35,15 +40,21 @@ export abstract class Exception {
 
 export class HttpException extends Exception {
 
-    private errorStatusCode = HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR
+    constructor(
+        exception: string | JSONObjectInterface | BaseHttpResponseInterface,
+        assign?: { status?: number, contentType?: string }) {
 
-    constructor(exception: BaseHttpResponseInterface) {
-        super(exception)
+        super(exception, assign)
     }
 
-    protected _onSetException(http: BaseHttpResponseInterface) {
-        http.responseData.status ||= this.errorStatusCode
-        return http
+    protected _onSetException(exception: BaseHttpResponseInterface) {
+        exception.responseData ||= {}
+
+        this._assign?.status && (exception.responseData.status = this._assign.status)
+        this._assign?.contentType && (exception.responseData.contentType = this._assign.contentType)
+
+        exception.responseData.status ||= HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR
+        return exception
     }
 }
 
@@ -79,18 +90,6 @@ export class HttpExceptionHandler extends ExceptionHandler {
     }
 
     async resolve() {
-
-        const http = this.exceptionData as BaseHttpResponseInterface
-
-        const response = HttpClient.getHttpResponseData(http)
-
-        const content = HttpClient.getHttpResponseDataContent(response)
-
-        http.exceptionMessage ||= HttpClient.getStatusCodeMessage(response.status)
-
-        http.response.writeHead(response.status, {'Content-Type': response.contentType})
-
-        http.response.end(content || http.exceptionMessage)
     }
 
 }
@@ -114,55 +113,19 @@ export class ExceptionLog {
 
     http: BaseHttpResponseInterface
 
-    httpResponseData: HttpResponseStatusCodeData
-
-    constructor(readonly source: ExceptionHandler | Exception | any) {
+    constructor(readonly source: any) {
     }
 
     get exception(): BaseExceptionInterface {
 
         const isException = this.source instanceof Exception || this.source instanceof ExceptionHandler
-        const exception = this.source instanceof Exception
-            ? this.source.exception
-            : this.source instanceof ExceptionHandler ? this.source.exceptionData : {} as BaseExceptionInterface
-
-        const exceptionMessage = typeof this.source === 'string' ? this.source : exception.exceptionMessage ?? ''
+        const exception = isException ? (this.source.exceptionData ?? this.source.exception) : {} as BaseExceptionInterface
+        const exceptionMessage = typeof this.source === 'string'
+            ? this.source
+            : this.source instanceof Object ? exception.exceptionMessage ?? '' : ''
         const exceptionData = isException ? exception.exceptionData : this.source
 
         return {...exception, ...{exceptionMessage, exceptionData}}
-    }
-
-    getHttpResponseData(req: Http2ServerRequest, res: Http2ServerResponse) {
-
-        if (this.httpResponseData) return this.httpResponseData
-
-        const exception = this.exception
-
-        this.http = (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException
-
-            ? exception : new HttpClient(req, res)) as BaseHttpResponseInterface
-
-        this.http.exceptionMessage = exception.exceptionMessage
-
-        this.http.exceptionData = exception.exceptionData
-
-        return this.httpResponseData = HttpClient.getDataFromStatusCode(this.http, HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
-    }
-
-    onHttp(req: Http2ServerRequest, res: Http2ServerResponse) {
-
-        const responseData = this.getHttpResponseData(req, res)
-
-        this.dumpData.query = 'HTTP ' + this.http.request.method.toUpperCase()
-            + ' : ' + this.http.request.url
-            + ' : ' + responseData.status
-            + ' : ' + responseData.content
-
-        this.dumpData.error = this.http.exceptionMessage === this.http.exceptionData?.toString()
-            ? this.http.exceptionMessage
-            : this.http.exceptionData ?? this.http.exceptionMessage
-
-        return this
     }
 
     dump() {
@@ -172,6 +135,61 @@ export class ExceptionLog {
         console.error($.date.currentDateTime() + ':', this.dumpData.query)
 
         this.dumpData.error && console.error(this.dumpData.error)
+    }
+
+    onHttp(req: Http2ServerRequest, res: Http2ServerResponse) {
+
+        const responseData = this.getHttpResponseData(req, res)
+
+        this.dumpData.query = 'HTTP ' + this.http.request.method.toUpperCase()
+            + ': ' + this.http.request.url
+            + ': ' + responseData.status
+            + ': ' + responseData.content
+
+        this.dumpData.error = this.http.exceptionMessage === this.http.exceptionData?.toString()
+            ? this.http.exceptionMessage
+            : this.http.exceptionData
+
+        return this
+    }
+
+    getHttpResponseData(req: Http2ServerRequest, res: Http2ServerResponse): HttpResponseResolveData {
+
+        const exception = this._getHttpException(req, res)
+
+        if (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException) {
+            const data = HttpClient.getHttpResponseData(exception)
+            const content = HttpClient.getHttpResponseDataContent(data)
+            return {
+                status: data.status,
+                contentType: data.contentType,
+                content: content || exception.exceptionMessage
+            }
+        }
+
+        return HttpClient.getDataFromStatusCode(exception)
+    }
+
+    protected _getHttpException(req: Http2ServerRequest, res: Http2ServerResponse): BaseHttpResponseInterface {
+
+        const exception = this.exception as BaseHttpResponseInterface
+
+        exception.request ||= req
+        exception.response ||= res
+
+        this.http = (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException
+            ? exception
+            : new HttpClient(req, res)) as BaseHttpResponseInterface
+
+        this.http.exceptionMessage = exception.exceptionMessage
+        this.http.exceptionData = exception.exceptionData || exception.exceptionMessage
+        this.http.responseData ||= {}
+
+        if (!this.http.responseData.status || this.http.responseData.status === HTTP_STATUS_CODES.OK) {
+            this.http.responseData.status = HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR
+        }
+
+        return this.http
     }
 
 }

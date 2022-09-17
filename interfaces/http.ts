@@ -14,7 +14,7 @@ export type HttpResponseData = {
     content?: HttpResponseDataContent
 }
 
-export type HttpResponseStatusCodeData = {
+export type HttpResponseResolveData = {
     status: number,
     contentType: string,
     content: string

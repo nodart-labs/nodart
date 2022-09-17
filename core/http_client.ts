@@ -5,13 +5,14 @@ import {
     HttpURL,
     BaseHttpResponseInterface,
     HttpClientConfigInterface,
-    BaseHttpResponseHandlerInterface, HttpResponseStatusCodeData
+    BaseHttpResponseHandlerInterface, HttpResponseResolveData
 } from "../interfaces/http";
 import {JSONObjectInterface} from "../interfaces/object";
 import {RuntimeException} from "./exception";
 import {HTTP_STATUS_CODES, HTTP_CONTENT_MIME_TYPES} from "../interfaces/http";
 
 export const DEFAULT_FILE_MIME_TYPE = 'application/octet-stream'
+export const DEFAULT_CONTENT_TYPE = 'application/json'
 
 export class HttpClient implements BaseHttpResponseHandlerInterface {
 
@@ -66,7 +67,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     sendFile(filePath: string, contentType?: string) {
         fs.system.readFile(filePath, (err, buffer) => {
             if (err) {
-                this.exceptionMessage = 'Could not read data from file.'
+                this.exceptionMessage = `Could not read data from file ${filePath}.`
                 this.exceptionData = err
                 throw new RuntimeException(this)
             }
@@ -97,7 +98,6 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     static getHttpResponseData(http: BaseHttpResponseInterface, assignData?: HttpResponseData): HttpResponseData {
 
         http.responseData ||= {}
-
         assignData?.content && (http.responseData.content = assignData?.content)
 
         http.responseData.status = assignData?.status ?? http.responseData.status ?? http.response.statusCode ?? HTTP_STATUS_CODES.OK
@@ -111,6 +111,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     static getHttpResponseDataContent(data: HttpResponseData) {
 
         data.content ||= {json: ''}
+
         const contentEntry = Object.keys(data.content)[0]
 
         contentEntry === 'json'
@@ -120,7 +121,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         if (!data.contentType) {
             switch (contentEntry) {
                 case 'json':
-                    data.contentType = 'application/json'
+                    data.contentType = DEFAULT_CONTENT_TYPE
                     break
                 case 'text':
                     data.contentType = 'text/plain'
@@ -144,11 +145,12 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         return ''
     }
 
-    static getDataFromStatusCode(http: BaseHttpResponseInterface, setStatusIfNone?: number): HttpResponseStatusCodeData {
+    static getDataFromStatusCode(http: BaseHttpResponseInterface, setStatusIfNone?: number): HttpResponseResolveData {
+
         http.responseData ||= {}
 
         const status = http.responseData.status ?? setStatusIfNone ?? http.response.statusCode
-        const contentType = http.responseData.contentType ?? http.response.getHeader('content-type') ?? 'application/json'
+        const contentType = http.responseData.contentType ?? http.response.getHeader('content-type') ?? DEFAULT_CONTENT_TYPE
         const content = HttpClient.getStatusCodeMessage(status)
 
         return {status, contentType, content}

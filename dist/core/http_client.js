@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HttpClient = exports.DEFAULT_FILE_MIME_TYPE = void 0;
+exports.HttpClient = exports.DEFAULT_CONTENT_TYPE = exports.DEFAULT_FILE_MIME_TYPE = void 0;
 const utils_1 = require("../utils");
 const exception_1 = require("./exception");
 const http_1 = require("../interfaces/http");
 exports.DEFAULT_FILE_MIME_TYPE = 'application/octet-stream';
+exports.DEFAULT_CONTENT_TYPE = 'application/json';
 class HttpClient {
     constructor(request, response, config = {}) {
         var _a;
@@ -41,7 +42,7 @@ class HttpClient {
         utils_1.fs.system.readFile(filePath, (err, buffer) => {
             var _a, _b;
             if (err) {
-                this.exceptionMessage = 'Could not read data from file.';
+                this.exceptionMessage = `Could not read data from file ${filePath}.`;
                 this.exceptionData = err;
                 throw new exception_1.RuntimeException(this);
             }
@@ -82,7 +83,7 @@ class HttpClient {
         if (!data.contentType) {
             switch (contentEntry) {
                 case 'json':
-                    data.contentType = 'application/json';
+                    data.contentType = exports.DEFAULT_CONTENT_TYPE;
                     break;
                 case 'text':
                     data.contentType = 'text/plain';
@@ -108,7 +109,7 @@ class HttpClient {
         var _a, _b, _c, _d;
         http.responseData || (http.responseData = {});
         const status = (_b = (_a = http.responseData.status) !== null && _a !== void 0 ? _a : setStatusIfNone) !== null && _b !== void 0 ? _b : http.response.statusCode;
-        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader('content-type')) !== null && _d !== void 0 ? _d : 'application/json';
+        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader('content-type')) !== null && _d !== void 0 ? _d : exports.DEFAULT_CONTENT_TYPE;
         const content = HttpClient.getStatusCodeMessage(status);
         return { status, contentType, content };
     }

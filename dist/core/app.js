@@ -15,7 +15,6 @@ const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
 const app_config_1 = require("./app_config");
-const exception_1 = require("./exception");
 const events = require('../store/system').events;
 class App {
     constructor(config) {
@@ -114,26 +113,23 @@ class AppExceptionResolve {
     getLog() {
         return this._log || (this._log = this.app.get('exception_log').call([this.exception]));
     }
-    sendHttpException(request, response) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const responseData = this.getLog().getHttpResponseData(request, response);
-            this.app.exceptionPayload && Object.assign(responseData, this.app.exceptionPayload(responseData));
-            const { status, contentType, content } = responseData;
-            this._handler && (yield this._handler.resolve());
-            response.writeHead(status, { 'Content-Type': contentType });
-            response.end(content);
-        });
-    }
     resolveOnHttp(request, response) {
         return __awaiter(this, void 0, void 0, function* () {
             const handler = this.getHandler();
-            handler && (this.exception = handler);
-            const log = this.getLog();
-            log.onHttp(request, response).dump();
-            if (handler instanceof exception_1.HttpExceptionHandler)
-                return yield handler.resolve();
-            yield this.sendHttpException(request, response);
+            handler && (this.exception = handler) && (yield handler.resolve());
+            const exceptionLog = this.getLog();
+            this._httpResponseData = exceptionLog.onHttp(request, response).getHttpResponseData(request, response);
+            exceptionLog.dump();
+            this._sendHttpException(request, response);
         });
+    }
+    _sendHttpException(request, response) {
+        var _a;
+        const data = this._httpResponseData;
+        this.app.exceptionPayload && Object.assign(data !== null && data !== void 0 ? data : {}, (_a = this.app.exceptionPayload(data)) !== null && _a !== void 0 ? _a : {});
+        const { status, contentType, content } = data !== null && data !== void 0 ? data : {};
+        response.writeHead(status, { 'Content-Type': contentType });
+        response.end(content);
     }
 }
 exports.AppExceptionResolve = AppExceptionResolve;
