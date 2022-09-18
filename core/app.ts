@@ -7,7 +7,7 @@ import {Router} from "./router";
 import {Orm} from "./orm";
 import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig} from "./app_config";
 import {AppConfigInterface, AppLoaders} from "../interfaces/app";
-import {HttpResponseResolveData} from "../interfaces/http";
+import {HttpResponseDataInterface} from "../interfaces/http";
 import {StoreState, StoreListenerArguments, StoreListeners} from "../interfaces/store";
 import {ExceptionHandler, ExceptionLog} from "./exception";
 import {HttpHandler} from "./http_handler";
@@ -20,7 +20,7 @@ export class App {
 
     protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
 
-    protected _exceptionPayload: (data: HttpResponseResolveData) => HttpResponseResolveData
+    protected _exceptionPayload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface
 
     readonly config: AppConfig
 
@@ -86,7 +86,7 @@ export class App {
         return this
     }
 
-    setHttpExceptionPayload(payload: (data: HttpResponseResolveData) => HttpResponseResolveData) {
+    setHttpExceptionPayload(payload: (data: HttpResponseDataInterface) => HttpResponseDataInterface) {
         this._exceptionPayload = payload
         return this
     }
@@ -134,9 +134,9 @@ export class AppExceptionResolve {
 
     protected _log: ExceptionLog
 
-    protected _httpResponseData: HttpResponseResolveData
+    protected _httpResponseData: HttpResponseDataInterface
 
-    constructor(readonly app, public exception: any) {
+    constructor(readonly app: App, public exception: any) {
     }
 
     getHandler(): ExceptionHandler {
@@ -147,6 +147,11 @@ export class AppExceptionResolve {
     getLog(): ExceptionLog {
 
         return this._log ||= this.app.get('exception_log').call([this.exception]) as ExceptionLog
+    }
+
+    getExceptionTemplate(response: HttpResponseDataInterface): void | string {
+
+        return this.app.get('exception_template').call([response])
     }
 
     async resolveOnHttp(request: Http2ServerRequest, response: Http2ServerResponse) {
@@ -166,15 +171,23 @@ export class AppExceptionResolve {
 
     protected _sendHttpException(request: Http2ServerRequest, response: Http2ServerResponse) {
 
-        const data = this._httpResponseData
+        const data = this._httpResponseData ?? {} as HttpResponseDataInterface
 
-        this.app.exceptionPayload && Object.assign(data ?? {}, this.app.exceptionPayload(data) ?? {})
+        const contentType = data.contentType
 
-        const {status, contentType, content} = data ?? {}
+        Object.assign(data, {request, response})
 
-        response.writeHead(status, {'Content-Type': contentType})
+        this.app.exceptionPayload && Object.assign(data, this.app.exceptionPayload(data, this))
 
-        response.end(content)
+        const exceptionTemplate = this.getExceptionTemplate(data)
+
+        response.writeHead(data.status, {
+            'Content-Type': contentType === data.contentType
+                ? (exceptionTemplate ? 'text/html' : contentType)
+                : data.contentType
+        })
+
+        response.end(exceptionTemplate || data.content)
     }
 
 }

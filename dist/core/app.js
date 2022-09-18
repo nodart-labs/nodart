@@ -113,6 +113,9 @@ class AppExceptionResolve {
     getLog() {
         return this._log || (this._log = this.app.get('exception_log').call([this.exception]));
     }
+    getExceptionTemplate(response) {
+        return this.app.get('exception_template').call([response]);
+    }
     resolveOnHttp(request, response) {
         return __awaiter(this, void 0, void 0, function* () {
             const handler = this.getHandler();
@@ -125,11 +128,17 @@ class AppExceptionResolve {
     }
     _sendHttpException(request, response) {
         var _a;
-        const data = this._httpResponseData;
-        this.app.exceptionPayload && Object.assign(data !== null && data !== void 0 ? data : {}, (_a = this.app.exceptionPayload(data)) !== null && _a !== void 0 ? _a : {});
-        const { status, contentType, content } = data !== null && data !== void 0 ? data : {};
-        response.writeHead(status, { 'Content-Type': contentType });
-        response.end(content);
+        const data = (_a = this._httpResponseData) !== null && _a !== void 0 ? _a : {};
+        const contentType = data.contentType;
+        Object.assign(data, { request, response });
+        this.app.exceptionPayload && Object.assign(data, this.app.exceptionPayload(data, this));
+        const exceptionTemplate = this.getExceptionTemplate(data);
+        response.writeHead(data.status, {
+            'Content-Type': contentType === data.contentType
+                ? (exceptionTemplate ? 'text/html' : contentType)
+                : data.contentType
+        });
+        response.end(exceptionTemplate || data.content);
     }
 }
 exports.AppExceptionResolve = AppExceptionResolve;

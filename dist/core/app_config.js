@@ -18,6 +18,7 @@ const exception_2 = require("./exception");
 const exception_handler_loader_1 = require("../loaders/exception_handler_loader");
 const exception_3 = require("./exception");
 const exception_log_loader_1 = require("../loaders/exception_log_loader");
+const exception_template_loader_1 = require("../loaders/exception_template_loader");
 const STORE = require('../store/system');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -80,7 +81,8 @@ exports.APP_CONFIG = Object.freeze({
         orm: orm_loader_1.OrmLoader,
         cmd: cmd_loader_1.CommandLineLoader,
         exception_handler: exception_handler_loader_1.ExceptionHandlerLoader,
-        exception_log: exception_log_loader_1.ExceptionLogLoader
+        exception_log: exception_log_loader_1.ExceptionLogLoader,
+        exception_template: exception_template_loader_1.ExceptionTemplateLoader
     },
     reference: {
         service: (app, target, props) => app.get('service').require(target).call(props),

@@ -18,4 +18,7 @@ export = <AppConfigInterface>Object.freeze({
      */
     orm,
     routes,
+    exception: {
+        template: 'exception'
+    }
 })

@@ -131,7 +131,7 @@ class ExceptionLog {
             return {
                 status: data.status,
                 contentType: data.contentType,
-                content: content || exception.exceptionMessage
+                content: content || exception.exceptionMessage || http_client_1.HttpClient.getStatusCodeMessage(data.status)
             };
         }
         return http_client_1.HttpClient.getDataFromStatusCode(exception);

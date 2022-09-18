@@ -5,7 +5,7 @@ import {
     HttpURL,
     BaseHttpResponseInterface,
     HttpClientConfigInterface,
-    BaseHttpResponseHandlerInterface, HttpResponseResolveData
+    BaseHttpResponseHandlerInterface, HttpResponseDataInterface
 } from "../interfaces/http";
 import {JSONObjectInterface} from "../interfaces/object";
 import {RuntimeException} from "./exception";
@@ -145,7 +145,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         return ''
     }
 
-    static getDataFromStatusCode(http: BaseHttpResponseInterface, setStatusIfNone?: number): HttpResponseResolveData {
+    static getDataFromStatusCode(http: BaseHttpResponseInterface, setStatusIfNone?: number): HttpResponseDataInterface {
 
         http.responseData ||= {}
 

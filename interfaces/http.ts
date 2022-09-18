@@ -14,12 +14,6 @@ export type HttpResponseData = {
     content?: HttpResponseDataContent
 }
 
-export type HttpResponseResolveData = {
-    status: number,
-    contentType: string,
-    content: string
-}
-
 export type HttpURL = {
     protocol: string,
     slashes: string,
@@ -66,19 +60,27 @@ export type HttpFileMimeType = 'application/octet-stream' | string
 export type HttpMimeTypes = { [K in HttpContentExtensions]: string }
 
 export interface HttpClientConfigInterface {
-    mimeTypes?: HttpMimeTypes & { [extension: string]: string },
-    fileMimeType?: HttpFileMimeType,
+    mimeTypes?: HttpMimeTypes & { [extension: string]: string }
+    fileMimeType?: HttpFileMimeType
 }
 
 export interface BaseHttpResponseInterface extends BaseExceptionInterface {
-    request: Http2ServerRequest,
-    response: Http2ServerResponse,
+    request: Http2ServerRequest
+    response: Http2ServerResponse
     responseData: HttpResponseData
 }
 
 export interface BaseHttpResponseHandlerInterface extends BaseHttpResponseInterface {
-    setResponseData(data: HttpResponseData),
+    setResponseData(data: HttpResponseData)
     getHttpResponse(assignData?: HttpResponseData): BaseHttpResponseInterface
+}
+
+export interface HttpResponseDataInterface {
+    status: number
+    contentType: string
+    content: string
+    request?: Http2ServerRequest
+    response?: Http2ServerResponse
 }
 
 export interface HttpAcceptorInterface {

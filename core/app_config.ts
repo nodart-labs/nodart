@@ -16,6 +16,7 @@ import {HttpException, RuntimeException} from "./exception";
 import {ExceptionHandlerLoader} from "../loaders/exception_handler_loader";
 import {ExceptionLog} from "./exception";
 import {ExceptionLogLoader} from "../loaders/exception_log_loader";
+import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
 
 const STORE = require('../store/system')
 
@@ -84,7 +85,8 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
         orm: OrmLoader,
         cmd: CommandLineLoader,
         exception_handler: ExceptionHandlerLoader,
-        exception_log: ExceptionLogLoader
+        exception_log: ExceptionLogLoader,
+        exception_template: ExceptionTemplateLoader
     },
     reference: {
         service: (app: App, target: string, props?: any[]) => app.get('service').require(target).call(props),

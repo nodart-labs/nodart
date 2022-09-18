@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.utils = exports.cli = exports.di = exports.nodart = exports.HttpClientLoader = exports.CommandLineLoader = exports.ExceptionLogLoader = exports.ExceptionHandlerLoader = exports.OrmLoader = exports.StaticLoader = exports.EngineLoader = exports.SessionLoader = exports.ServiceLoader = exports.StoreLoader = exports.ModelLoader = exports.ControllerLoader = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.RuntimeException = exports.HttpException = exports.ExceptionLog = exports.ExceptionHandler = exports.Exception = exports.Observer = exports.Service = exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMigrationSource = exports.Orm = exports.Model = exports.Engine = exports.Controller = exports.Session = exports.Router = exports.HttpHandler = exports.HttpClient = exports.AppListener = exports.AppStore = exports.AppFactory = exports.AppLoader = exports.AppConfig = exports.AppExceptionResolve = exports.App = void 0;
+exports.utils = exports.cli = exports.di = exports.nodart = exports.HttpClientLoader = exports.CommandLineLoader = exports.ExceptionTemplateLoader = exports.ExceptionLogLoader = exports.ExceptionHandlerLoader = exports.OrmLoader = exports.StaticLoader = exports.EngineLoader = exports.SessionLoader = exports.ServiceLoader = exports.StoreLoader = exports.ModelLoader = exports.ControllerLoader = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.RuntimeException = exports.HttpException = exports.ExceptionLog = exports.ExceptionHandler = exports.Exception = exports.Observer = exports.Service = exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMigrationSource = exports.Orm = exports.Model = exports.Engine = exports.Controller = exports.Session = exports.Router = exports.HttpHandler = exports.HttpClient = exports.AppListener = exports.AppStore = exports.AppFactory = exports.AppLoader = exports.AppConfig = exports.AppExceptionResolve = exports.App = void 0;
 const app_1 = require("./core/app");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return app_1.App; } });
 Object.defineProperty(exports, "AppExceptionResolve", { enumerable: true, get: function () { return app_1.AppExceptionResolve; } });
@@ -71,6 +71,8 @@ const http_client_loader_1 = require("./loaders/http_client_loader");
 Object.defineProperty(exports, "HttpClientLoader", { enumerable: true, get: function () { return http_client_loader_1.HttpClientLoader; } });
 const exception_log_loader_1 = require("./loaders/exception_log_loader");
 Object.defineProperty(exports, "ExceptionLogLoader", { enumerable: true, get: function () { return exception_log_loader_1.ExceptionLogLoader; } });
+const exception_template_loader_1 = require("./loaders/exception_template_loader");
+Object.defineProperty(exports, "ExceptionTemplateLoader", { enumerable: true, get: function () { return exception_template_loader_1.ExceptionTemplateLoader; } });
 const nodart = require("./interfaces");
 exports.nodart = nodart;
 const di = require("./core/di");

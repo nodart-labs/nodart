@@ -1,5 +1,5 @@
 import {BaseExceptionHandlerInterface, BaseExceptionInterface} from "../interfaces/exception";
-import {BaseHttpResponseInterface, HTTP_STATUS_CODES, HttpResponseResolveData} from "../interfaces/http";
+import {BaseHttpResponseInterface, HTTP_STATUS_CODES, HttpResponseDataInterface} from "../interfaces/http";
 import {HttpClient} from "./http_client";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {$} from "../utils"
@@ -153,7 +153,7 @@ export class ExceptionLog {
         return this
     }
 
-    getHttpResponseData(req: Http2ServerRequest, res: Http2ServerResponse): HttpResponseResolveData {
+    getHttpResponseData(req: Http2ServerRequest, res: Http2ServerResponse): HttpResponseDataInterface {
 
         const exception = this._getHttpException(req, res)
 
@@ -163,7 +163,7 @@ export class ExceptionLog {
             return {
                 status: data.status,
                 contentType: data.contentType,
-                content: content || exception.exceptionMessage
+                content: content || exception.exceptionMessage || HttpClient.getStatusCodeMessage(data.status)
             }
         }
 

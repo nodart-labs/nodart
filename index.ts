@@ -29,6 +29,7 @@ import {ExceptionHandlerLoader} from "./loaders/exception_handler_loader";
 import {CommandLineLoader} from "./loaders/cmd_loader"
 import {HttpClientLoader} from "./loaders/http_client_loader";
 import {ExceptionLogLoader} from "./loaders/exception_log_loader";
+import {ExceptionTemplateLoader} from "./loaders/exception_template_loader";
 
 import * as nodart from "./interfaces"
 import * as di from "./core/di"
@@ -75,6 +76,7 @@ export {
     OrmLoader,
     ExceptionHandlerLoader,
     ExceptionLogLoader,
+    ExceptionTemplateLoader,
     CommandLineLoader,
     HttpClientLoader,
 

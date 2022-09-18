@@ -15,5 +15,5 @@ export type CommandSource = {
 export type CommandList = CommandSource[]
 
 export interface CommandLineConfigInterface {
-    commandDirName?: string, // commands directory name
+    commandDirName?: string // commands directory name
 }
