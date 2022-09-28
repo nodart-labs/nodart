@@ -61,7 +61,7 @@ module.exports = {
     copy(obj) {
         return JSON.parse(JSON.stringify(obj));
     },
-    copyUnset(obj) {
+    copyReplaceCircular(obj) {
         return JSON.parse(this.stringifyReplaceCircular(obj));
     },
     stringify(obj) {
@@ -114,28 +114,28 @@ module.exports = {
             }
         });
     },
-    getFuncArguments(func) {
+    parseFuncArguments(func) {
         var _a, _b, _c, _d, _e;
         return (_e = (_d = (_c = (_b = (_a = func.toString().replace(/[\r\n\s]+/g, ' ')) === null || _a === void 0 ? void 0 : _a.match(/(?:[^(]+)?\s*(?:\((.*?)\)|([^\s]+))/)) === null || _b === void 0 ? void 0 : _b.slice(1, 3)) === null || _c === void 0 ? void 0 : _c.join('')) === null || _d === void 0 ? void 0 : _d.split(/\s*,\s*/)) !== null && _e !== void 0 ? _e : [];
     },
-    arrangeFuncArguments(func, parseDefaultValues = false) {
-        const args = this.getFuncArguments(func);
+    arrangeFuncArguments(func) {
+        const args = this.parseFuncArguments(func);
         const order = [];
         args.forEach(arg => {
             var _a, _b;
+            if (!arg.trim())
+                return;
             const data = arg.split('=');
-            let def = undefined;
-            if (parseDefaultValues) {
-                def = (_a = data[1]) === null || _a === void 0 ? void 0 : _a.trim();
-                try {
-                    !isNaN(parseFloat(def)) ? def = parseFloat(def) : def = JSON.parse(def);
-                }
-                catch (e) {
-                    def = (_b = data[1]) === null || _b === void 0 ? void 0 : _b.trim();
-                }
-            }
+            const def = (_b = (_a = data[1]) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : '';
+            const type = def ? ((def.startsWith('"') || def.startsWith("'"))
+                ? 'string' : !isNaN(parseFloat(def))
+                ? 'number' : def.match(/^\[.*?]$/)
+                ? 'array' : def.match(/^\{.*?}$/)
+                ? 'object' : def.match(/^[^(]*?\([^)]*?\)\s*(\{|=>)/)
+                ? 'function' : def.match(/^(true|false)$/) ? 'boolean' : undefined) : undefined;
             order.push({
                 arg: data[0].trim(),
+                type,
                 default: def,
                 required: data.length === 1,
                 src: arg

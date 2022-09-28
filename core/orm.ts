@@ -11,7 +11,7 @@ import {
     OrmMigrationInterface,
     ConnectionManagerInterface
 } from "../interfaces/orm";
-import {fs} from "../utils";
+import {fs, object} from "../utils";
 import {RuntimeException} from "./exception";
 
 export class Orm implements ConnectionManagerInterface {
@@ -117,7 +117,7 @@ export class OrmMigrator {
 
         this.config = {...this.orm.config.migrations ?? {}, ...config ?? {}}
 
-        return this.client = this.orm.connect({...this.orm.config, migrations: this.config})
+        return this.client = this.orm.connect(object.merge(this.orm.config, {migrations: this.config}))
     }
 
     /**
@@ -127,13 +127,15 @@ export class OrmMigrator {
     fetchSource(name: string): typeof OrmMigrationSource {
         try {
             return fs.getSource(
-                require('path').resolve(this.orm.sources(), name),
+                fs.path(this.orm.sources(), name),
                 OrmMigrationSource
             ) as typeof OrmMigrationSource
         } catch (e) {
-            throw new RuntimeException(
-                `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
-            )
+            throw new RuntimeException({
+                exceptionMessage:
+                    `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
+                exceptionData: e
+            })
         }
     }
 
@@ -176,7 +178,7 @@ export class OrmMigrator {
      * The default value for this parameter is false
      * @param all
      */
-    async rollback(all: boolean) {
+    async rollback(all: boolean = false) {
         return await this.client.migrate.rollback(this.config, all)
     }
 
@@ -267,7 +269,7 @@ export class OrmSeeder {
 
         this.config = {...this.orm.config.seeds ?? {}, ...config ?? {}}
 
-        return this.client = this.orm.connect({...this.orm.config, seeds: this.config})
+        return this.client = this.orm.connect(object.merge(this.orm.config, {seeds: this.config}))
     }
 
     /**
@@ -277,13 +279,15 @@ export class OrmSeeder {
     fetchSource(name: string): typeof OrmSeedSource {
         try {
             return fs.getSource(
-                require('path').resolve(this.orm.seedSources(), name),
+                fs.path(this.orm.seedSources(), name),
                 OrmSeedSource
             ) as typeof OrmSeedSource
         } catch (e) {
-            throw new RuntimeException(
-                `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`
-            )
+            throw new RuntimeException({
+                exceptionMessage:
+                    `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
+                exceptionData: e
+            })
         }
     }
 

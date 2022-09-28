@@ -11,7 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const http_client_1 = require("../core/http_client");
 module.exports = (app, http) => __awaiter(void 0, void 0, void 0, function* () {
     const response = http.responseData;
+    const content = http_client_1.HttpClient.getHttpResponseDataContent(response);
     http.response.writeHead(response.status, { 'Content-Type': response.contentType });
-    http.response.end(http_client_1.HttpClient.getHttpResponseDataContent(response));
+    http.response.end(content);
 });
 //# sourceMappingURL=http_response.js.map

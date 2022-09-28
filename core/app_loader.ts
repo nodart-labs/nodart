@@ -3,7 +3,6 @@ import {App} from './app'
 import {DependencyInterceptorInterface} from "../interfaces/di";
 import {Service} from "./service";
 import {ServiceScope} from "../interfaces/service";
-import {AppLoaders} from "../interfaces/app";
 
 export abstract class AppLoader implements DependencyInterceptorInterface {
 
@@ -115,31 +114,33 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
         await this._onGenerate(this.getRepo())
     }
 
-    getRepo(): string {
+    getRepo(rootDir?: string): string {
+
+        rootDir ||= this._app.rootDir
 
         const repo = this.repository
 
         if (!repo) return ''
 
-        const path = require('path').resolve(this._app.rootDir, repo)
+        const path = fs.path(rootDir, repo)
 
         fs.isDir(path) || fs.mkDeepDir(path)
 
         return path
     }
 
-    absPath(path: string): string {
+    absPath(path: string, rootDir?: string): string {
 
-        const repo = this.getRepo()
+        const repo = this.getRepo(rootDir)
 
         path = this.securePath(path)
 
-        return repo ? require('path').resolve(repo, $.trimPath(path) + this._pathSuffix) : ''
+        return repo ? fs.path(repo, $.trimPath(path) + this._pathSuffix) : ''
     }
 
     isTarget(path: string) {
 
-        return fs.isFile(require('path').resolve(this._app.rootDir, $.trimPath(path)), ['ts', 'js'])
+        return fs.isFile(fs.path(this._app.rootDir, $.trimPath(path)), ['ts', 'js'])
     }
 
     isSource(path: string) {
@@ -154,25 +155,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
     securePath(path: string) {
 
-        return path.replace('../', '').replace('..\\', '')
-    }
-
-    intersectLoader(loaderName: AppLoaders, subRepo?: string, targetPath?: string) {
-
-        subRepo ||= ''
-
-        targetPath ||= this._targetPath
-
-        const loader = this._app.get(loaderName)
-
-        if (!loader) return
-
-        const referenceTarget = loader.getReferenceTarget(
-            loader.repository + (subRepo ? '/' + $.trimPath(subRepo) : ''),
-            $.trimPath(targetPath)
-        )
-
-        if (referenceTarget) return loader.require(subRepo + '/' + referenceTarget)
+        return path?.replace(/(\.\.\\|\.\.\/)/g, '') ?? ''
     }
 
 }

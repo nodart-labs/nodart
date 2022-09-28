@@ -13,10 +13,47 @@ exports.AppFactory = void 0;
 const app_1 = require("./app");
 const app_store_1 = require("./app_store");
 const app_config_1 = require("./app_config");
+const utils_1 = require("../utils");
+const exception_1 = require("./exception");
 const events = require('../store/system').events;
 class AppFactory {
     constructor(_app) {
         this._app = _app;
+        this.envFileNamePattern = /^[A-z\d.-_]+(\.ts|\.js)$/;
+        this.tsConfigFileName = 'tsconfig.json';
+    }
+    get baseDir() {
+        return utils_1.fs.isFile(utils_1.fs.path(this._app.rootDir, this.tsConfigFileName)) ? this._app.rootDir : process.cwd();
+    }
+    get env() {
+        return this._env || (this._env = {
+            data: this.envData,
+            tsConfig: this.tsConfig
+        });
+    }
+    get envData() {
+        const data = utils_1.fs.include(this.envFile, {
+            log: false,
+            skipExt: true,
+            error: () => {
+                throw new exception_1.RuntimeException(`No environment data found on the path "${this.envFile}"`);
+            }
+        });
+        return utils_1.$.isPlainObject(data) ? data : {};
+    }
+    get envFileName() {
+        const name = this._app.config.get.envFileName || app_config_1.DEFAULT_ENV_FILE_NAME;
+        if (!name.match(this.envFileNamePattern))
+            throw new exception_1.RuntimeException(`The environment file name "${name}" does not have a valid name or extension (.js or .ts).`
+                + ' Check the configuration parameter "envFileName".');
+        return name;
+    }
+    get envFile() {
+        return utils_1.fs.path(this._app.rootDir, this.envFileName);
+    }
+    get tsConfig() {
+        var _a;
+        return (_a = utils_1.fs.json(utils_1.fs.path(this.baseDir, this.tsConfigFileName))) !== null && _a !== void 0 ? _a : {};
     }
     get storeData() {
         return {
@@ -53,8 +90,7 @@ class AppFactory {
         });
     }
     createLoader(name) {
-        const loader = this._app.config.getStrict(`loaders.${name}`);
-        return Reflect.construct(loader, [this._app]);
+        return Reflect.construct(this._app.config.getStrict(`loaders.${name}`), [this._app]);
     }
 }
 exports.AppFactory = AppFactory;

@@ -9,12 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppExceptionResolve = exports.App = void 0;
+exports.AppBuilder = exports.AppExceptionResolve = exports.App = void 0;
 const app_store_1 = require("./app_store");
 const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
 const app_config_1 = require("./app_config");
+const exception_1 = require("./exception");
+const utils_1 = require("../utils");
 const events = require('../store/system').events;
 class App {
     constructor(config) {
@@ -22,15 +24,16 @@ class App {
         this.factory = new app_factory_1.AppFactory(this);
         this.di = new di_1.DIManager(this.config.getStrict('reference'), this);
         this.router = new router_1.Router(this.config.get.routes);
+        this.builder = new AppBuilder(this);
     }
     get rootDir() {
-        return this.config.get.rootDir;
+        return utils_1.fs.path(this.config.get.rootDir);
     }
     get(loader) {
         return this.factory.createLoader(loader);
     }
     get db() {
-        const orm = this.get('orm').call([this.config.get.orm]);
+        const orm = this.get('orm').call();
         return {
             query: orm.queryBuilder,
             orm
@@ -56,7 +59,7 @@ class App {
             }))();
         }).listen(port, host, function () {
             console.log(`server start at port ${port}.`, host ? `host: ${host}` : '');
-            console.log(`${protocol}://${host ? host : 'localhost'}:${port}`);
+            console.log(`${protocol}://${host || 'localhost'}:${port}`);
         });
     }
     setHttpRequestPayload(payload) {
@@ -142,4 +145,32 @@ class AppExceptionResolve {
     }
 }
 exports.AppExceptionResolve = AppExceptionResolve;
+class AppBuilder {
+    constructor(app) {
+        this.app = app;
+    }
+    get buildDir() {
+        var _a;
+        const buildDirName = this.app.config.get.buildDirName || app_config_1.DEFAULT_APP_BUILD_DIR;
+        const buildDir = utils_1.fs.path(this.app.rootDir, buildDirName);
+        const tsConfig = this.app.factory.tsConfig;
+        return ((_a = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) === null || _a === void 0 ? void 0 : _a.outDir) === buildDirName ? buildDir : null;
+    }
+    get envIsBuild() {
+        const buildDir = this.buildDir;
+        return !!(buildDir && this.app.rootDir.startsWith(buildDir));
+    }
+    build(onError) {
+        const buildDir = this.buildDir;
+        if (buildDir === null)
+            throw new exception_1.RuntimeException('App Build failed. Cannot retrieve a build directory name.'
+                + ' Check that configuration parameter "buildDirName" and the option "outDir"'
+                + ' in tsconfig.json file are both the same values.');
+        utils_1.fs.rmDir(buildDir, (err) => {
+            err || require('child_process').execFileSync('tsc', ['--build'], { shell: true, encoding: "utf-8" });
+            err && (onError === null || onError === void 0 ? void 0 : onError());
+        });
+    }
+}
+exports.AppBuilder = AppBuilder;
 //# sourceMappingURL=app.js.map

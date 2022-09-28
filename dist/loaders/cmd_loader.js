@@ -13,7 +13,7 @@ class CommandLineLoader extends app_loader_1.AppLoader {
     _onCall(target, args) {
     }
     _onGenerate(repository) {
-        const cmdDir = require('path').resolve(repository, this._app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR);
+        const cmdDir = utils_1.fs.path(repository, this._app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR);
         this._loadSource();
         utils_1.fs.isDir(cmdDir) || utils_1.fs.mkDeepDir(cmdDir);
     }

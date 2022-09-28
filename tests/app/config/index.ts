@@ -3,10 +3,8 @@ import {AppConfigInterface} from "../../../interfaces/app";
 const orm = require('./database')
 const routes = require('./routes')
 
-const _path = require('path')
-
 export = <AppConfigInterface>Object.freeze({
-    rootDir: _path.resolve(__dirname, '..'),
+    rootDir: require('path').resolve(__dirname, '..'),
     /**
      * See session supporting docs: https://github.com/mozilla/node-client-sessions
      */

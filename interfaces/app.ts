@@ -10,6 +10,7 @@ import {Exception, ExceptionHandler, ExceptionLog} from "../core/exception";
 import {AppExceptionResolve} from "../core/app";
 
 export type AppLoaders =
+    | 'app_builder'
     | 'http'
     | 'controller'
     | 'model'
@@ -27,8 +28,15 @@ export type AppLoaders =
 
 export type AppExceptions = 'http' | 'runtime' | string
 
+export interface AppEnvInterface {
+    data: AppConfigInterface
+    tsConfig: any
+}
+
 export interface AppConfigInterface {
     rootDir?: string
+    envFileName?: string
+    buildDirName?: string
     store?: string | boolean
     storeName?: string
     stateName?: string

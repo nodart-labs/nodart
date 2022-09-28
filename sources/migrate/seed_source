@@ -1,0 +1,20 @@
+import {nodart, OrmSeedSource} from "nodart";
+
+export class [NAME]Seed extends OrmSeedSource {
+
+    readonly seeds = <nodart.orm.OrmSeedInterface>{
+SEED>>>
+        /*
+        [SEED_NAME]: (client) => {
+            return client('TABLE_NAME').truncate()
+                .then(function () {
+                    // Inserts seed entries
+                    return client('TABLE_NAME').insert([
+                        // {},
+                    ])
+                })
+        },
+        */
+SEED>>>
+    }
+}

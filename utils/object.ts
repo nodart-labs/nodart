@@ -1,3 +1,5 @@
+import {FunctionArgumentParseData} from "../interfaces/object";
+
 const $ = require('./common')
 
 export = {
@@ -70,7 +72,7 @@ export = {
         return JSON.parse(JSON.stringify(obj))
     },
 
-    copyUnset(obj: object) {
+    copyReplaceCircular(obj: object) {
         return JSON.parse(this.stringifyReplaceCircular(obj))
     },
 
@@ -127,40 +129,32 @@ export = {
         })
     },
 
-    getFuncArguments(func: Function): string[] {
+    parseFuncArguments(func: Function): string[] {
         return func.toString().replace(/[\r\n\s]+/g, ' ')
             ?.match(/(?:[^(]+)?\s*(?:\((.*?)\)|([^\s]+))/)
-            ?.slice(1,3)
+            ?.slice(1, 3)
             ?.join('')
             ?.split(/\s*,\s*/) ?? []
     },
 
-    arrangeFuncArguments(func: Function, parseDefaultValues: boolean = false) {
-        const args = this.getFuncArguments(func)
-        const order: {
-            arg: string,
-            default: any,
-            required: boolean,
-            src: string
-        }[] = []
+    arrangeFuncArguments(func: Function) {
+        const args = this.parseFuncArguments(func)
+        const order: Array<FunctionArgumentParseData> = []
 
         args.forEach(arg => {
+            if (!arg.trim()) return
             const data = arg.split('=')
-
-            let def = undefined
-
-            if (parseDefaultValues) {
-                def = data[1]?.trim()
-
-                try {
-                    !isNaN(parseFloat(def)) ? def = parseFloat(def) : def = JSON.parse(def)
-                } catch(e) {
-                    def = data[1]?.trim()
-                }
-            }
-
+            const def = data[1]?.trim() ?? ''
+            const type = def ? (
+                (def.startsWith('"') || def.startsWith("'"))
+                    ? 'string' : !isNaN(parseFloat(def))
+                        ? 'number' : def.match(/^\[.*?]$/)
+                            ? 'array' : def.match(/^\{.*?}$/)
+                                ? 'object' : def.match(/^[^(]*?\([^)]*?\)\s*(\{|=>)/)
+                                    ? 'function' : def.match(/^(true|false)$/) ? 'boolean' : undefined) : undefined
             order.push({
                 arg: data[0].trim(),
+                type,
                 default: def,
                 required: data.length === 1,
                 src: arg

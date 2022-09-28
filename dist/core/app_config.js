@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.SYSTEM_LISTENERS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
+exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.SYSTEM_LISTENERS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const app_1 = require("./app");
 const controller_loader_1 = require("../loaders/controller_loader");
@@ -19,6 +19,7 @@ const exception_handler_loader_1 = require("../loaders/exception_handler_loader"
 const exception_3 = require("./exception");
 const exception_log_loader_1 = require("../loaders/exception_log_loader");
 const exception_template_loader_1 = require("../loaders/exception_template_loader");
+const app_builder_loader_1 = require("../loaders/app_builder_loader");
 const STORE = require('../store/system');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -41,8 +42,12 @@ exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = 'seed_sources';
 exports.DEFAULT_CMD_DIR = 'cmd';
 exports.DEFAULT_CMD_COMMANDS_DIR = 'commands';
 exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = 'views';
+exports.DEFAULT_APP_BUILD_DIR = 'build';
+exports.DEFAULT_ENV_FILE_NAME = 'env.ts';
 exports.APP_CONFIG = Object.freeze({
     rootDir: '',
+    envFileName: exports.DEFAULT_ENV_FILE_NAME,
+    buildDirName: exports.DEFAULT_APP_BUILD_DIR,
     cli: {},
     store: true,
     storeName: exports.CLIENT_STORE_NAME,
@@ -70,6 +75,7 @@ exports.APP_CONFIG = Object.freeze({
         log: exception_3.ExceptionLog,
     },
     loaders: {
+        app_builder: app_builder_loader_1.AppBuilderLoader,
         http: http_client_loader_1.HttpClientLoader,
         controller: controller_loader_1.ControllerLoader,
         model: model_loader_1.ModelLoader,
@@ -114,16 +120,21 @@ class AppConfig {
 }
 exports.AppConfig = AppConfig;
 const getSourcesDir = (path) => {
-    const _path = require('path');
-    const dir = _path.resolve(__dirname, '../../sources');
-    const localDir = _path.resolve(__dirname, '../sources');
+    const dir = utils_1.fs.path(__dirname, '../../sources');
+    const localDir = utils_1.fs.path(__dirname, '../sources');
     const resolve = utils_1.fs.isDir(dir) ? dir : utils_1.fs.isDir(localDir) ? localDir : null;
-    return resolve ? (path ? _path.resolve(resolve, path) : resolve) : null;
+    return resolve ? (path ? utils_1.fs.path(resolve, path) : resolve) : null;
 };
 exports.getSourcesDir = getSourcesDir;
-const getSources = (path, callback) => {
+const getSources = (path, callback, onError) => {
     const dir = (0, exports.getSourcesDir)(path);
-    dir && utils_1.fs.dir(dir).forEach(file => utils_1.fs.isFile(file) && callback(file));
+    dir && utils_1.fs.dir(dir).forEach(file => utils_1.fs.isFile(file) ? callback(file) : onError && onError());
 };
 exports.getSources = getSources;
+const getSource = (filePathFromSourceDir, callback, onError) => {
+    const dir = (0, exports.getSourcesDir)();
+    const path = utils_1.fs.path(dir, filePathFromSourceDir);
+    utils_1.fs.isFile(path) ? callback(path) : onError && onError();
+};
+exports.getSource = getSource;
 //# sourceMappingURL=app_config.js.map

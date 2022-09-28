@@ -9,6 +9,11 @@ export = <RouteEntry>{
     ],
     sample: 'sample',
     sample2: [
-        '/:foo?/:+id'
+        {
+            path: '/:foo/:+id?',
+            // action: 'post'
+        },
+
+        // '/:foo/:test/:fgh',
     ]
 }

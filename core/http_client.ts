@@ -5,7 +5,8 @@ import {
     HttpURL,
     BaseHttpResponseInterface,
     HttpClientConfigInterface,
-    BaseHttpResponseHandlerInterface, HttpResponseDataInterface
+    BaseHttpResponseHandlerInterface,
+    HttpResponseDataInterface
 } from "../interfaces/http";
 import {JSONObjectInterface} from "../interfaces/object";
 import {RuntimeException} from "./exception";

@@ -2,72 +2,46 @@ import {App} from "./app";
 import {$, fs, object} from "../utils"
 import {DEFAULT_CMD_COMMANDS_DIR, DEFAULT_CMD_DIR} from "./app_config";
 import {Command, CommandList, CommandExecutor, CommandSource} from "../interfaces/cmd";
+import {FunctionArgumentParseData} from "../interfaces/object";
 
-const OPTION_POINTER = '--'
+export const OPTION_POINTER = '--'
+export const SYSTEM_DIR = fs.path(__dirname, '../..')
+export const SYSTEM_BIN_DIR = fs.path(SYSTEM_DIR, 'bin')
+
+type ActionParseData = {
+    action: string,
+    func: Function,
+    args: { [key: string]: any },
+    executor: { [key: string]: any },
+    argsData: Array<FunctionArgumentParseData>,
+    values: any[]
+}
 
 export class CommandLine {
 
     protected _command: Command
 
+    protected static _lock: boolean = false
+
+    protected static _state: CommandLine
+
+    readonly parser: CommandLineParser
+
     constructor(readonly app: App) {
-    }
-
-    static parseCommand(): Command {
-
-        const cmd = {
-            command: '',
-            action: '',
-            options: {}
-        }
-
-        const args = process.argv.slice(2)
-
-        args.forEach((arg, i) => {
-            if (i === 0) {
-                if (arg.startsWith(OPTION_POINTER)) return
-                cmd.command = arg
-                args[i + 1] && (args[i + 1]?.startsWith(OPTION_POINTER) || (cmd.action = args[i + 1]))
-                return
-            }
-            if (arg.startsWith(OPTION_POINTER)) {
-                arg = $.trim(arg, OPTION_POINTER)
-                cmd.options[arg] = CommandLine.assignCommandOptionValues(args, arg, i) ?? true
-            }
-        })
-
-        return cmd
-    }
-
-    static assignCommandOptionValues(args: string[], arg: string, index: number) {
-
-        const values = {}
-
-        for (let i = index; i < args.length; i++) {
-            let value: any = args[i + 1]
-            if (value === undefined || value.startsWith(OPTION_POINTER)) return values[arg]
-
-            value === 'true'
-                ? value = true : value === 'false'
-                    ? value = false : !isNaN(parseFloat(value)) && (value = parseFloat(value))
-
-            i > index
-                ? (Array.isArray(values[arg]) ? values[arg].push(value) : values[arg] = [values[arg], value])
-                : values[arg] = value
-        }
-
-        return values[arg]
+        this.parser = new CommandLineParser()
+        CommandLine._state = this
     }
 
     get command(): Command {
+        return this._command ||= CommandLineParser.parseCommand()
+    }
 
-        return this._command ||= CommandLine.parseCommand()
+    get appCmdDir() {
+        return fs.formatPath(fs.path(this.app.rootDir, DEFAULT_CMD_DIR))
     }
 
     get commandsDirectory() {
-
-        return fs.formatPath(this.app.rootDir
-            + '/' + DEFAULT_CMD_DIR
-            + '/' + (this.app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR))
+        return fs.path(this.appCmdDir, (this.app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR))
     }
 
     commandList(directory?: string): CommandList {
@@ -105,55 +79,183 @@ export class CommandLine {
         }
     }
 
+    get state(): CommandLine {
+        return CommandLine._state
+    }
+
     get system() {
-
-        const dir = require('path').resolve(__dirname, '../../bin/' + DEFAULT_CMD_COMMANDS_DIR)
-
+        const commandsDir = fs.path(SYSTEM_BIN_DIR, DEFAULT_CMD_COMMANDS_DIR)
         return {
-            directory: dir,
-            source: (commandName?: string) => this.getCommandSource(commandName, dir),
-            commands: () => this.commandList(dir),
-            run: (commandName?: string) => this.run(commandName, dir)
+            commandsDir,
+            source: (commandName?: string) => this.getCommandSource(commandName, commandsDir),
+            commands: () => this.commandList(commandsDir),
+            run: (commandName?: string) => this.run(commandName, commandsDir),
+            fetchAppState: (app: App) => {
+                CommandLine._lock = true
+                fs.include(this.appCmdDir, {
+                    error: () => fs.include(fs.path(app.builder.buildDir, DEFAULT_CMD_DIR))
+                })
+                Object.assign(app, this.state.app)
+                CommandLine._lock = false
+                return this.state
+            },
+            buildApp: (app: App, exitOnError: boolean = true) => {
+                const dist = app.builder.buildDir
+                app.builder.build(() => {
+                    console.error('The App build directory does not exist.')
+                    exitOnError && process.exit(1)
+                })
+                fs.isDir(dist) && app.config.set({rootDir: dist})
+            }
         }
     }
 
-    async run(commandName?: string, directory?: string) {
+    async run(commandName?: string, directory?: string, onGetExecutor?: (executor: CommandExecutor) => CommandExecutor) {
 
         commandName ||= this.command.command
-
-        if (!commandName) return
+        if (!commandName || CommandLine._lock) return
 
         const source = this.getCommandSource(commandName, directory)
-
         if (!source) throw `The "${commandName}" command's source is not found.`
 
-        const executor = source.get()
-
+        const executor = onGetExecutor ? onGetExecutor(source.get()) : source.get()
         if (!executor) throw `Cannot find the executor for "${commandName}" command's source.`
 
-        return await this.execute(executor)
+        return await this.execute(executor).catch((err) => {
+            console.error(err)
+            process.exit(1)
+        })
     }
 
     async execute(executor: CommandExecutor) {
 
         const data = executor instanceof Function ? await executor({app: this.app, cmd: this}) : executor
-
         if (!(data instanceof Object)) return
 
-        const command = $.hyphen2Camel(this.command.action)
+        const {func, values} = await this.parser.validate(this.command, data).catch(errors => {
+            console.log(errors.join("\r\n"))
+            process.exit(1)
+        }) as ActionParseData
 
-        const action = command && data[command] instanceof Function ? data[command] : null
+        return await Reflect.apply(func, data, values)
+    }
+}
 
-        if (!action) return
+export class CommandLineParser {
 
-        const options = this.command.options
+    static parseCommand(): Command {
 
+        const cmd: Command = {
+            command: '',
+            action: '',
+            options: {},
+        }
+
+        const args = process.argv.slice(2)
+
+        args.forEach((arg, i) => {
+            if (i === 0) {
+                if (arg.startsWith(OPTION_POINTER)) return
+                cmd.command = arg
+                args[i + 1] && (args[i + 1]?.startsWith(OPTION_POINTER) || (cmd.action = args[i + 1]))
+                return
+            }
+            if (arg.startsWith(OPTION_POINTER)) {
+                arg = $.trim(arg, OPTION_POINTER)
+                cmd.options[arg] = CommandLineParser.assignCommandOptionValues(args, arg, i) ?? true
+            }
+        })
+
+        return cmd
+    }
+
+    static assignCommandOptionValues(args: string[], arg: string, index: number) {
+
+        const values = {}
+
+        for (let i = index; i < args.length; i++) {
+            let value: any = args[i + 1]
+            if (value === undefined || value.startsWith(OPTION_POINTER)) return values[arg]
+
+            value === 'true'
+                ? value = true : value === 'false'
+                    ? value = false : !isNaN(parseFloat(value)) && (value = parseFloat(value))
+
+            i > index
+                ? (Array.isArray(values[arg]) ? values[arg].push(value) : values[arg] = [values[arg], value])
+                : values[arg] = value
+        }
+
+        return values[arg]
+    }
+
+    parseAction(command: Command, executorData?: { [key: string]: any }): void | ActionParseData {
+
+        const action = $.hyphen2Camel(command.action)
+        const actionFunc = action && executorData?.[action] instanceof Function ? executorData[action] : null
+
+        if (!actionFunc) return
+
+        const options = command.options
         const args = {}
+        const argsData = object.arrangeFuncArguments(actionFunc)
 
         Object.keys(options).forEach(k => args[$.hyphen2Camel(k)] = options[k])
 
-        const values = object.arrangeFuncArguments(action).map(a => a.arg in args ? args[a.arg] : undefined)
+        return {
+            action,
+            func: actionFunc,
+            executor: executorData,
+            args,
+            argsData,
+            values: argsData.map(a => a.arg in args ? args[a.arg] : undefined)
+        }
+    }
 
-        return await Reflect.apply(action, data, values)
+    validate(command: Command, executorData: { [key: string]: any }): Promise<ActionParseData> {
+
+        const actionData = (this.parseAction(command, executorData) || {}) as ActionParseData
+
+        return new Promise((resolve, reject) => {
+            const errors = []
+            const actions = Object.keys(executorData)
+
+            if (!actionData.action && !command.action) {
+                actions.length && errors.push(
+                    `No action supplied for command "${command.command} ${command.action}". (${actions.join('|')})`)
+                return actions.length ? reject(errors) : resolve(actionData)
+            }
+
+            if (executorData[actionData.action] instanceof Function) {
+                const {missing} = this.actionArgumentsValidate(actionData)
+                missing.length && errors.push(
+                    `Missing required arguments: ${missing.map(v => OPTION_POINTER + v).join(', ')}.`)
+
+            } else errors.push(
+                `The action "${command.action}" does not exist in command "${command.command}". (${actions.join('|')})`)
+
+            errors.length ? reject(errors) : resolve(actionData)
+        })
+    }
+
+    actionArgumentsValidate(actionData: ActionParseData) {
+
+        const missing = []
+
+        actionData.argsData.forEach(({arg, type, required}, index) => {
+            const val = actionData.values[index]
+
+            required && val === undefined && missing.push(arg)
+
+            if (val === undefined) return
+
+            type === 'number' && (actionData.values[index] = !isNaN(parseFloat(val)) ? parseFloat(val) : 0)
+            type === 'boolean' && (actionData.values[index] = Boolean(val))
+            type === 'array' && !Array.isArray(val) && (actionData.values[index] = [val])
+            type === 'object' && $.isEmpty(val) && (actionData.values[index] = {})
+            type === 'string' && typeof val !== 'string' && (actionData.values[index] = val.toString())
+        })
+
+        return {missing}
     }
 }

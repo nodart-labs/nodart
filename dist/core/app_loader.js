@@ -80,21 +80,22 @@ class AppLoader {
             yield this._onGenerate(this.getRepo());
         });
     }
-    getRepo() {
+    getRepo(rootDir) {
+        rootDir || (rootDir = this._app.rootDir);
         const repo = this.repository;
         if (!repo)
             return '';
-        const path = require('path').resolve(this._app.rootDir, repo);
+        const path = utils_1.fs.path(rootDir, repo);
         utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
         return path;
     }
-    absPath(path) {
-        const repo = this.getRepo();
+    absPath(path, rootDir) {
+        const repo = this.getRepo(rootDir);
         path = this.securePath(path);
-        return repo ? require('path').resolve(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
+        return repo ? utils_1.fs.path(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
     }
     isTarget(path) {
-        return utils_1.fs.isFile(require('path').resolve(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
+        return utils_1.fs.isFile(utils_1.fs.path(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
     }
     isSource(path) {
         return utils_1.fs.isFile(this.absPath(path), ['ts', 'js']);
@@ -103,17 +104,8 @@ class AppLoader {
         return utils_1.fs.isFile(this.absPath(path));
     }
     securePath(path) {
-        return path.replace('../', '').replace('..\\', '');
-    }
-    intersectLoader(loaderName, subRepo, targetPath) {
-        subRepo || (subRepo = '');
-        targetPath || (targetPath = this._targetPath);
-        const loader = this._app.get(loaderName);
-        if (!loader)
-            return;
-        const referenceTarget = loader.getReferenceTarget(loader.repository + (subRepo ? '/' + utils_1.$.trimPath(subRepo) : ''), utils_1.$.trimPath(targetPath));
-        if (referenceTarget)
-            return loader.require(subRepo + '/' + referenceTarget);
+        var _a;
+        return (_a = path === null || path === void 0 ? void 0 : path.replace(/(\.\.\\|\.\.\/)/g, '')) !== null && _a !== void 0 ? _a : '';
     }
 }
 exports.AppLoader = AppLoader;

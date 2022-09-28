@@ -4,6 +4,8 @@ type JSONValue =
     | string
     | number
     | boolean
+    | undefined
+    | null
     | JSONObjectInterface
     | JSONArrayInterface
 
@@ -13,3 +15,10 @@ export interface JSONObjectInterface {
 
 export interface JSONArrayInterface extends Array<JSONValue> { }
 
+export type FunctionArgumentParseData = {
+    arg: string,
+    type: 'string' | 'number' | 'object' | 'array' | 'function' | 'boolean' | undefined,
+    default: string,
+    required: boolean,
+    src: string
+}

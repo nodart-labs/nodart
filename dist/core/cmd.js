@@ -9,59 +9,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommandLine = void 0;
+exports.CommandLineParser = exports.CommandLine = exports.SYSTEM_BIN_DIR = exports.SYSTEM_DIR = exports.OPTION_POINTER = void 0;
 const utils_1 = require("../utils");
 const app_config_1 = require("./app_config");
-const OPTION_POINTER = '--';
+exports.OPTION_POINTER = '--';
+exports.SYSTEM_DIR = utils_1.fs.path(__dirname, '../..');
+exports.SYSTEM_BIN_DIR = utils_1.fs.path(exports.SYSTEM_DIR, 'bin');
 class CommandLine {
     constructor(app) {
         this.app = app;
-    }
-    static parseCommand() {
-        const cmd = {
-            command: '',
-            action: '',
-            options: {}
-        };
-        const args = process.argv.slice(2);
-        args.forEach((arg, i) => {
-            var _a, _b;
-            if (i === 0) {
-                if (arg.startsWith(OPTION_POINTER))
-                    return;
-                cmd.command = arg;
-                args[i + 1] && (((_a = args[i + 1]) === null || _a === void 0 ? void 0 : _a.startsWith(OPTION_POINTER)) || (cmd.action = args[i + 1]));
-                return;
-            }
-            if (arg.startsWith(OPTION_POINTER)) {
-                arg = utils_1.$.trim(arg, OPTION_POINTER);
-                cmd.options[arg] = (_b = CommandLine.assignCommandOptionValues(args, arg, i)) !== null && _b !== void 0 ? _b : true;
-            }
-        });
-        return cmd;
-    }
-    static assignCommandOptionValues(args, arg, index) {
-        const values = {};
-        for (let i = index; i < args.length; i++) {
-            let value = args[i + 1];
-            if (value === undefined || value.startsWith(OPTION_POINTER))
-                return values[arg];
-            value === 'true'
-                ? value = true : value === 'false'
-                ? value = false : !isNaN(parseFloat(value)) && (value = parseFloat(value));
-            i > index
-                ? (Array.isArray(values[arg]) ? values[arg].push(value) : values[arg] = [values[arg], value])
-                : values[arg] = value;
-        }
-        return values[arg];
+        this.parser = new CommandLineParser();
+        CommandLine._state = this;
     }
     get command() {
-        return this._command || (this._command = CommandLine.parseCommand());
+        return this._command || (this._command = CommandLineParser.parseCommand());
+    }
+    get appCmdDir() {
+        return utils_1.fs.formatPath(utils_1.fs.path(this.app.rootDir, app_config_1.DEFAULT_CMD_DIR));
     }
     get commandsDirectory() {
-        return utils_1.fs.formatPath(this.app.rootDir
-            + '/' + app_config_1.DEFAULT_CMD_DIR
-            + '/' + (this.app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR));
+        return utils_1.fs.path(this.appCmdDir, (this.app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR));
     }
     commandList(directory) {
         directory || (directory = this.commandsDirectory);
@@ -89,27 +56,50 @@ class CommandLine {
                 };
         }
     }
+    get state() {
+        return CommandLine._state;
+    }
     get system() {
-        const dir = require('path').resolve(__dirname, '../../bin/' + app_config_1.DEFAULT_CMD_COMMANDS_DIR);
+        const commandsDir = utils_1.fs.path(exports.SYSTEM_BIN_DIR, app_config_1.DEFAULT_CMD_COMMANDS_DIR);
         return {
-            directory: dir,
-            source: (commandName) => this.getCommandSource(commandName, dir),
-            commands: () => this.commandList(dir),
-            run: (commandName) => this.run(commandName, dir)
+            commandsDir,
+            source: (commandName) => this.getCommandSource(commandName, commandsDir),
+            commands: () => this.commandList(commandsDir),
+            run: (commandName) => this.run(commandName, commandsDir),
+            fetchAppState: (app) => {
+                CommandLine._lock = true;
+                utils_1.fs.include(this.appCmdDir, {
+                    error: () => utils_1.fs.include(utils_1.fs.path(app.builder.buildDir, app_config_1.DEFAULT_CMD_DIR))
+                });
+                Object.assign(app, this.state.app);
+                CommandLine._lock = false;
+                return this.state;
+            },
+            buildApp: (app, exitOnError = true) => {
+                const dist = app.builder.buildDir;
+                app.builder.build(() => {
+                    console.error('The App build directory does not exist.');
+                    exitOnError && process.exit(1);
+                });
+                utils_1.fs.isDir(dist) && app.config.set({ rootDir: dist });
+            }
         };
     }
-    run(commandName, directory) {
+    run(commandName, directory, onGetExecutor) {
         return __awaiter(this, void 0, void 0, function* () {
             commandName || (commandName = this.command.command);
-            if (!commandName)
+            if (!commandName || CommandLine._lock)
                 return;
             const source = this.getCommandSource(commandName, directory);
             if (!source)
                 throw `The "${commandName}" command's source is not found.`;
-            const executor = source.get();
+            const executor = onGetExecutor ? onGetExecutor(source.get()) : source.get();
             if (!executor)
                 throw `Cannot find the executor for "${commandName}" command's source.`;
-            return yield this.execute(executor);
+            return yield this.execute(executor).catch((err) => {
+                console.error(err);
+                process.exit(1);
+            });
         });
     }
     execute(executor) {
@@ -117,17 +107,106 @@ class CommandLine {
             const data = executor instanceof Function ? yield executor({ app: this.app, cmd: this }) : executor;
             if (!(data instanceof Object))
                 return;
-            const command = utils_1.$.hyphen2Camel(this.command.action);
-            const action = command && data[command] instanceof Function ? data[command] : null;
-            if (!action)
-                return;
-            const options = this.command.options;
-            const args = {};
-            Object.keys(options).forEach(k => args[utils_1.$.hyphen2Camel(k)] = options[k]);
-            const values = utils_1.object.arrangeFuncArguments(action).map(a => a.arg in args ? args[a.arg] : undefined);
-            return yield Reflect.apply(action, data, values);
+            const { func, values } = yield this.parser.validate(this.command, data).catch(errors => {
+                console.log(errors.join("\r\n"));
+                process.exit(1);
+            });
+            return yield Reflect.apply(func, data, values);
         });
     }
 }
 exports.CommandLine = CommandLine;
+CommandLine._lock = false;
+class CommandLineParser {
+    static parseCommand() {
+        const cmd = {
+            command: '',
+            action: '',
+            options: {},
+        };
+        const args = process.argv.slice(2);
+        args.forEach((arg, i) => {
+            var _a, _b;
+            if (i === 0) {
+                if (arg.startsWith(exports.OPTION_POINTER))
+                    return;
+                cmd.command = arg;
+                args[i + 1] && (((_a = args[i + 1]) === null || _a === void 0 ? void 0 : _a.startsWith(exports.OPTION_POINTER)) || (cmd.action = args[i + 1]));
+                return;
+            }
+            if (arg.startsWith(exports.OPTION_POINTER)) {
+                arg = utils_1.$.trim(arg, exports.OPTION_POINTER);
+                cmd.options[arg] = (_b = CommandLineParser.assignCommandOptionValues(args, arg, i)) !== null && _b !== void 0 ? _b : true;
+            }
+        });
+        return cmd;
+    }
+    static assignCommandOptionValues(args, arg, index) {
+        const values = {};
+        for (let i = index; i < args.length; i++) {
+            let value = args[i + 1];
+            if (value === undefined || value.startsWith(exports.OPTION_POINTER))
+                return values[arg];
+            value === 'true'
+                ? value = true : value === 'false'
+                ? value = false : !isNaN(parseFloat(value)) && (value = parseFloat(value));
+            i > index
+                ? (Array.isArray(values[arg]) ? values[arg].push(value) : values[arg] = [values[arg], value])
+                : values[arg] = value;
+        }
+        return values[arg];
+    }
+    parseAction(command, executorData) {
+        const action = utils_1.$.hyphen2Camel(command.action);
+        const actionFunc = action && (executorData === null || executorData === void 0 ? void 0 : executorData[action]) instanceof Function ? executorData[action] : null;
+        if (!actionFunc)
+            return;
+        const options = command.options;
+        const args = {};
+        const argsData = utils_1.object.arrangeFuncArguments(actionFunc);
+        Object.keys(options).forEach(k => args[utils_1.$.hyphen2Camel(k)] = options[k]);
+        return {
+            action,
+            func: actionFunc,
+            executor: executorData,
+            args,
+            argsData,
+            values: argsData.map(a => a.arg in args ? args[a.arg] : undefined)
+        };
+    }
+    validate(command, executorData) {
+        const actionData = (this.parseAction(command, executorData) || {});
+        return new Promise((resolve, reject) => {
+            const errors = [];
+            const actions = Object.keys(executorData);
+            if (!actionData.action && !command.action) {
+                actions.length && errors.push(`No action supplied for command "${command.command} ${command.action}". (${actions.join('|')})`);
+                return actions.length ? reject(errors) : resolve(actionData);
+            }
+            if (executorData[actionData.action] instanceof Function) {
+                const { missing } = this.actionArgumentsValidate(actionData);
+                missing.length && errors.push(`Missing required arguments: ${missing.map(v => exports.OPTION_POINTER + v).join(', ')}.`);
+            }
+            else
+                errors.push(`The action "${command.action}" does not exist in command "${command.command}". (${actions.join('|')})`);
+            errors.length ? reject(errors) : resolve(actionData);
+        });
+    }
+    actionArgumentsValidate(actionData) {
+        const missing = [];
+        actionData.argsData.forEach(({ arg, type, required }, index) => {
+            const val = actionData.values[index];
+            required && val === undefined && missing.push(arg);
+            if (val === undefined)
+                return;
+            type === 'number' && (actionData.values[index] = !isNaN(parseFloat(val)) ? parseFloat(val) : 0);
+            type === 'boolean' && (actionData.values[index] = Boolean(val));
+            type === 'array' && !Array.isArray(val) && (actionData.values[index] = [val]);
+            type === 'object' && utils_1.$.isEmpty(val) && (actionData.values[index] = {});
+            type === 'string' && typeof val !== 'string' && (actionData.values[index] = val.toString());
+        });
+        return { missing };
+    }
+}
+exports.CommandLineParser = CommandLineParser;
 //# sourceMappingURL=cmd.js.map

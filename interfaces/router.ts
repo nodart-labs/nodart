@@ -9,27 +9,17 @@ export type RouteEntryObject = {
     name?: string,
     action?: string,
     types?: {
-        // determine which type should be attached to url path string parameter.
-        [pathName: string]: typeof Number | RegExp | ((value: any) => any)
+        [paramName: string]: typeof Number | RegExp | ((value: any) => any)
     },
-}
-
-export type RouteEntryData = {
-    pathName: string,
-    param: string | undefined,
-    isOptional: boolean,
-    isSkip: boolean,
-    isNumber: boolean,
-    index: number,
-    pathNames: string[]
+    [addon: string]: any
 }
 
 export type RouteData = {
-    route?: string,
-    name?: string,
     path: string,
     pathname: string,
-    params?: object,
+    route?: string,
+    name?: string,
+    params?: {[name: string]: string | number},
     action?: string,
     [addon: string]: any
 }

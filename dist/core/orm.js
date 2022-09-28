@@ -94,7 +94,7 @@ class OrmMigrator {
     _connect(config) {
         var _a;
         this.config = Object.assign(Object.assign({}, (_a = this.orm.config.migrations) !== null && _a !== void 0 ? _a : {}), config !== null && config !== void 0 ? config : {});
-        return this.client = this.orm.connect(Object.assign(Object.assign({}, this.orm.config), { migrations: this.config }));
+        return this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { migrations: this.config }));
     }
     /**
      * Retrieves Migration Source class by its file name/path
@@ -102,10 +102,13 @@ class OrmMigrator {
      */
     fetchSource(name) {
         try {
-            return utils_1.fs.getSource(require('path').resolve(this.orm.sources(), name), OrmMigrationSource);
+            return utils_1.fs.getSource(utils_1.fs.path(this.orm.sources(), name), OrmMigrationSource);
         }
         catch (e) {
-            throw new exception_1.RuntimeException(`The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`);
+            throw new exception_1.RuntimeException({
+                exceptionMessage: `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
+                exceptionData: e
+            });
         }
     }
     assignSource() {
@@ -144,7 +147,7 @@ class OrmMigrator {
      * The default value for this parameter is false
      * @param all
      */
-    rollback(all) {
+    rollback(all = false) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.client.migrate.rollback(this.config, all);
         });
@@ -233,7 +236,7 @@ class OrmSeeder {
     _connect(config) {
         var _a;
         this.config = Object.assign(Object.assign({}, (_a = this.orm.config.seeds) !== null && _a !== void 0 ? _a : {}), config !== null && config !== void 0 ? config : {});
-        return this.client = this.orm.connect(Object.assign(Object.assign({}, this.orm.config), { seeds: this.config }));
+        return this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { seeds: this.config }));
     }
     /**
      * Retrieves Seeder Source class by its file name/path
@@ -241,10 +244,13 @@ class OrmSeeder {
      */
     fetchSource(name) {
         try {
-            return utils_1.fs.getSource(require('path').resolve(this.orm.seedSources(), name), OrmSeedSource);
+            return utils_1.fs.getSource(utils_1.fs.path(this.orm.seedSources(), name), OrmSeedSource);
         }
         catch (e) {
-            throw new exception_1.RuntimeException(`The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`);
+            throw new exception_1.RuntimeException({
+                exceptionMessage: `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
+                exceptionData: e
+            });
         }
     }
     assignSource() {

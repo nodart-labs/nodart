@@ -14,10 +14,6 @@ export class OrmLoader extends AppLoader {
 
     protected _repository = DEFAULT_DATABASE_REPOSITORY
 
-    protected _migrationSourceDirectory: string = ''
-
-    protected _seedSourceDirectory: string = ''
-
     constructor(protected _app: App) {
         super(_app)
         this._repository = _app.config.get.database ?? DEFAULT_DATABASE_REPOSITORY
@@ -28,22 +24,12 @@ export class OrmLoader extends AppLoader {
 
     get migrationSourceDirectory() {
 
-        return this._migrationSourceDirectory ||= require('path').resolve(this.getRepo(), DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY)
-    }
-
-    set migrationSourceDirectory(dir: string) {
-
-        this._migrationSourceDirectory = this.securePath(dir)
+        return fs.path(this.getRepo(), DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY)
     }
 
     get seedSourceDirectory() {
 
-        return this._seedSourceDirectory ||= require('path').resolve(this.getRepo(), DEFAULT_DATABASE_SEED_SRC_REPOSITORY)
-    }
-
-    set seedSourceDirectory(dir: string) {
-
-        this._seedSourceDirectory = this.securePath(dir)
+        return fs.path(this.getRepo(), DEFAULT_DATABASE_SEED_SRC_REPOSITORY)
     }
 
     protected _onGenerate(repository: string) {
@@ -63,18 +49,18 @@ export class OrmLoader extends AppLoader {
 
     protected _resolve(target?: any, args?: any[]): any {
 
-        const orm = Orm
         const getSources = () => this.migrationSourceDirectory
         const getSeedSources = () => this.seedSourceDirectory
+        const config = object.merge(this.database, (args?.[0] ?? this._app.config.get.orm) ?? {})
 
-        orm.prototype.sources = function () {
+        Orm.prototype.sources = function () {
             return this._sources || getSources()
         }
-        orm.prototype.seedSources = function () {
+        Orm.prototype.seedSources = function () {
             return this._seedSources || getSeedSources()
         }
 
-        return new orm(args?.[0] ?? this._app.config.get.orm)
+        return new Orm(config)
     }
 
     get database() {
@@ -86,18 +72,23 @@ export class OrmLoader extends AppLoader {
         const migrations = object.get(config, 'migrations')
         const seeds = object.get(config, 'seeds')
         const repo = this.getRepo()
+        const ext = this._app.builder.envIsBuild ? 'js' : 'ts'
+        const loadExt = ['.js', '.ts']
+
+        Array.isArray(migrations.loadExtensions) || (migrations.loadExtensions = [])
+        Array.isArray(seeds.loadExtensions) || (seeds.loadExtensions = [])
 
         return {
             migrations: {
                 tableName: migrations.tableName ||= DEFAULT_DATABASE_MIGRATION_REPOSITORY,
-                directory: migrations.directory ||= repo + '/' + DEFAULT_DATABASE_MIGRATION_REPOSITORY,
-                extension: migrations.extension ||= 'ts',
-                loadExtensions: migrations.loadExtensions ||= ['.ts'],
+                directory: migrations.directory ||= fs.path(repo, DEFAULT_DATABASE_MIGRATION_REPOSITORY),
+                extension: migrations.extension ||= ext,
+                loadExtensions: migrations.loadExtensions = [...migrations.loadExtensions, ...loadExt],
             },
             seeds: {
-                directory: seeds.directory ||= repo + '/' + DEFAULT_DATABASE_SEED_REPOSITORY,
-                extension: seeds.extension ||= 'ts',
-                loadExtensions: seeds.loadExtensions ||= ['.ts'],
+                directory: seeds.directory ||= fs.path(repo, DEFAULT_DATABASE_SEED_REPOSITORY),
+                extension: seeds.extension ||= ext,
+                loadExtensions: seeds.loadExtensions = [...seeds.loadExtensions, ...loadExt],
             }
         }
     }

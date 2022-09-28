@@ -12,7 +12,7 @@ export class CommandLineLoader extends AppLoader {
 
     protected _onGenerate(repository: string): void {
 
-        const cmdDir = require('path').resolve(repository, this._app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR)
+        const cmdDir = fs.path(repository, this._app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR)
 
         this._loadSource()
 

@@ -17,6 +17,7 @@ import {ExceptionHandlerLoader} from "../loaders/exception_handler_loader";
 import {ExceptionLog} from "./exception";
 import {ExceptionLogLoader} from "../loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
+import {AppBuilderLoader} from "../loaders/app_builder_loader";
 
 const STORE = require('../store/system')
 
@@ -44,9 +45,13 @@ export const DEFAULT_DATABASE_SEED_SRC_REPOSITORY = 'seed_sources'
 export const DEFAULT_CMD_DIR = 'cmd'
 export const DEFAULT_CMD_COMMANDS_DIR = 'commands'
 export const DEFAULT_ENGINE_VIEWS_REPOSITORY = 'views'
+export const DEFAULT_APP_BUILD_DIR = 'build'
+export const DEFAULT_ENV_FILE_NAME = 'env.ts'
 
 export const APP_CONFIG: AppConfigInterface = Object.freeze({
     rootDir: '',
+    envFileName: DEFAULT_ENV_FILE_NAME,
+    buildDirName: DEFAULT_APP_BUILD_DIR,
     cli: {},
     store: true,
     storeName: CLIENT_STORE_NAME,
@@ -74,6 +79,7 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
         log: ExceptionLog,
     },
     loaders: {
+        app_builder: AppBuilderLoader,
         http: HttpClientLoader,
         controller: ControllerLoader,
         model: ModelLoader,
@@ -126,14 +132,19 @@ export class AppConfig {
 }
 
 export const getSourcesDir = (path?: string) => {
-    const _path = require('path')
-    const dir = _path.resolve(__dirname, '../../sources')
-    const localDir = _path.resolve(__dirname, '../sources')
+    const dir = fs.path(__dirname, '../../sources')
+    const localDir = fs.path(__dirname, '../sources')
     const resolve = fs.isDir(dir) ? dir : fs.isDir(localDir) ? localDir : null
-    return resolve ? (path ? _path.resolve(resolve, path) : resolve) : null
+    return resolve ? (path ? fs.path(resolve, path) : resolve) : null
 }
 
-export const getSources = (path: string, callback: Function) => {
+export const getSources = (path: string, callback: Function, onError?: Function) => {
     const dir = getSourcesDir(path)
-    dir && fs.dir(dir).forEach(file => fs.isFile(file) && callback(file))
+    dir && fs.dir(dir).forEach(file => fs.isFile(file) ? callback(file) : onError && onError())
+}
+
+export const getSource = (filePathFromSourceDir: string, callback: Function, onError?: Function) => {
+    const dir = getSourcesDir()
+    const path = fs.path(dir, filePathFromSourceDir)
+    fs.isFile(path) ? callback(path) : onError && onError()
 }

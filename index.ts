@@ -1,4 +1,4 @@
-import {App, AppExceptionResolve} from "./core/app";
+import {App, AppExceptionResolve, AppBuilder} from "./core/app";
 import {AppConfig} from "./core/app_config";
 import {AppLoader} from "./core/app_loader";
 import {AppFactory} from "./core/app_factory";
@@ -17,6 +17,7 @@ import {Exception, ExceptionHandler, ExceptionLog} from "./core/exception";
 import {HttpException, RuntimeException} from "./core/exception";
 import {HttpExceptionHandler, RuntimeExceptionHandler} from "./core/exception";
 
+import {AppBuilderLoader} from "./loaders/app_builder_loader";
 import {ControllerLoader} from "./loaders/controller_loader";
 import {ModelLoader} from "./loaders/model_loader";
 import {StoreLoader} from "./loaders/store_loader";
@@ -38,6 +39,7 @@ import * as utils from "./utils"
 
 export {
     App,
+    AppBuilder,
     AppExceptionResolve,
     AppConfig,
     AppLoader,
@@ -66,6 +68,7 @@ export {
     HttpExceptionHandler,
     RuntimeExceptionHandler,
 
+    AppBuilderLoader,
     ControllerLoader,
     ModelLoader,
     StoreLoader,

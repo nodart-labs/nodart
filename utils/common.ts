@@ -182,6 +182,11 @@ export = {
         return str.replace(delimiters ? new RegExp('[' + delimiters + ']+(.)?', 'g') : pattern, toUpper)
     },
 
+    camel2Snake(str: string) {
+        if (!str) return ''
+        return str.replace(/\.?([A-Z]+)/g, function (x,y){return "_" + y.toLowerCase()}).replace(/^_/, "")
+    },
+
     get date() {
         return {
             currentDateTime() {
@@ -189,6 +194,14 @@ export = {
                 const date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate()
                 const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds()
                 return date + ' ' + time
+            }
+        }
+    },
+
+    get random() {
+        return {
+            hex(num:number = 20) {
+                return require('crypto').randomBytes(num).toString('hex')
             }
         }
     }

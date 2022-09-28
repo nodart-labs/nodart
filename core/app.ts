@@ -5,22 +5,17 @@ import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {DIManager} from "./di";
 import {Router} from "./router";
 import {Orm} from "./orm";
-import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig} from "./app_config";
+import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig, DEFAULT_APP_BUILD_DIR} from "./app_config";
 import {AppConfigInterface, AppLoaders} from "../interfaces/app";
 import {HttpResponseDataInterface} from "../interfaces/http";
 import {StoreState, StoreListenerArguments, StoreListeners} from "../interfaces/store";
-import {ExceptionHandler, ExceptionLog} from "./exception";
+import {ExceptionHandler, ExceptionLog, RuntimeException} from "./exception";
 import {HttpHandler} from "./http_handler";
+import {fs} from "../utils";
 
 const events = require('../store/system').events
 
 export class App {
-
-    protected _httpHandlerPayload: (httpHandler: HttpHandler) => Promise<any>
-
-    protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
-
-    protected _exceptionPayload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface
 
     readonly config: AppConfig
 
@@ -30,15 +25,24 @@ export class App {
 
     readonly router: Router
 
+    readonly builder: AppBuilder
+
+    protected _httpHandlerPayload: (httpHandler: HttpHandler) => Promise<any>
+
+    protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
+
+    protected _exceptionPayload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface
+
     constructor(config: AppConfigInterface) {
         this.config = new AppConfig().set(config)
         this.factory = new AppFactory(this)
         this.di = new DIManager(this.config.getStrict('reference'), this)
         this.router = new Router(this.config.get.routes)
+        this.builder = new AppBuilder(this)
     }
 
     get rootDir() {
-        return this.config.get.rootDir
+        return fs.path(this.config.get.rootDir)
     }
 
     get(loader: AppLoaders): AppLoader {
@@ -46,7 +50,7 @@ export class App {
     }
 
     get db() {
-        const orm = this.get('orm').call([this.config.get.orm]) as Orm
+        const orm = this.get('orm').call() as Orm
         return {
             query: orm.queryBuilder,
             orm
@@ -72,7 +76,7 @@ export class App {
             })()
         }).listen(port, host, function () {
             console.log(`server start at port ${port}.`, host ? `host: ${host}` : '')
-            console.log(`${protocol}://${host ? host : 'localhost'}:${port}`)
+            console.log(`${protocol}://${host || 'localhost'}:${port}`)
         })
     }
 
@@ -190,4 +194,44 @@ export class AppExceptionResolve {
         response.end(exceptionTemplate || data.content)
     }
 
+}
+
+export class AppBuilder {
+
+    constructor(readonly app: App) {
+    }
+
+    get buildDir() {
+
+        const buildDirName = this.app.config.get.buildDirName || DEFAULT_APP_BUILD_DIR
+
+        const buildDir = fs.path(this.app.rootDir, buildDirName)
+
+        const tsConfig = this.app.factory.tsConfig
+
+        return tsConfig?.compilerOptions?.outDir === buildDirName ? buildDir : null
+    }
+
+    get envIsBuild() {
+
+        const buildDir = this.buildDir
+
+        return !!(buildDir && this.app.rootDir.startsWith(buildDir))
+    }
+
+    build(onError?: Function) {
+
+        const buildDir = this.buildDir
+
+        if (buildDir === null) throw new RuntimeException(
+            'App Build failed. Cannot retrieve a build directory name.'
+            + ' Check that configuration parameter "buildDirName" and the option "outDir"'
+            + ' in tsconfig.json file are both the same values.'
+        )
+
+        fs.rmDir(buildDir, (err) => {
+            err || require('child_process').execFileSync('tsc', ['--build'], {shell: true, encoding: "utf-8"})
+            err && onError?.()
+        })
+    }
 }

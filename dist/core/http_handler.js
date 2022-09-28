@@ -52,7 +52,9 @@ class HttpHandler {
         const httpMethod = controller.http.request.method.toLowerCase();
         action || (action = this.action || httpMethod);
         if (controller_1.CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod) {
-            throw new exception_1.HttpException(this.httpClient.getHttpResponse({ status: 400 }));
+            throw new exception_1.HttpException('The current HTTP method receives no response from the request method.', {
+                status: 400
+            });
         }
         return action;
     }

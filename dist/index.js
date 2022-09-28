@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.utils = exports.cli = exports.di = exports.nodart = exports.HttpClientLoader = exports.CommandLineLoader = exports.ExceptionTemplateLoader = exports.ExceptionLogLoader = exports.ExceptionHandlerLoader = exports.OrmLoader = exports.StaticLoader = exports.EngineLoader = exports.SessionLoader = exports.ServiceLoader = exports.StoreLoader = exports.ModelLoader = exports.ControllerLoader = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.RuntimeException = exports.HttpException = exports.ExceptionLog = exports.ExceptionHandler = exports.Exception = exports.Observer = exports.Service = exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMigrationSource = exports.Orm = exports.Model = exports.Engine = exports.Controller = exports.Session = exports.Router = exports.HttpHandler = exports.HttpClient = exports.AppListener = exports.AppStore = exports.AppFactory = exports.AppLoader = exports.AppConfig = exports.AppExceptionResolve = exports.App = void 0;
+exports.utils = exports.cli = exports.di = exports.nodart = exports.HttpClientLoader = exports.CommandLineLoader = exports.ExceptionTemplateLoader = exports.ExceptionLogLoader = exports.ExceptionHandlerLoader = exports.OrmLoader = exports.StaticLoader = exports.EngineLoader = exports.SessionLoader = exports.ServiceLoader = exports.StoreLoader = exports.ModelLoader = exports.ControllerLoader = exports.AppBuilderLoader = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.RuntimeException = exports.HttpException = exports.ExceptionLog = exports.ExceptionHandler = exports.Exception = exports.Observer = exports.Service = exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMigrationSource = exports.Orm = exports.Model = exports.Engine = exports.Controller = exports.Session = exports.Router = exports.HttpHandler = exports.HttpClient = exports.AppListener = exports.AppStore = exports.AppFactory = exports.AppLoader = exports.AppConfig = exports.AppExceptionResolve = exports.AppBuilder = exports.App = void 0;
 const app_1 = require("./core/app");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return app_1.App; } });
 Object.defineProperty(exports, "AppExceptionResolve", { enumerable: true, get: function () { return app_1.AppExceptionResolve; } });
+Object.defineProperty(exports, "AppBuilder", { enumerable: true, get: function () { return app_1.AppBuilder; } });
 const app_config_1 = require("./core/app_config");
 Object.defineProperty(exports, "AppConfig", { enumerable: true, get: function () { return app_config_1.AppConfig; } });
 const app_loader_1 = require("./core/app_loader");
@@ -47,6 +48,8 @@ Object.defineProperty(exports, "RuntimeException", { enumerable: true, get: func
 const exception_3 = require("./core/exception");
 Object.defineProperty(exports, "HttpExceptionHandler", { enumerable: true, get: function () { return exception_3.HttpExceptionHandler; } });
 Object.defineProperty(exports, "RuntimeExceptionHandler", { enumerable: true, get: function () { return exception_3.RuntimeExceptionHandler; } });
+const app_builder_loader_1 = require("./loaders/app_builder_loader");
+Object.defineProperty(exports, "AppBuilderLoader", { enumerable: true, get: function () { return app_builder_loader_1.AppBuilderLoader; } });
 const controller_loader_1 = require("./loaders/controller_loader");
 Object.defineProperty(exports, "ControllerLoader", { enumerable: true, get: function () { return controller_loader_1.ControllerLoader; } });
 const model_loader_1 = require("./loaders/model_loader");

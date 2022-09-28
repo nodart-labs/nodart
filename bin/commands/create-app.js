@@ -6,7 +6,7 @@ module.exports = async ({app, cmd}) => {
 
     const source = path.resolve(__dirname, '../../sources/nodart-app.zip')
 
-    await decompress(source, app.rootDir).then(files => {
+    await decompress(source, app.rootDir).then(() => {
 
         const err = 'Warning: Failed to apply package version from existing source.'
 

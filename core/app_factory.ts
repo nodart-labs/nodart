@@ -1,14 +1,68 @@
 import {App} from './app'
 import {AppStore} from "./app_store";
-import {CLIENT_STORE, SYSTEM_LISTENERS, SYSTEM_STORE, SYSTEM_STORE_NAME} from "./app_config";
-import {AppLoaders} from "../interfaces/app";
 import {AppLoader} from "./app_loader";
+import {AppConfigInterface, AppEnvInterface, AppLoaders} from "../interfaces/app";
+import {
+    CLIENT_STORE,
+    DEFAULT_ENV_FILE_NAME,
+    SYSTEM_LISTENERS,
+    SYSTEM_STORE,
+    SYSTEM_STORE_NAME
+} from "./app_config";
+import {fs, $} from "../utils";
+import {RuntimeException} from "./exception";
 
 const events = require('../store/system').events
 
 export class AppFactory {
 
+    private envFileNamePattern: RegExp = /^[A-z\d.-_]+(\.ts|\.js)$/
+
+    private tsConfigFileName: string = 'tsconfig.json'
+
+    private _env: AppEnvInterface
+
     constructor(protected _app: App) {
+    }
+
+    get baseDir() {
+        return fs.isFile(fs.path(this._app.rootDir, this.tsConfigFileName)) ? this._app.rootDir : process.cwd()
+    }
+
+    get env(): AppEnvInterface {
+        return this._env ||= {
+            data: this.envData as AppConfigInterface,
+            tsConfig: this.tsConfig
+        }
+    }
+
+    get envData(): AppConfigInterface {
+        const data = fs.include(this.envFile, {
+            log: false,
+            skipExt: true,
+            error: () => {
+                throw new RuntimeException(`No environment data found on the path "${this.envFile}"`)
+            }
+        })
+        return $.isPlainObject(data) ? data : {}
+    }
+
+    get envFileName() {
+        const name = this._app.config.get.envFileName || DEFAULT_ENV_FILE_NAME
+        if (!name.match(this.envFileNamePattern))
+            throw new RuntimeException(
+                `The environment file name "${name}" does not have a valid name or extension (.js or .ts).`
+                + ' Check the configuration parameter "envFileName".'
+            )
+        return name
+    }
+
+    get envFile() {
+        return fs.path(this._app.rootDir, this.envFileName)
+    }
+
+    get tsConfig() {
+        return fs.json(fs.path(this.baseDir, this.tsConfigFileName)) ?? {}
     }
 
     get storeData() {
@@ -50,8 +104,7 @@ export class AppFactory {
     }
 
     createLoader(name: AppLoaders): AppLoader {
-        const loader = this._app.config.getStrict(`loaders.${name}`)
-        return Reflect.construct(loader, [this._app])
+        return Reflect.construct(this._app.config.getStrict(`loaders.${name}`), [this._app])
     }
 
 }

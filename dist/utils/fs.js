@@ -9,10 +9,26 @@ const dir = (directory) => {
     let results = [];
     const list = fs.readdirSync(directory);
     list.forEach(function (file) {
-        file = directory + '/' + file;
+        file = _path.resolve(directory, file);
         isDir(file) ? results = results.concat(dir(file)) : (isFile(file) && results.push(file));
     });
     return results;
+};
+const rmDir = (directory, callback) => {
+    if (!isDir(directory))
+        return callback === null || callback === void 0 ? void 0 : callback();
+    try {
+        if ("rmdirSync" in fs) {
+            fs.rmdirSync(directory, { recursive: true });
+            isDir(directory) ? callback === null || callback === void 0 ? void 0 : callback(`Could not delete directory "${directory}"`) : callback === null || callback === void 0 ? void 0 : callback();
+        }
+        else {
+            fs.rm(directory, { recursive: true }, (err) => callback === null || callback === void 0 ? void 0 : callback(err));
+        }
+    }
+    catch (e) {
+        callback === null || callback === void 0 ? void 0 : callback(e);
+    }
 };
 const write = (path, data = '') => {
     fs.writeFileSync(path, data);
@@ -27,11 +43,9 @@ const json = (path) => {
     try {
         if (isFile(path))
             return JSON.parse(fs.readFileSync(path, 'utf8'));
-        return false;
     }
     catch (e) {
         console.error(e);
-        return false;
     }
 };
 const read = (path) => isFile(path) ? fs.readFileSync(path, 'utf8') : null;
@@ -44,13 +58,16 @@ const copy = (src, dest, callback = (() => undefined), chmod) => {
     }
     return false;
 };
-const include = (path, silent = false) => {
+const include = (path, params = { log: true }) => {
     try {
-        return require(path);
+        params.skipExt && (path = path.replace(/\.[a-z\d]+$/, ''));
+        const data = require(path);
+        params.success && params.success(data);
+        return data;
     }
     catch (e) {
-        silent || console.error(`Failed to load data from path "${path}".`);
-        silent || console.error(e);
+        params.error && params.error(e);
+        params.log && console.error(`Failed to load data from path "${path}".`, e);
         return null;
     }
 };
@@ -66,7 +83,8 @@ const getSource = (path, sourceProtoObject) => {
 };
 const filename = (path) => isFile(path) ? _path.basename(path) : null;
 const parseFile = (path) => isFile(path) ? _path.parse(path) : {};
-const formatPath = (path) => index_1.$.trimPath(path).replace('\\', '/');
+const formatPath = (path) => index_1.$.trimPath(path !== null && path !== void 0 ? path : '').replace(/\\/g, '/').replace(/\/$/, '');
+const path = (path, to = '') => _path.resolve(path, to);
 module.exports = {
     system: fs,
     stat,
@@ -83,6 +101,8 @@ module.exports = {
     mkdir,
     mkDeepDir,
     getSource,
-    include
+    include,
+    path,
+    rmDir,
 };
 //# sourceMappingURL=fs.js.map

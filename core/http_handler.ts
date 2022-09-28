@@ -68,7 +68,9 @@ export class HttpHandler {
 
         if (CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod) {
 
-            throw new HttpException(this.httpClient.getHttpResponse({status: 400}))
+            throw new HttpException('The current HTTP method receives no response from the request method.', {
+                status: 400
+            })
         }
 
         return action

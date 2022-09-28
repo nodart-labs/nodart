@@ -6,8 +6,10 @@ export = async (app: App, http: BaseHttpResponseInterface) => {
 
     const response = http.responseData
 
+    const content = HttpClient.getHttpResponseDataContent(response)
+
     http.response.writeHead(response.status, {'Content-Type': response.contentType})
 
-    http.response.end(HttpClient.getHttpResponseDataContent(response))
+    http.response.end(content)
 
 }

@@ -1,7 +1,7 @@
 export type Command = {
     command: string,
     action: string,
-    options: { [key: string]: any }
+    options: { [key: string]: any },
 }
 
 export type CommandExecutor = Function | { [key: string]: any }
