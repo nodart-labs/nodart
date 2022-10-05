@@ -2,6 +2,7 @@ import {AppLoader} from "../core/app_loader";
 import {Controller} from "../core/controller"
 import {HttpClient} from "../core/http_client";
 import {RouteData} from "../interfaces/router";
+import {Service} from "../core/service";
 
 export class ControllerLoader extends AppLoader {
 
@@ -12,8 +13,6 @@ export class ControllerLoader extends AppLoader {
     protected _http: HttpClient
 
     protected _route: RouteData
-
-    protected _target: Controller
 
     protected get targetType() {
 
@@ -40,7 +39,19 @@ export class ControllerLoader extends AppLoader {
 
     onGetDependency(target: any): void {
 
-        this.serviceScope = {controller: this._target}
+        if (target instanceof Service && this._pushDependency(target) && this._target instanceof Controller) {
+
+            const controller = this._target
+
+            this.serviceScope = {
+                controller,
+                model: controller.model,
+                service: controller.service,
+                http: controller.http,
+                route: controller.route,
+                session: controller.session
+            }
+        }
 
         super.onGetDependency(target)
     }

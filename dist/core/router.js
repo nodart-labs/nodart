@@ -9,7 +9,7 @@ class Router {
         this._routeParamEntryPointer = ':';
     }
     httpRoute(http) {
-        const { pathname } = http.parseURL;
+        const { pathname, query } = http.parseURL;
         const route = {
             route: '',
             name: '',
@@ -17,38 +17,38 @@ class Router {
             action: '',
             pathname,
             params: {},
+            query,
         };
         for (let [routeName, routeData] of Object.entries(this._routes)) {
-            const data = this.findRoute(routeData, pathname);
+            const data = this.findRoute(routeData, http.parseURL);
             if (data)
                 return Object.assign(route, data, { route: routeName });
         }
         return route;
     }
-    findRoute(routeData, urlPath) {
-        urlPath = utils_1.$.trimPath(urlPath);
-        const urlPathSplit = urlPath.split('/');
+    findRoute(routeData, url) {
+        url.pathname = utils_1.$.trimPath(url.pathname);
+        const urlPathSplit = url.pathname.split('/');
         if (typeof routeData === 'string')
-            return this.getRouteObject(routeData, urlPath, urlPathSplit);
+            return this.getRouteObject(routeData, url.pathname, urlPathSplit);
+        Array.isArray(routeData) || (routeData = [routeData]);
         for (let route of routeData) {
             route instanceof Object || (route = { path: route });
-            const data = this.getRouteObject(route.path, urlPath, urlPathSplit);
+            const data = this.getRouteObject(route.path, url.pathname, urlPathSplit);
             if (data) {
                 if (false === this.fetchRoutePathEntryParamTypes(route, data.params))
                     return;
+                data.query = url.query;
                 return Object.assign(Object.assign({}, route), data);
             }
         }
-    }
-    routePathHasParamEntry(path) {
-        return path.includes(this._routeParamEntryPointer);
     }
     getRouteObject(path, urlPath, urlPathSplit) {
         var _a;
         path = utils_1.$.trimPath(path);
         if (path === urlPath)
             return { path, pathname: urlPath, params: {} };
-        if (false === this.routePathHasParamEntry(path))
+        if (false === path.includes(this._routeParamEntryPointer))
             return;
         const pathSplit = path.split('/');
         const params = {};
@@ -77,7 +77,7 @@ class Router {
         return { path, params, pathname: urlPath };
     }
     parseRoutePathEntryParam(pathEntry) {
-        const match = pathEntry.match(this._retrieveRouteParamPattern); // /^(:(\+)?([a-z\d_]+)(\?)?)|(\*)$/i
+        const match = pathEntry.match(this._retrieveRouteParamPattern); // /^:(\+)?([a-z\d_]+)(\?)?$/i
         return {
             param: match === null || match === void 0 ? void 0 : match[2],
             isOptional: !!(match === null || match === void 0 ? void 0 : match[3]),

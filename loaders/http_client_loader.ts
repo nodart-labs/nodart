@@ -2,11 +2,7 @@ import {App} from "../core/app";
 import {AppLoader} from "../core/app_loader";
 import {HttpClient} from "../core/http_client";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
-import {
-    HttpResponseData,
-    HttpClientConfigInterface,
-    BaseHttpResponseHandlerInterface
-} from "../interfaces/http";
+import {HttpResponseData, HttpClientConfigInterface, BaseHttpResponseHandlerInterface} from "../interfaces/http";
 
 export class HttpClientLoader extends AppLoader {
 
@@ -23,7 +19,11 @@ export class HttpClientLoader extends AppLoader {
         return HttpClient
     }
 
-    protected _onCall(target: BaseHttpResponseHandlerInterface, args?: any[]) {
+    protected _onCall(target: BaseHttpResponseHandlerInterface, args?: [
+        request: Http2ServerRequest,
+        response: Http2ServerResponse,
+        config: HttpClientConfigInterface
+    ]) {
         this._request = args?.[0]
         this._response = args?.[1]
         this._config = args?.[2]
@@ -34,6 +34,8 @@ export class HttpClientLoader extends AppLoader {
         const client = new HttpClient(this._request, this._response, this._config)
 
         const app = this._app
+
+        client.host = this._app.host
 
         client.setResponseData = async function (data: HttpResponseData) {
             await App.system.listen({

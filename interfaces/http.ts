@@ -15,24 +15,33 @@ export type HttpResponseData = {
 }
 
 export type HttpURL = {
-    protocol: string,
-    slashes: string,
-    auth: string,
-    host: string,
-    port: string,
-    hostname: string,
-    hash: string,
-    search: string,
-    query: object,
-    pathname: string,
-    path: string,
-    href: string
+    pathname: string
+    protocol?: string
+    slashes?: string
+    auth?: string
+    host?: string
+    port?: number
+    hostname?: string
+    hash?: string
+    search?: string
+    query?: object
+    path?: string
+    href?: string
+    [addon: string]: any
+}
+
+export type HttpHost = {
+    protocol: string
+    host: string
+    port: number
+    hostname?: string
 }
 
 export const HTTP_CONTENT_MIME_TYPES = Object.freeze({
     html: 'text/html',
     htm: 'text/html',
     text: 'text/plain; charset=utf-8',
+    txt: 'text/plain; charset=utf-8',
     js: 'text/javascript',
     css: 'text/css',
     json: 'application/json',
@@ -42,9 +51,13 @@ export const HTTP_CONTENT_MIME_TYPES = Object.freeze({
     gif: 'image/gif',
     svg: 'image/svg+xml',
     wav: 'audio/wav',
+    mp3: 'audio/mpeg',
+    aac: 'audio/aac',
     mp4: 'video/mp4',
+    mpeg: 'video/mpeg',
     avi: 'video/x-msvideo',
     woff: 'application/font-woff',
+    woff2: 'application/font-woff2',
     ttf: 'application/font-ttf',
     eot: 'application/vnd.ms-fontobject',
     otf: 'application/font-otf',
@@ -52,15 +65,15 @@ export const HTTP_CONTENT_MIME_TYPES = Object.freeze({
 })
 
 export type HttpContentExtensions =
-    | 'html' | 'htm' | 'text' | 'js' | 'css' | 'json' | 'png' | 'ico' | 'jpg' | 'gif'
-    | 'svg' | 'wav' | 'mp4' | 'avi' | 'woff' | 'ttf' | 'eot' | 'otf' | 'wasm' | string
+    | 'html' | 'htm' | 'text' | 'txt' | 'js' | 'css' | 'json' | 'png' | 'ico' | 'jpg' | 'gif'
+    | 'svg' | 'wav' | 'mp3' | 'aac' | 'mp4' | 'mpeg' | 'avi' | 'woff'| 'woff2' | 'ttf' | 'eot' | 'otf' | 'wasm' | string
 
 export type HttpFileMimeType = 'application/octet-stream' | string
 
-export type HttpMimeTypes = { [K in HttpContentExtensions]: string }
+export type HttpMimeTypes = { [K in HttpContentExtensions]?: string }
 
 export interface HttpClientConfigInterface {
-    mimeTypes?: HttpMimeTypes & { [extension: string]: string }
+    mimeTypes?: HttpMimeTypes
     fileMimeType?: HttpFileMimeType
 }
 
@@ -73,6 +86,7 @@ export interface BaseHttpResponseInterface extends BaseExceptionInterface {
 export interface BaseHttpResponseHandlerInterface extends BaseHttpResponseInterface {
     setResponseData(data: HttpResponseData)
     getHttpResponse(assignData?: HttpResponseData): BaseHttpResponseInterface
+    responseIsSent: boolean
 }
 
 export interface HttpResponseDataInterface {

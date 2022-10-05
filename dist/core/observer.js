@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.observable = exports.observe = exports.Observer = void 0;
+exports.Observer = void 0;
 class Observer {
     constructor(observable = {}, handlers) {
         this.observable = observable;
@@ -29,14 +29,14 @@ class Observer {
         return Observable.get(this.observable, this);
     }
     pull(data) {
-        let { prop, source } = data;
+        const { prop, source } = data;
         return this._getter ? this._getter(prop, data) : Array.isArray(source) ? source[prop] : source;
     }
     push(data) {
-        let { prop, value } = data;
+        const { prop, value } = data;
         return this._setter ? this._setter(prop, value, data) : value;
     }
-    isObject(data) {
+    static isObject(data) {
         return !Array.isArray(data)
             && typeof data !== 'function'
             && data instanceof Object
@@ -51,7 +51,7 @@ class Observable {
         return Observable._stackPointer;
     }
     static get(source, observer, path = '', pathDelim = '') {
-        pathDelim || (pathDelim = (Math.random() * 100).toString());
+        pathDelim || (pathDelim = require('crypto').randomBytes(10).toString('hex'));
         return new Proxy(source, {
             set: (t, p, value) => {
                 path = setPath(p, path, pathDelim);
@@ -60,54 +60,20 @@ class Observable {
             },
             get: (t, p) => {
                 const isStackPointer = Observable.isStackPointer(source, p);
-                const isTarget = isStackPointer || !observer.isObject(source[p]) || Object.keys(source[p]).length === 0;
+                const isTarget = isStackPointer || !Observer.isObject(source[p]) || Object.keys(source[p]).length === 0;
                 isStackPointer || (path = setPath(p, path, pathDelim));
-                const handle = () => {
-                    const prop = isStackPointer ? path.split(pathDelim).at(-1) : p;
-                    const data = isStackPointer
-                        ? source[p]
-                        : observer.pull({ prop, source, path: getPath(path, pathDelim), isTarget });
-                    return source[p] = data;
-                };
-                return isTarget ? handle() : Observable.get(handle(), observer, path, pathDelim);
+                const prop = isStackPointer && path ? path.split(pathDelim).at(-1) : p;
+                const descriptor = { prop, source, path: getPath(path, pathDelim), isTarget };
+                source[prop] = observer.pull(descriptor);
+                return descriptor.isTarget ? source[prop] : Observable.get(source[prop], observer, path, pathDelim);
             }
         });
     }
     static isStackPointer(source, prop) {
-        if ((Array.isArray(source) && isNaN(+prop)) || (source instanceof Object && !source.hasOwnProperty(prop)))
-            return true;
-        return Observable.stackPointer === prop && !(prop in source);
+        return ((Array.isArray(source) && isNaN(+prop))
+            || (source instanceof Object && !source.hasOwnProperty(prop)))
+            || Observable.stackPointer === prop && !(prop in source);
     }
 }
 Observable._stackPointer = 'stack';
-function observe() {
-    return function (target, propertyKey) {
-        const value = target[propertyKey];
-        Object.defineProperty(target, propertyKey, {
-            get: function () {
-                return new Observer(value);
-            },
-            set: function () {
-            },
-            configurable: true,
-            enumerable: true
-        });
-    };
-}
-exports.observe = observe;
-function observable(handlers) {
-    return function (target, propertyKey) {
-        const value = target[propertyKey];
-        Object.defineProperty(target, propertyKey, {
-            get: function () {
-                return new Observer(value, handlers).get;
-            },
-            set: function () {
-            },
-            configurable: true,
-            enumerable: true
-        });
-    };
-}
-exports.observable = observable;
 //# sourceMappingURL=observer.js.map

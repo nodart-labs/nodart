@@ -3,14 +3,20 @@ const index_1 = require("./index");
 const fs = require('fs');
 const _path = require("path");
 const stat = (path) => fs.existsSync(path) ? fs.statSync(path) : null;
-const dir = (directory) => {
+const dir = (directory, callback) => {
     if (!isDir(directory))
         return [];
     let results = [];
     const list = fs.readdirSync(directory);
     list.forEach(function (file) {
-        file = _path.resolve(directory, file);
-        isDir(file) ? results = results.concat(dir(file)) : (isFile(file) && results.push(file));
+        file = path(directory, file);
+        if (isDir(file)) {
+            results = results.concat(dir(file, callback));
+            callback === null || callback === void 0 ? void 0 : callback({ directory: file });
+            return;
+        }
+        results.push(file);
+        callback === null || callback === void 0 ? void 0 : callback({ file });
     });
     return results;
 };
@@ -60,7 +66,7 @@ const copy = (src, dest, callback = (() => undefined), chmod) => {
 };
 const include = (path, params = { log: true }) => {
     try {
-        params.skipExt && (path = path.replace(/\.[a-z\d]+$/, ''));
+        params.skipExt && (path = skipExtension(path));
         const data = require(path);
         params.success && params.success(data);
         return data;
@@ -85,6 +91,7 @@ const filename = (path) => isFile(path) ? _path.basename(path) : null;
 const parseFile = (path) => isFile(path) ? _path.parse(path) : {};
 const formatPath = (path) => index_1.$.trimPath(path !== null && path !== void 0 ? path : '').replace(/\\/g, '/').replace(/\/$/, '');
 const path = (path, to = '') => _path.resolve(path, to);
+const skipExtension = (path) => path.replace(/\.[a-z\d]+$/i, '');
 module.exports = {
     system: fs,
     stat,
@@ -104,5 +111,6 @@ module.exports = {
     include,
     path,
     rmDir,
+    skipExtension
 };
 //# sourceMappingURL=fs.js.map

@@ -16,6 +16,8 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
     protected _serviceScope: ServiceScope = {}
 
+    protected _dependencies: any[] = []
+
     get serviceScope() {
 
         return {...this._serviceScope, ...{app: this._app}}
@@ -50,9 +52,30 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
         return this._target
     }
 
+    setTarget(type: any): void {
+
+        this._target = type
+    }
+
     onGetDependency(target: any): void {
 
         target instanceof Service && target.setScope(this.serviceScope)
+
+        this._pushDependency(target)
+    }
+
+    protected _hasDependency(target: any): boolean {
+
+        return !!(target?.constructor && this._dependencies.includes(target.constructor))
+    }
+
+    protected _pushDependency(target: any): boolean {
+
+        if (!target?.constructor || this._hasDependency(target)) return false
+
+        this._dependencies.push(target.constructor)
+
+        return true
     }
 
     onGetProperty(property: string, value: any, reference?: string): any {

@@ -7,7 +7,8 @@ import {Engine} from "./engine";
 import {Model} from "./model";
 import {uses, injects} from "./di";
 import {RouteData} from "../interfaces/router";
-import {JSONObjectInterface, ObjectDeepNestedGeneric} from "../interfaces/object";
+import {ObjectDeepNestedGeneric} from "../interfaces/object";
+import {HttpRespond} from "./http_respond";
 
 export const CONTROLLER_INITIAL_ACTION = 'init'
 export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head']
@@ -15,7 +16,7 @@ export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete',
 @uses('service')
 @uses('model')
 
-export abstract class Controller implements HttpAcceptorInterface {
+export abstract class Controller extends HttpRespond implements HttpAcceptorInterface {
 
     @injects('service') readonly service: ObjectDeepNestedGeneric<Service | typeof Service>
 
@@ -26,12 +27,14 @@ export abstract class Controller implements HttpAcceptorInterface {
     protected _engine: Engine
 
     protected constructor(
-        readonly app?: App,
-        readonly http?: HttpClient,
-        readonly route?: RouteData) {
+        readonly app: App,
+        readonly http: HttpClient,
+        readonly route: RouteData) {
+
+        super(http)
     }
 
-    abstract init(): any
+    abstract init(): void
 
     abstract get(...args): any
 
@@ -46,22 +49,11 @@ export abstract class Controller implements HttpAcceptorInterface {
     abstract head(...args): any
 
     get session() {
-        return this._session ||= <Session>this.app.get('session').call().load(this.http)
+        return this._session ||= <Session>this.app.get('session').call([this.http])
     }
 
     get engine() {
         return this._engine ||= <Engine>this.app.get('engine').call()
-    }
-
-    get send() {
-        return {
-            data: (body: JSONObjectInterface | string, status?: number, contentType?: string) => {
-                this.http.send(body, status, contentType)
-            },
-            view: (template: string, args?: object, status?: number, callback?: Function) => {
-                this.http.sendHtml(this.engine.view(template, args, callback), status)
-            }
-        }
     }
 
 }

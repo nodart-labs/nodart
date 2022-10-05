@@ -25,6 +25,7 @@ class HttpClientLoader extends app_loader_1.AppLoader {
     _resolve(target, args) {
         const client = new http_client_1.HttpClient(this._request, this._response, this._config);
         const app = this._app;
+        client.host = this._app.host;
         client.setResponseData = function (data) {
             return __awaiter(this, void 0, void 0, function* () {
                 yield app_1.App.system.listen({

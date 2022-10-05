@@ -10,7 +10,7 @@ class SessionLoader extends app_loader_1.AppLoader {
     }
     _resolve(target, args) {
         var _a;
-        return new session_1.Session((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this._app.config.get.session);
+        return new session_1.Session((_a = args === null || args === void 0 ? void 0 : args[1]) !== null && _a !== void 0 ? _a : this._app.config.get.session).load(args[0]);
     }
 }
 exports.SessionLoader = SessionLoader;

@@ -4,7 +4,7 @@
 export interface SessionConfigInterface {
     cookieName?: string,
     requestKey?: string, // requestKey overrides cookieName for the key name added to the request object.
-    secret: string, // should be a large unguessable string or Buffer
+    secret: string | Buffer, // should be a large unguessable string or Buffer
     duration?: number,
     activeDuration?: number, // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds
     // Advanced Cryptographic Options

@@ -1,8 +1,10 @@
 import {App} from '../core/app'
-import {BaseHttpResponseInterface} from "../interfaces/http";
+import {BaseHttpResponseHandlerInterface} from "../interfaces/http";
 import {HttpClient} from "../core/http_client";
 
-export = async (app: App, http: BaseHttpResponseInterface) => {
+export = async (app: App, http: BaseHttpResponseHandlerInterface) => {
+
+    if (http.responseIsSent) return
 
     const response = http.responseData
 

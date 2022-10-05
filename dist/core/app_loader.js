@@ -19,6 +19,7 @@ class AppLoader {
         this._pathSuffix = '';
         this._targetPath = '';
         this._serviceScope = {};
+        this._dependencies = [];
     }
     get serviceScope() {
         return Object.assign(Object.assign({}, this._serviceScope), { app: this._app });
@@ -38,8 +39,21 @@ class AppLoader {
     getTarget() {
         return this._target;
     }
+    setTarget(type) {
+        this._target = type;
+    }
     onGetDependency(target) {
         target instanceof service_1.Service && target.setScope(this.serviceScope);
+        this._pushDependency(target);
+    }
+    _hasDependency(target) {
+        return !!((target === null || target === void 0 ? void 0 : target.constructor) && this._dependencies.includes(target.constructor));
+    }
+    _pushDependency(target) {
+        if (!(target === null || target === void 0 ? void 0 : target.constructor) || this._hasDependency(target))
+            return false;
+        this._dependencies.push(target.constructor);
+        return true;
     }
     onGetProperty(property, value, reference) {
     }

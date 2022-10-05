@@ -31,7 +31,7 @@ export class DIContainer implements PropertyInterceptorInterface {
 
         if (!this.prototype?.constructor)
 
-            throw new RuntimeException('The DI Container must be applied to a valid Class prototype\'s constructor.')
+            throw new RuntimeException('The constructor of a legitimate Class prototype must be used with the DI Container.')
     }
 
     get references() {
@@ -50,7 +50,7 @@ export class DIContainer implements PropertyInterceptorInterface {
 
     static create(target: any) {
         const container = new DIContainer(target)
-        const hash = (Math.random() * 100).toString().replace('.', '')
+        const hash = require('crypto').randomBytes(10).toString('hex')
         const key = DIContainer.setOrigin(hash, target.prototype.constructor, container)
         return {key, container}
     }
@@ -186,9 +186,9 @@ export class DIContainerDependency {
         return this.initial[propertyKey]
     }
 
-    intercept(propertyKey: string, value: any, reference?: any) {
+    intercept(propertyKey: string, value: any, reference?: string) {
 
-        const onGetProperty = this.container?.onGetProperty ?? {}
+        const onGetProperty = this.container?.onGetProperty as Function
 
         if (onGetProperty instanceof Function) return onGetProperty(propertyKey, value, reference)
 
@@ -339,6 +339,8 @@ export class DependencyInterceptor {
         const observer = new Observer(value, {
 
             get: (key: string, descriptor: ObserverDescriptor) => {
+
+                this.interceptor.onWatchProperty?.(property, descriptor)
 
                 const {prop, path, source, isTarget} = descriptor
 

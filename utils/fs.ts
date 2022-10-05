@@ -7,7 +7,7 @@ const _path = require("path")
 
 const stat = (path: string) => fs.existsSync(path) ? fs.statSync(path) : null
 
-const dir = (directory: string): string[] => {
+const dir = (directory: string, callback?: (data: {file?: string, directory?: string}) => void): string[] => {
 
     if (!isDir(directory)) return []
 
@@ -16,8 +16,21 @@ const dir = (directory: string): string[] => {
     const list = fs.readdirSync(directory)
 
     list.forEach(function (file) {
-        file = _path.resolve(directory, file)
-        isDir(file) ? results = results.concat(dir(file)) : (isFile(file) && results.push(file))
+
+        file = path(directory, file)
+
+        if (isDir(file)) {
+
+            results = results.concat(dir(file, callback))
+
+            callback?.({directory: file})
+
+            return
+        }
+
+        results.push(file)
+
+        callback?.({file})
     })
 
     return results
@@ -87,7 +100,7 @@ const include = (
     } = {log: true}
 ): any | null => {
     try {
-        params.skipExt && (path = path.replace(/\.[a-z\d]+$/, ''))
+        params.skipExt && (path = skipExtension(path))
         const data = require(path)
         params.success && params.success(data)
         return data
@@ -120,6 +133,8 @@ const formatPath = (path: string) => $.trimPath(path ?? '').replace(/\\/g, '/').
 
 const path = (path: string, to: string = '') => _path.resolve(path, to)
 
+const skipExtension = (path: string) => path.replace(/\.[a-z\d]+$/i, '')
+
 export = {
     system: fs,
     stat,
@@ -139,4 +154,5 @@ export = {
     include,
     path,
     rmDir,
+    skipExtension
 }

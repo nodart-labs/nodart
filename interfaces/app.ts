@@ -12,6 +12,8 @@ import {AppExceptionResolve} from "../core/app";
 export type AppLoaders =
     | 'app_builder'
     | 'http'
+    | 'http_service'
+    | 'http_respond'
     | 'controller'
     | 'model'
     | 'store'
@@ -54,11 +56,12 @@ export interface AppConfigInterface {
     staticIndex?: string
     cli?: CommandLineConfigInterface
     exception?: {
-        types?: {[K in AppExceptions]?: typeof Exception}
-        handlers?: {[K in AppExceptions]?: typeof ExceptionHandler}
+        types?: { [K in AppExceptions]?: typeof Exception }
+        handlers?: { [K in AppExceptions]?: typeof ExceptionHandler }
         log?: typeof ExceptionLog
         resolve?: typeof AppExceptionResolve
         template?: string | ((response: HttpResponseDataInterface) => string | void)  // Path to html (from views directory)
     }
+
     [addon: string]: any
 }

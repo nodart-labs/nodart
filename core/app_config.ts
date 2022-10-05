@@ -18,6 +18,8 @@ import {ExceptionLog} from "./exception";
 import {ExceptionLogLoader} from "../loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
 import {AppBuilderLoader} from "../loaders/app_builder_loader";
+import {HttpServiceLoader} from "../loaders/http_service_loader";
+import {HttpRespondLoader} from "../loaders/http_respond_loader";
 
 const STORE = require('../store/system')
 
@@ -60,7 +62,7 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     routes: {},
     engine: {},
     session: {
-        secret: require('crypto').randomBytes(20).toString('hex')
+        secret: undefined
     },
     orm: {},
     database: DEFAULT_DATABASE_REPOSITORY,
@@ -81,6 +83,8 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     loaders: {
         app_builder: AppBuilderLoader,
         http: HttpClientLoader,
+        http_service: HttpServiceLoader,
+        http_respond: HttpRespondLoader,
         controller: ControllerLoader,
         model: ModelLoader,
         store: StoreLoader,

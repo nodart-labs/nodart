@@ -8,29 +8,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Controller = exports.CONTROLLER_HTTP_ACTIONS = exports.CONTROLLER_INITIAL_ACTION = void 0;
 const di_1 = require("./di");
+const http_respond_1 = require("./http_respond");
 exports.CONTROLLER_INITIAL_ACTION = 'init';
 exports.CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head'];
-let Controller = class Controller {
+let Controller = class Controller extends http_respond_1.HttpRespond {
     constructor(app, http, route) {
+        super(http);
         this.app = app;
         this.http = http;
         this.route = route;
     }
     get session() {
-        return this._session || (this._session = this.app.get('session').call().load(this.http));
+        return this._session || (this._session = this.app.get('session').call([this.http]));
     }
     get engine() {
         return this._engine || (this._engine = this.app.get('engine').call());
-    }
-    get send() {
-        return {
-            data: (body, status, contentType) => {
-                this.http.send(body, status, contentType);
-            },
-            view: (template, args, status, callback) => {
-                this.http.sendHtml(this.engine.view(template, args, callback), status);
-            }
-        };
     }
 };
 __decorate([

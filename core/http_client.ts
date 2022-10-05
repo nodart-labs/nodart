@@ -3,14 +3,18 @@ import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {
     HttpResponseData,
     HttpURL,
+    HttpHost,
+    HttpContentExtensions,
+    HttpMimeTypes,
     BaseHttpResponseInterface,
     HttpClientConfigInterface,
     BaseHttpResponseHandlerInterface,
-    HttpResponseDataInterface
+    HttpResponseDataInterface,
+    HTTP_STATUS_CODES,
+    HTTP_CONTENT_MIME_TYPES
 } from "../interfaces/http";
 import {JSONObjectInterface} from "../interfaces/object";
 import {RuntimeException} from "./exception";
-import {HTTP_STATUS_CODES, HTTP_CONTENT_MIME_TYPES} from "../interfaces/http";
 
 export const DEFAULT_FILE_MIME_TYPE = 'application/octet-stream'
 export const DEFAULT_CONTENT_TYPE = 'application/json'
@@ -19,11 +23,18 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
 
     protected _dataURL: HttpURL
 
+    protected _host: HttpHost
+
     responseData: HttpResponseData
 
     exceptionMessage: string
 
     exceptionData: any
+
+    get responseIsSent(): boolean {
+
+        return this.response.writableEnded || this.response.writableFinished
+    }
 
     constructor(
         readonly request: Http2ServerRequest,
@@ -38,13 +49,21 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     }
 
     get parseURL(): HttpURL {
-        return this._dataURL ||= HttpClient.getParsedURL(this.request.url)
+        return this._dataURL ||= HttpClient.getParsedURL(
+            this._host
+                ? HttpClient.getURI(this._host) + '/' + $.trimPath(this.request.url)
+                : this.request.url
+        )
+    }
+
+    set host(data: HttpHost) {
+        this._host = data
     }
 
     send(data: JSONObjectInterface | string, status: number = HTTP_STATUS_CODES.OK, contentType?: string) {
         this.setResponseData({
             status,
-            contentType: contentType || this.config.mimeTypes.json,
+            contentType: contentType || HttpClient.getDefaultContentType('json', this.config.mimeTypes),
             content: {json: data}
         })
     }
@@ -52,7 +71,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     sendText(data: string, status: number = HTTP_STATUS_CODES.OK, contentType?: string) {
         this.setResponseData({
             status,
-            contentType: contentType || this.config.mimeTypes.text,
+            contentType: contentType || HttpClient.getDefaultContentType('text', this.config.mimeTypes, 'text/plain'),
             content: {text: data}
         })
     }
@@ -60,19 +79,24 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     sendHtml(content: string, status: number = HTTP_STATUS_CODES.OK, contentType?: string) {
         this.setResponseData({
             status,
-            contentType: contentType || this.config.mimeTypes.html,
+            contentType: contentType || HttpClient.getDefaultContentType('html', this.config.mimeTypes, 'text/html'),
             content: {html: content}
         })
     }
 
     sendFile(filePath: string, contentType?: string) {
+
         fs.system.readFile(filePath, (err, buffer) => {
+
             if (err) {
                 this.exceptionMessage = `Could not read data from file ${filePath}.`
                 this.exceptionData = err
                 throw new RuntimeException(this)
             }
-            contentType ||= (this.config.mimeTypes[$.trim(fs.parseFile(filePath).ext ?? '', '.')] ?? DEFAULT_FILE_MIME_TYPE)
+
+            const ext = $.trim(fs.parseFile(filePath).ext ?? '', '.')
+
+            contentType ||= HttpClient.getDefaultContentType(ext, this.config.mimeTypes, DEFAULT_FILE_MIME_TYPE)
 
             this.setResponseData({content: {buffer}, contentType})
         })
@@ -92,17 +116,17 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         }
     }
 
-    static getParsedURL(url: string): HttpURL {
-        return require('url').parse(url, true)
-    }
-
     static getHttpResponseData(http: BaseHttpResponseInterface, assignData?: HttpResponseData): HttpResponseData {
 
         http.responseData ||= {}
+
         assignData?.content && (http.responseData.content = assignData?.content)
 
-        http.responseData.status = assignData?.status ?? http.responseData.status ?? http.response.statusCode ?? HTTP_STATUS_CODES.OK
-        http.responseData.contentType = assignData?.contentType ?? http.responseData.contentType ?? http.response.getHeader('content-type')
+        http.responseData.status = assignData?.status
+            ?? http.responseData.status ?? http.response.statusCode ?? HTTP_STATUS_CODES.OK
+
+        http.responseData.contentType = assignData?.contentType
+            ?? http.responseData.contentType ?? http.response.getHeader('content-type')
 
         HttpClient.getHttpResponseDataContent(http.responseData)
 
@@ -119,24 +143,18 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         && data.content[contentEntry] instanceof Object
         && (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]))
 
-        if (!data.contentType) {
-            switch (contentEntry) {
-                case 'json':
-                    data.contentType = DEFAULT_CONTENT_TYPE
-                    break
-                case 'text':
-                    data.contentType = 'text/plain'
-                    break
-                case 'html':
-                    data.contentType = 'text/html'
-                    break
-                case 'buffer':
-                    data.contentType = DEFAULT_FILE_MIME_TYPE
-                    break
-            }
-        }
+        data.contentType ||= HttpClient.getDefaultContentType(contentEntry)
 
         return data.content[contentEntry]
+    }
+
+    static getDefaultContentType(
+        entry: HttpContentExtensions | 'buffer',
+        mimeTypes: HttpMimeTypes = {},
+        defaultMimeType: string = DEFAULT_CONTENT_TYPE) {
+
+        const contentTypes = {buffer: DEFAULT_FILE_MIME_TYPE, ...HTTP_CONTENT_MIME_TYPES, ...mimeTypes}
+        return contentTypes[entry] ?? defaultMimeType
     }
 
     static getStatusCodeMessage(status: number): string {
@@ -155,5 +173,22 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         const content = HttpClient.getStatusCodeMessage(status)
 
         return {status, contentType, content}
+    }
+
+    static getParsedURL(url: string): HttpURL {
+
+        return require('url').parse(url, true)
+    }
+
+    static fetchHostData(data: HttpHost): HttpHost {
+
+        const {port, protocol, host, hostname} = HttpClient.getParsedURL(HttpClient.getURI(data))
+
+        return {port, protocol, host, hostname}
+    }
+
+    static getURI(data: HttpHost) {
+
+        return `${$.trim(data.protocol, ':')}://${$.trim(data.host, ':' + data.port)}` + (data.port ? ':' + data.port : '')
     }
 }

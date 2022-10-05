@@ -14,12 +14,19 @@ const app_store_1 = require("./app_store");
 const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
 const router_1 = require("./router");
-const app_config_1 = require("./app_config");
 const exception_1 = require("./exception");
+const app_config_1 = require("./app_config");
+const http_client_1 = require("./http_client");
 const utils_1 = require("../utils");
 const events = require('../store/system').events;
+const DEFAULT_HOST = 'localhost';
 class App {
     constructor(config) {
+        this.httpServiceRoutes = [];
+        this._host = { port: null, protocol: null, host: null, hostname: null };
+        this._addHttpServiceRoute = (data) => {
+            this.httpServiceRoutes.push(data);
+        };
         this.config = new app_config_1.AppConfig().set(config);
         this.factory = new app_factory_1.AppFactory(this);
         this.di = new di_1.DIManager(this.config.getStrict('reference'), this);
@@ -48,18 +55,38 @@ class App {
             return this;
         });
     }
-    serve(port = 3000, protocol = 'http', host) {
-        require(protocol).createServer((req, res) => {
+    serve(port = 3000, protocol = 'http', host = DEFAULT_HOST) {
+        this._host = Object.freeze(http_client_1.HttpClient.fetchHostData({ port, protocol, host }));
+        return require(protocol).createServer((req, res) => {
             (() => __awaiter(this, void 0, void 0, function* () {
                 this.requestPayload && (yield this.requestPayload(req, res));
                 yield App.system.listen({ event: { [events.HTTP_REQUEST]: [this, req, res] } }).catch(exception => {
-                    const resolve = this.config.get.exception.resolve || AppExceptionResolve;
-                    new resolve(this, exception).resolveOnHttp(req, res);
+                    this._httpExceptionResolve(exception, req, res);
                 });
             }))();
-        }).listen(port, host, function () {
-            console.log(`server start at port ${port}.`, host ? `host: ${host}` : '');
-            console.log(`${protocol}://${host || 'localhost'}:${port}`);
+        }).listen(port, host, () => {
+            console.log(`server start at port ${port}.`, this.uri);
+        });
+    }
+    get host() {
+        return Object.assign({}, this._host);
+    }
+    get uri() {
+        return http_client_1.HttpClient.getURI(this.host);
+    }
+    get service() {
+        return {
+            http: () => {
+                const httpService = this.get('http_service').call();
+                httpService.subscribe(this._addHttpServiceRoute);
+                return httpService.httpAcceptor;
+            }
+        };
+    }
+    _httpExceptionResolve(exception, req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const resolve = this.config.get.exception.resolve || AppExceptionResolve;
+            yield new resolve(this, exception).resolveOnHttp(req, res);
         });
     }
     setHttpRequestPayload(payload) {
@@ -131,6 +158,8 @@ class AppExceptionResolve {
     }
     _sendHttpException(request, response) {
         var _a;
+        if (response.writableEnded || response.writableFinished)
+            return;
         const data = (_a = this._httpResponseData) !== null && _a !== void 0 ? _a : {};
         const contentType = data.contentType;
         Object.assign(data, { request, response });
@@ -168,7 +197,7 @@ class AppBuilder {
                 + ' in tsconfig.json file are both the same values.');
         utils_1.fs.rmDir(buildDir, (err) => {
             err || require('child_process').execFileSync('tsc', ['--build'], { shell: true, encoding: "utf-8" });
-            err && (onError === null || onError === void 0 ? void 0 : onError());
+            err && (onError === null || onError === void 0 ? void 0 : onError(err));
         });
     }
 }

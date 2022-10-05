@@ -1,4 +1,5 @@
 import {DIContainer} from "../core/di";
+import {ObserverGetter} from "./observer";
 
 export type DIContainerDependencyPayload = (instance: any, property: string, value?: any) => any
 
@@ -33,6 +34,8 @@ export type DIReferencePayload = (mediator: any, target: string, targetProps?: a
 export interface PropertyInterceptorInterface {
 
     onGetProperty: (property: string, value: any, reference?: string) => any
+
+    onWatchProperty?: ObserverGetter
 }
 
 export interface DependencyInterceptorInterface extends PropertyInterceptorInterface {

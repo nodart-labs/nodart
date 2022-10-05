@@ -5,83 +5,124 @@ import {Controller, CONTROLLER_INITIAL_ACTION, CONTROLLER_HTTP_ACTIONS} from "./
 import {DEFAULT_CONTROLLER_NAME} from "./app_config";
 import {AppLoader} from "./app_loader";
 import {ControllerLoader} from "../loaders/controller_loader";
-import {HttpException} from "./exception";
+import {HttpException, RuntimeException} from "./exception";
+import {object, $} from "../utils";
 
 export class HttpHandler {
 
-    readonly controllerLoader: ControllerLoader
+    protected _controller: Controller
 
-    private action: string
+    constructor(readonly app: App, readonly httpClient: HttpClient) {
+    }
 
-    constructor (
-        readonly app: App,
-        readonly httpClient: HttpClient) {
+    get controller(): Controller | null {
 
-        this.controllerLoader = <ControllerLoader>app.get('controller')
+        return this._controller instanceof Controller ? this._controller : this._controller = null
+    }
+
+    set controller(instance: Controller | null) {
+
+        this._controller = instance
+    }
+
+    static getControllerLoader(app: App, type?: typeof Controller): ControllerLoader {
+
+        const loader = app.get('controller') as ControllerLoader
+
+        if (type && false === object.isProtoConstructor(type, Controller)) {
+
+            throw new RuntimeException(
+                `HttpHandler: The type "${object.getProtoConstructor(type)?.name}" that was provided is an invalid Controller class.`
+            )
+        }
+
+        type && loader.setTarget(type)
+
+        return loader
     }
 
     getRoute() {
+
         return this.app.router.httpRoute(this.httpClient)
     }
 
     async getController(route?: RouteData, httpClient?: HttpClient): Promise<Controller | void> {
 
-        route ||= this.getRoute()
+        if (this.controller) return this.controller
 
-        httpClient ||= this.httpClient
+        route ??= this.getRoute()
 
-        const {path, action} = HttpHandler.getRoutePathData(route, this.controllerLoader)
+        httpClient ??= this.httpClient
+
+        const controller = HttpHandler.getControllerByRouteDescriptor(this.app, route, httpClient)
+
+        if (controller instanceof Controller) {
+
+            this.controller = controller
+
+            return this.controller
+        }
+
+        const loader = HttpHandler.getControllerLoader(this.app)
+
+        const {path, action} = HttpHandler.getControllerPathAndActionByRoute(route, loader)
 
         if (path) {
 
-            this.action = action
+            this.controller = await loader.require(path).call([httpClient, route])
 
-            return await this.controllerLoader.require(path).call([httpClient, route])
+            this.controller && (this.controller.route.action = action)
+
+            return this.controller
         }
     }
 
-    async runController(controller?: Controller, action?: string, args?: any[]): Promise<any> {
+    static getControllerByRouteDescriptor(app: App, route: RouteData, httpClient: HttpClient): Controller | void {
 
-        controller ||= await this.getController() as Controller
+        const controller = route.controller?.(route)
 
-        if (!(controller instanceof Controller)) {
+        if (controller) return HttpHandler.getControllerLoader(app, controller).call([httpClient, route])
+    }
 
-            throw new HttpException(this.httpClient.getHttpResponse({status: 404}))
-        }
+    async runController(): Promise<any> {
 
-        action = this.fetchControllerAction(controller, action || controller.route?.action)
+        const controller = this.controller ??= (await this.getController() as Controller)
 
-        args ||= (controller.route ? this.app.router.arrangeRouteParams(controller.route) : [])
+        if (!controller) throw new HttpException(this.httpClient.getHttpResponse({status: 404}))
+
+        const httpMethod = this.httpClient.request.method.toLowerCase()
+
+        const action = controller.route.action ||= httpMethod
 
         await controller[CONTROLLER_INITIAL_ACTION]()
 
-        controller.route && (controller.route.action = action)
+        if (action !== controller.route.action || controller.http.responseIsSent) return
 
-        if (controller[action] instanceof Function) return await controller[action].apply(controller, args)
-    }
+        if (CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod)
 
-    fetchControllerAction(controller: Controller, action?: string) {
+            throw new HttpException('The current HTTP method receives no response from the request method.', {status: 400})
 
-        const httpMethod = controller.http.request.method.toLowerCase()
+        const args = this.app.router.arrangeRouteParams(controller.route)
 
-        action ||= (this.action || httpMethod)
+        if (controller[action] instanceof Function) {
 
-        if (CONTROLLER_HTTP_ACTIONS.includes(action) && action !== httpMethod) {
+            const data = await controller[action].apply(controller, args)
 
-            throw new HttpException('The current HTTP method receives no response from the request method.', {
-                status: 400
-            })
+            if (controller.http.responseIsSent) return
+
+            if ($.isPlainObject(data) || typeof data === 'string') controller.send.data(data)
+
+            return data
         }
-
-        return action
     }
 
-    static getRoutePathData(route: RouteData, loader: AppLoader) {
+    static getControllerPathAndActionByRoute(route: RouteData, loader: AppLoader) {
 
         const data = {path: '', action: ''}
 
         if (route.route) {
             data.path = route.route
+            data.action = route.action ?? ''
             return data
         }
 

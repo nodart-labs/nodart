@@ -12,7 +12,7 @@ class DIContainer {
         this._references = {};
         this.prototype = target === null || target === void 0 ? void 0 : target.prototype;
         if (!((_a = this.prototype) === null || _a === void 0 ? void 0 : _a.constructor))
-            throw new exception_1.RuntimeException('The DI Container must be applied to a valid Class prototype\'s constructor.');
+            throw new exception_1.RuntimeException('The constructor of a legitimate Class prototype must be used with the DI Container.');
     }
     get references() {
         return Object.assign({}, this._references);
@@ -27,7 +27,7 @@ class DIContainer {
     }
     static create(target) {
         const container = new DIContainer(target);
-        const hash = (Math.random() * 100).toString().replace('.', '');
+        const hash = require('crypto').randomBytes(10).toString('hex');
         const key = DIContainer.setOrigin(hash, target.prototype.constructor, container);
         return { key, container };
     }
@@ -122,8 +122,8 @@ class DIContainerDependency {
         return this.initial[propertyKey];
     }
     intercept(propertyKey, value, reference) {
-        var _a, _b;
-        const onGetProperty = (_b = (_a = this.container) === null || _a === void 0 ? void 0 : _a.onGetProperty) !== null && _b !== void 0 ? _b : {};
+        var _a;
+        const onGetProperty = (_a = this.container) === null || _a === void 0 ? void 0 : _a.onGetProperty;
         if (onGetProperty instanceof Function)
             return onGetProperty(propertyKey, value, reference);
         return value;
@@ -227,6 +227,8 @@ class DependencyInterceptor {
     _observe(property, value, reference) {
         const observer = new observer_1.Observer(value, {
             get: (key, descriptor) => {
+                var _a, _b;
+                (_b = (_a = this.interceptor).onWatchProperty) === null || _b === void 0 ? void 0 : _b.call(_a, property, descriptor);
                 const { prop, path, source, isTarget } = descriptor;
                 if (isTarget) {
                     return this._interceptProperty(property, source, reference + '/' + (path.length ? path.join('/') + '/' : '') + prop.toString());

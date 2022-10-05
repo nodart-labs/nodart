@@ -1,25 +1,25 @@
+import {Controller} from "../core/controller";
+
 export type RouteEntry = {
     [name: string]: Route
 }
 
-export type Route = string | Array<string | RouteEntryObject>
+export type Route = string | RouteDescriptor | Array<string | RouteDescriptor>
 
-export type RouteEntryObject = {
+export type RouteDescriptor = {
     path: string,
     name?: string,
     action?: string,
+    controller?: (route: RouteData) => typeof Controller
     types?: {
         [paramName: string]: typeof Number | RegExp | ((value: any) => any)
     },
     [addon: string]: any
 }
 
-export type RouteData = {
-    path: string,
+export type RouteData = RouteDescriptor & {
     pathname: string,
     route?: string,
-    name?: string,
     params?: {[name: string]: string | number},
-    action?: string,
-    [addon: string]: any
+    query?: {[name: string]: any},
 }

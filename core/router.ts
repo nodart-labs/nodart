@@ -1,6 +1,7 @@
 import {$} from '../utils'
 import {HttpClient} from "./http_client";
-import {Route, RouteEntry, RouteEntryObject, RouteData} from "../interfaces/router";
+import {Route, RouteEntry, RouteDescriptor, RouteData} from "../interfaces/router";
+import {HttpURL} from "../interfaces/http";
 
 export class Router {
 
@@ -13,7 +14,7 @@ export class Router {
 
     httpRoute(http: HttpClient): RouteData {
 
-        const {pathname} = http.parseURL
+        const {pathname, query} = http.parseURL
 
         const route: RouteData = {
             route: '',
@@ -22,11 +23,12 @@ export class Router {
             action: '',
             pathname,
             params: {},
+            query,
         }
 
         for (let [routeName, routeData] of Object.entries(this._routes)) {
 
-            const data = this.findRoute(routeData, pathname)
+            const data = this.findRoute(routeData, http.parseURL)
 
             if (data) return Object.assign(route, data, {route: routeName})
         }
@@ -34,32 +36,31 @@ export class Router {
         return route
     }
 
-    findRoute(routeData: Route, urlPath: string): RouteData | void {
+    findRoute(routeData: Route, url: HttpURL): RouteData | void {
 
-        urlPath = $.trimPath(urlPath)
+        url.pathname = $.trimPath(url.pathname)
 
-        const urlPathSplit = urlPath.split('/')
+        const urlPathSplit = url.pathname.split('/')
 
-        if (typeof routeData === 'string') return this.getRouteObject(routeData, urlPath, urlPathSplit)
+        if (typeof routeData === 'string') return this.getRouteObject(routeData, url.pathname, urlPathSplit)
+
+        Array.isArray(routeData) || (routeData = [routeData])
 
         for (let route of routeData) {
 
             route instanceof Object || (route = {path: route})
 
-            const data = this.getRouteObject(route.path, urlPath, urlPathSplit)
+            const data = this.getRouteObject(route.path, url.pathname, urlPathSplit)
 
             if (data) {
 
                 if (false === this.fetchRoutePathEntryParamTypes(route, data.params)) return
 
+                data.query = url.query
+
                 return {...route, ...data}
             }
         }
-    }
-
-    routePathHasParamEntry(path: string) {
-
-        return path.includes(this._routeParamEntryPointer)
     }
 
     getRouteObject(path: string, urlPath: string, urlPathSplit: string[]): RouteData | void {
@@ -68,7 +69,7 @@ export class Router {
 
         if (path === urlPath) return {path, pathname: urlPath, params: {}}
 
-        if (false === this.routePathHasParamEntry(path)) return
+        if (false === path.includes(this._routeParamEntryPointer)) return
 
         const pathSplit = path.split('/')
 
@@ -107,7 +108,7 @@ export class Router {
 
     parseRoutePathEntryParam(pathEntry: string) {
 
-        const match = pathEntry.match(this._retrieveRouteParamPattern) // /^(:(\+)?([a-z\d_]+)(\?)?)|(\*)$/i
+        const match = pathEntry.match(this._retrieveRouteParamPattern) // /^:(\+)?([a-z\d_]+)(\?)?$/i
 
         return {
             param: match?.[2],
@@ -116,7 +117,7 @@ export class Router {
         }
     }
 
-    fetchRoutePathEntryParamTypes(route: RouteEntryObject, params: { [name: string]: string | number }): void | false {
+    fetchRoutePathEntryParamTypes(route: RouteDescriptor, params: { [name: string]: string | number }): void | false {
 
         if (!route.types) return
 

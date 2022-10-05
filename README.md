@@ -1,12 +1,22 @@
 
-<div align="center">
-<img src="sources/img/nodart-logo.svg" width="70">
+<p align="center" dir="auto">
+<img src="sources/img/nodart-logo.svg" width="90">
+</p>
 <h3 align="center">NodArt - The Art of Node.js.</h3>
 <h3 align="center"> A full-featured web framework for building progressive</h3>
-<h3 align="center"> MVC OOP back-end applications. </h3>
+<h3 align="center"> MVC OOP server-side applications. </h3>
+<p align="center" dir="auto">
 <br/>
-<img align="center" src="sources/img/badges/stable-3.svg" height="20">
-</div>
+<a href="https://github.com/nodart-labs/nodart.git">
+<img align="center" src="sources/img/badges/stable.svg" height="20">
+</a>
+<a href="https://github.com/nodart-labs/nodart.git">
+<img align="center" src="sources/img/badges/release.svg" height="20">
+</a>
+<a href="https://github.com/nodart-labs/nodart.git">
+<img align="center" src="sources/img/badges/license.svg" height="20">
+</a>
+</p>
 
 
 ---

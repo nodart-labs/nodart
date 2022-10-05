@@ -20,6 +20,8 @@ const exception_3 = require("./exception");
 const exception_log_loader_1 = require("../loaders/exception_log_loader");
 const exception_template_loader_1 = require("../loaders/exception_template_loader");
 const app_builder_loader_1 = require("../loaders/app_builder_loader");
+const http_service_loader_1 = require("../loaders/http_service_loader");
+const http_respond_loader_1 = require("../loaders/http_respond_loader");
 const STORE = require('../store/system');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -56,7 +58,7 @@ exports.APP_CONFIG = Object.freeze({
     routes: {},
     engine: {},
     session: {
-        secret: require('crypto').randomBytes(20).toString('hex')
+        secret: undefined
     },
     orm: {},
     database: exports.DEFAULT_DATABASE_REPOSITORY,
@@ -77,6 +79,8 @@ exports.APP_CONFIG = Object.freeze({
     loaders: {
         app_builder: app_builder_loader_1.AppBuilderLoader,
         http: http_client_loader_1.HttpClientLoader,
+        http_service: http_service_loader_1.HttpServiceLoader,
+        http_respond: http_respond_loader_1.HttpRespondLoader,
         controller: controller_loader_1.ControllerLoader,
         model: model_loader_1.ModelLoader,
         store: store_loader_1.StoreLoader,

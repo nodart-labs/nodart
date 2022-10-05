@@ -51,7 +51,7 @@ export class AppFactory {
         const name = this._app.config.get.envFileName || DEFAULT_ENV_FILE_NAME
         if (!name.match(this.envFileNamePattern))
             throw new RuntimeException(
-                `The environment file name "${name}" does not have a valid name or extension (.js or .ts).`
+                `The environment file name "${name}" does not have a permitted name or extension (.js or .ts).`
                 + ' Check the configuration parameter "envFileName".'
             )
         return name
