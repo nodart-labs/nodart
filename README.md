@@ -3,8 +3,10 @@
 <img src="sources/img/nodart-logo.svg" width="90">
 </p>
 <h3 align="center">NodArt - The Art of Node.js.</h3>
-<h3 align="center"> A full-featured web framework for building progressive</h3>
-<h3 align="center"> MVC OOP server-side applications. </h3>
+<h3 align="center">A complete web framework 
+<br/><br/>
+for creating microservices and large-scale server-side applications for businesses
+</h3>
 <p align="center" dir="auto">
 <br/>
 <a href="https://github.com/nodart-labs/nodart.git">
@@ -25,16 +27,17 @@
 The framework adheres to the concept of "just install and use".
 Everything you need to run a server application:
 
-1. **Templating**
-2. **Working with a session**
-3. **ORM client, Working with databases (MySQL, PostgresSQL, SQLite, MSSQL, OracleDB, CockroachDB, Amazon Redshift)**
-4. **Error and Exception handling**
-5. **Working with a command line; Creation of custom commands**
-6. **Routing**
-7. **Custom events and states**
-8. **Dependency injection**
-9. **Observer pattern**
-10. **Repository pattern**
+1. **MVC; OOP (TypeScript, ECMAScript 6)**
+2. **ORM client, Working with databases (MySQL, PostgresSQL, SQLite, MSSQL, OracleDB, CockroachDB, Amazon Redshift)**
+3. **Working with a session**
+4. **Templating**
+5. **Error and Exception handling**
+6. **Working with a command line; Creation of custom commands**
+7. **Routing**
+8. **Custom events and states**
+9. **Dependency injection**
+10. **Observer pattern**
+11. **Repository pattern**
 
 Everything of this is provided out of the hood.
 All that is needed for some of the above things to work is to specify the basic settings
@@ -45,6 +48,7 @@ making it easy to extend and customize all of these things,
 up to and including completely changing the basic behavior
 by specifying class loaders and references in the same configuration file.
 
+The framework is independent, thus it doesn't rely on other frameworks like Express.
 
 ---
 
