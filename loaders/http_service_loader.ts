@@ -27,7 +27,7 @@ export class HttpServiceLoader extends AppLoader {
         if (scope.http && !(scope.http instanceof HttpClient))
             throw new RuntimeException('HttpServiceLoader: missing required scope argument "HttpClient".')
 
-        if (scope.route && !(scope.route.path && scope.route.pathname))
+        if (scope.route && !(("path" in scope.route) && ("pathname" in scope.route)))
             throw new RuntimeException('HttpServiceLoader: invalid scope argument "route".')
 
         scope.app ??= this._app

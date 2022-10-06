@@ -19,7 +19,7 @@ class HttpServiceLoader extends app_loader_1.AppLoader {
         const scope = (_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : {};
         if (scope.http && !(scope.http instanceof http_client_1.HttpClient))
             throw new exception_1.RuntimeException('HttpServiceLoader: missing required scope argument "HttpClient".');
-        if (scope.route && !(scope.route.path && scope.route.pathname))
+        if (scope.route && !(("path" in scope.route) && ("pathname" in scope.route)))
             throw new exception_1.RuntimeException('HttpServiceLoader: invalid scope argument "route".');
         (_b = scope.app) !== null && _b !== void 0 ? _b : (scope.app = this._app);
         if (scope.http) {
