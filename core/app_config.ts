@@ -20,6 +20,9 @@ import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
 import {AppBuilderLoader} from "../loaders/app_builder_loader";
 import {HttpServiceLoader} from "../loaders/http_service_loader";
 import {HttpRespondLoader} from "../loaders/http_respond_loader";
+import {HttpFormDataLoader} from "../loaders/http_form_data_loader";
+import {Engine} from "./engine";
+import {HttpResponder} from "./http_respond";
 
 const STORE = require('../store/system')
 
@@ -59,10 +62,13 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     storeName: CLIENT_STORE_NAME,
     stateName: CLIENT_STATE_NAME,
     httpClient: {},
+    fetchDataOnRequest: true,
     routes: {},
-    engine: {},
+    engine: Engine,
+    engineConfig: {},
+    httpResponder: HttpResponder,
     session: {
-        secret: undefined
+        secret: $.random.hex()
     },
     orm: {},
     database: DEFAULT_DATABASE_REPOSITORY,
@@ -83,6 +89,7 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     loaders: {
         app_builder: AppBuilderLoader,
         http: HttpClientLoader,
+        http_form: HttpFormDataLoader,
         http_service: HttpServiceLoader,
         http_respond: HttpRespondLoader,
         controller: ControllerLoader,
@@ -101,7 +108,8 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     reference: {
         service: (app: App, target: string, props?: any[]) => app.get('service').require(target).call(props),
         model: (app: App, target: string, props?: any[]) => app.get('model').require(target).call(props),
-    }
+    },
+    formData: {}
 })
 
 export class AppConfig {

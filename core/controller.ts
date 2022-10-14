@@ -8,7 +8,7 @@ import {Model} from "./model";
 import {uses, injects} from "./di";
 import {RouteData} from "../interfaces/router";
 import {ObjectDeepNestedGeneric} from "../interfaces/object";
-import {HttpRespond} from "./http_respond";
+import {HttpRespond, HttpResponder} from "./http_respond";
 
 export const CONTROLLER_INITIAL_ACTION = 'init'
 export const CONTROLLER_HTTP_ACTIONS = ['get', 'post', 'patch', 'put', 'delete', 'head']
@@ -25,6 +25,8 @@ export abstract class Controller extends HttpRespond implements HttpAcceptorInte
     protected _session: Session
 
     protected _engine: Engine
+
+    protected _httpResponder: HttpResponder
 
     protected constructor(
         readonly app: App,
@@ -54,6 +56,10 @@ export abstract class Controller extends HttpRespond implements HttpAcceptorInte
 
     get engine() {
         return this._engine ||= <Engine>this.app.get('engine').call()
+    }
+
+    get httpResponder() {
+        return this._httpResponder ||= new (this.app.config.get.httpResponder || HttpResponder)(this)
     }
 
 }

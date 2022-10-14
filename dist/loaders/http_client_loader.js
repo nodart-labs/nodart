@@ -13,19 +13,26 @@ exports.HttpClientLoader = void 0;
 const app_1 = require("../core/app");
 const app_loader_1 = require("../core/app_loader");
 const http_client_1 = require("../core/http_client");
+const exception_1 = require("../core/exception");
 class HttpClientLoader extends app_loader_1.AppLoader {
     get targetType() {
         return http_client_1.HttpClient;
     }
     _onCall(target, args) {
+        var _a;
         this._request = args === null || args === void 0 ? void 0 : args[0];
         this._response = args === null || args === void 0 ? void 0 : args[1];
-        this._config = args === null || args === void 0 ? void 0 : args[2];
+        this._config = (_a = args === null || args === void 0 ? void 0 : args[2]) !== null && _a !== void 0 ? _a : {};
     }
-    _resolve(target, args) {
+    _resolve() {
         const client = new http_client_1.HttpClient(this._request, this._response, this._config);
         const app = this._app;
         client.host = this._app.host;
+        Object.assign(client, {
+            get form() {
+                return this._form || (this._form = app.get('http_form').call([client]));
+            }
+        });
         client.setResponseData = function (data) {
             return __awaiter(this, void 0, void 0, function* () {
                 yield app_1.App.system.listen({
@@ -35,7 +42,12 @@ class HttpClientLoader extends app_loader_1.AppLoader {
                 });
             });
         };
-        return this._target = client;
+        client.onError = function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                yield app.resolveExceptionOnHttp(new exception_1.RuntimeException(this), this.request, this.response);
+            });
+        };
+        return client;
     }
     _onGenerate(repository) {
     }

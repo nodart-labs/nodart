@@ -87,7 +87,7 @@ class AppLoader {
     call(args = []) {
         this._onCall(this._target, args);
         this.intercept();
-        return this._resolve(this._target, args);
+        return this._target = this._resolve(this._target, args);
     }
     generate() {
         return __awaiter(this, void 0, void 0, function* () {

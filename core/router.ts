@@ -5,9 +5,11 @@ import {HttpURL} from "../interfaces/http";
 
 export class Router {
 
-    protected _retrieveRouteParamPattern: RegExp = /^:(\+)?([a-z\d_]+)(\?)?$/i
-
-    protected _routeParamEntryPointer: string = ':'
+    protected _routeEntryPointers = {
+        param: ':',
+        number: '+',
+        optional: '?',
+    }
 
     constructor(protected _routes: RouteEntry) {
     }
@@ -69,7 +71,7 @@ export class Router {
 
         if (path === urlPath) return {path, pathname: urlPath, params: {}}
 
-        if (false === path.includes(this._routeParamEntryPointer)) return
+        if (false === path.includes(this._routeEntryPointers.param)) return
 
         const pathSplit = path.split('/')
 
@@ -81,16 +83,11 @@ export class Router {
 
             const target = urlPathSplit[index]
 
-            if (false === entry.startsWith(this._routeParamEntryPointer)) {
+            if (target === entry) continue
 
-                if (target === entry) continue
+            const {param, isOptional, isNumber} = this.parseRoutePathEntry(entry)
 
-                return
-            }
-
-            const {param, isOptional, isNumber} = this.parseRoutePathEntryParam(entry)
-
-            if (!param) return
+            if (param === undefined) return
 
             if (isOptional && target === undefined) return {
                 path,
@@ -106,15 +103,20 @@ export class Router {
         return {path, params, pathname: urlPath}
     }
 
-    parseRoutePathEntryParam(pathEntry: string) {
+    parseRoutePathEntry(pathEntry: string) {
 
-        const match = pathEntry.match(this._retrieveRouteParamPattern) // /^:(\+)?([a-z\d_]+)(\?)?$/i
+        if (pathEntry[0] !== this._routeEntryPointers.param) return {}
 
-        return {
-            param: match?.[2],
-            isOptional: !!match?.[3],
-            isNumber: !!match?.[1],
-        }
+        let param = '', i = 1, end = pathEntry.length
+        let isNumber = pathEntry[1] === this._routeEntryPointers.number
+        let isOptional = pathEntry.at(-1) === this._routeEntryPointers.optional
+
+        isNumber && (i += 1)
+        isOptional && (end -= 1)
+
+        for (; i < end; i++) param += pathEntry[i]
+
+        return {param, isOptional, isNumber}
     }
 
     fetchRoutePathEntryParamTypes(route: RouteDescriptor, params: { [name: string]: string | number }): void | false {
@@ -139,7 +141,7 @@ export class Router {
 
         path.split('/').forEach(entry => {
 
-            const data = this.parseRoutePathEntryParam(entry)
+            const data = this.parseRoutePathEntry(entry)
 
             data.param && (data.param in params) && arrange.push(params[data.param])
         })

@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "3.2.4",
+  "version": "3.3.0",
   "description": "typescript backend framework",
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^7.6.2",
+    "busboy": "^1.6.0",
     "client-sessions": "^0.8.0",
     "decompress": "^4.2.1",
     "knex": "^2.2.0",

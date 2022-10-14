@@ -18,7 +18,10 @@ import {fs} from "../utils";
 
 const events = require('../store/system').events
 
-const DEFAULT_HOST = 'localhost'
+export const DEFAULT_PORT = 3000
+export const DEFAULT_HOST = 'localhost'
+
+type Protocols = 'http' | 'https' | string
 
 export class App {
 
@@ -87,11 +90,30 @@ export class App {
         return this
     }
 
-    serve(port: number = 3000, protocol: 'http' | 'https' | string = 'http', host: string = DEFAULT_HOST) {
+    start(port: number = DEFAULT_PORT, protocol: Protocols | {[K in Protocols]: any} = 'http', host: string = DEFAULT_HOST) {
 
-        this._host = Object.freeze(HttpClient.fetchHostData({port, protocol, host}))
+        this.factory.createStore()
 
-        return require(protocol).createServer((req: Http2ServerRequest, res: Http2ServerResponse) => {
+        this.factory.createState()
+
+        this.factory.createEventListener()
+
+        const server = this.serve(port, protocol, host)
+
+        const http = this.service.http()
+
+        return {app: this, http, server}
+    }
+
+    serve(port: number = DEFAULT_PORT, protocol: Protocols | {[K in Protocols]: any} = 'http', host: string = DEFAULT_HOST) {
+
+        const type = typeof protocol === 'string' ? protocol : Object.keys(protocol)[0] as string
+
+        const http = typeof protocol === 'string' ? require(protocol) : protocol[type]
+
+        this._host = Object.freeze(HttpClient.fetchHostData({port, protocol: type, host}))
+
+        return http.createServer((req: Http2ServerRequest, res: Http2ServerResponse) => {
 
             (async () => {
 
@@ -99,8 +121,9 @@ export class App {
 
                 await App.system.listen({event: {[events.HTTP_REQUEST]: [this, req, res]}}).catch(exception => {
 
-                    this._httpExceptionResolve(exception, req, res)
+                    this.resolveExceptionOnHttp(exception, req, res)
                 })
+
             })()
 
         }).listen(port, host, () => {
@@ -127,19 +150,17 @@ export class App {
 
                 const httpService = this.get('http_service').call() as HttpService
 
-                httpService.subscribe(this._addHttpServiceRoute)
+                httpService.subscribe((data: HttpServiceRouteObject) => {
+
+                    this.httpServiceRoutes.push(data)
+                })
 
                 return httpService.httpAcceptor
             }
         }
     }
 
-    protected _addHttpServiceRoute = (data: HttpServiceRouteObject) => {
-
-        this.httpServiceRoutes.push(data)
-    }
-
-    protected async _httpExceptionResolve(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
+    async resolveExceptionOnHttp(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
 
         const resolve = this.config.get.exception.resolve || AppExceptionResolve
 
@@ -253,7 +274,7 @@ export class AppExceptionResolve {
 
     protected _sendHttpException(request: Http2ServerRequest, response: Http2ServerResponse) {
 
-        if (response.writableEnded || response.writableFinished) return
+        if (response.headersSent || response.writableEnded || response.writableFinished) return
 
         const data = this._httpResponseData ?? {} as HttpResponseDataInterface
 

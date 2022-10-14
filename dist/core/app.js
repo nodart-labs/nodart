@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppBuilder = exports.AppExceptionResolve = exports.App = void 0;
+exports.AppBuilder = exports.AppExceptionResolve = exports.App = exports.DEFAULT_HOST = exports.DEFAULT_PORT = void 0;
 const app_store_1 = require("./app_store");
 const app_factory_1 = require("./app_factory");
 const di_1 = require("./di");
@@ -19,14 +19,12 @@ const app_config_1 = require("./app_config");
 const http_client_1 = require("./http_client");
 const utils_1 = require("../utils");
 const events = require('../store/system').events;
-const DEFAULT_HOST = 'localhost';
+exports.DEFAULT_PORT = 3000;
+exports.DEFAULT_HOST = 'localhost';
 class App {
     constructor(config) {
         this.httpServiceRoutes = [];
         this._host = { port: null, protocol: null, host: null, hostname: null };
-        this._addHttpServiceRoute = (data) => {
-            this.httpServiceRoutes.push(data);
-        };
         this.config = new app_config_1.AppConfig().set(config);
         this.factory = new app_factory_1.AppFactory(this);
         this.di = new di_1.DIManager(this.config.getStrict('reference'), this);
@@ -55,13 +53,23 @@ class App {
             return this;
         });
     }
-    serve(port = 3000, protocol = 'http', host = DEFAULT_HOST) {
-        this._host = Object.freeze(http_client_1.HttpClient.fetchHostData({ port, protocol, host }));
-        return require(protocol).createServer((req, res) => {
+    start(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST) {
+        this.factory.createStore();
+        this.factory.createState();
+        this.factory.createEventListener();
+        const server = this.serve(port, protocol, host);
+        const http = this.service.http();
+        return { app: this, http, server };
+    }
+    serve(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST) {
+        const type = typeof protocol === 'string' ? protocol : Object.keys(protocol)[0];
+        const http = typeof protocol === 'string' ? require(protocol) : protocol[type];
+        this._host = Object.freeze(http_client_1.HttpClient.fetchHostData({ port, protocol: type, host }));
+        return http.createServer((req, res) => {
             (() => __awaiter(this, void 0, void 0, function* () {
                 this.requestPayload && (yield this.requestPayload(req, res));
                 yield App.system.listen({ event: { [events.HTTP_REQUEST]: [this, req, res] } }).catch(exception => {
-                    this._httpExceptionResolve(exception, req, res);
+                    this.resolveExceptionOnHttp(exception, req, res);
                 });
             }))();
         }).listen(port, host, () => {
@@ -78,12 +86,14 @@ class App {
         return {
             http: () => {
                 const httpService = this.get('http_service').call();
-                httpService.subscribe(this._addHttpServiceRoute);
+                httpService.subscribe((data) => {
+                    this.httpServiceRoutes.push(data);
+                });
                 return httpService.httpAcceptor;
             }
         };
     }
-    _httpExceptionResolve(exception, req, res) {
+    resolveExceptionOnHttp(exception, req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const resolve = this.config.get.exception.resolve || AppExceptionResolve;
             yield new resolve(this, exception).resolveOnHttp(req, res);
@@ -158,7 +168,7 @@ class AppExceptionResolve {
     }
     _sendHttpException(request, response) {
         var _a;
-        if (response.writableEnded || response.writableFinished)
+        if (response.headersSent || response.writableEnded || response.writableFinished)
             return;
         const data = (_a = this._httpResponseData) !== null && _a !== void 0 ? _a : {};
         const contentType = data.contentType;

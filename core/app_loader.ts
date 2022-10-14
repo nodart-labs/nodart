@@ -129,7 +129,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         this.intercept()
 
-        return this._resolve(this._target, args)
+        return this._target = this._resolve(this._target, args)
     }
 
     async generate() {

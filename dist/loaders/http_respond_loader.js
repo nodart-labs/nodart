@@ -24,6 +24,9 @@ class HttpRespondLoader extends app_loader_1.AppLoader {
             get engine() {
                 return this._engine || (this._engine = app.get('engine').call());
             }
+            get httpResponder() {
+                return this._httpResponder || (this._httpResponder = new (app.config.get.httpResponder || http_respond_1.HttpResponder)(this));
+            }
         }
         return BaseHttpRespond;
     }

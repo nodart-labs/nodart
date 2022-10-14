@@ -4,8 +4,10 @@
 </p>
 <h3 align="center">NodArt - The Art of Node.js.</h3>
 <h3 align="center">A complete web framework 
-<br/><br/>
-for creating microservices and large-scale server-side applications for businesses
+<br/>
+for creating microservices and 
+<br/>
+large-scale server-side applications for businesses
 </h3>
 <p align="center" dir="auto">
 <br/>
@@ -53,9 +55,9 @@ The framework is independent, thus it doesn't rely on other frameworks like Expr
 ---
 
 
-### INSTALLATION
+### APPLICATION CREATION, INITIALISATION AND START
 
-### 1. GIT
+#### 1. GIT
 
 it downloads the current framework version's application with full usage examples.
 
@@ -63,7 +65,7 @@ it downloads the current framework version's application with full usage example
 git clone https://github.com/nodart-labs/nodart-app.git
 ```
 
-### 2. CLI
+#### 2. CLI
 
 it creates a base application structure with some usage examples.
 
@@ -73,18 +75,122 @@ npx nodart create-app
 
 ---
 
-<div align="center">
-<img src="sources/img/intro.svg" width="80%">
-</div>
+#### 3. INITIALISATION AND START
+
+
+You can launch microservice or monolithic apps, or you can combine them, depending on the requirements. 
+In this <a target="_blank" href="https://fauna.com/blog/how-to-build-microservices-with-node-js">article</a>, 
+you can read more about application architecture.
+
+
+**BASIC INITIALISATION:**
+
+```typescript
+
+import {App} from "nodart"
+
+const config = require('./config')
+
+// Be aware that this fundamental initialization 
+// automatically creates the necessary app files and folders.
+// (database folder, controllers folder, models folder, services folder, views folder and etc.)
+
+new App({...config}).init().then(app => {
+
+    const server = app.serve(3000, 'http', '127.0.0.1')
+    
+    // do anything on startup, for example:
+
+    // configure server:
+    server.timeout = 30000 // setting max timeout on requests
+
+    // or create payload for all HTTP requests:
+    app.setHttpRequestPayload((req, res) => {})
+    
+    // or launch HTTP service: 
+    const http = app.service.http()
+    
+    http.get('url/path/with/:params', (scope) => {})
+    
+})
+
+```
 
 ---
 
-### RUN UNDER DEVELOPMENT SERVER
+**STARTING HTTP SERVICE:**
+
+```typescript
+
+import {App} from "nodart"
+
+const config = require('./config')
+
+const {app, http, server} = new App({...config}).start(3000)
+
+// base HTTP processing:
+
+http.get('/path/:first/:second/:+optional_id?', ({route, respond, http}) => {
+    
+    const {first, second, optional_id} = route.params
+    
+    const {queryParam} = route.query
+
+    // sending template from views folder:
+    respond.send.view('path/to/template', {queryParam})
+
+    // sending file:
+    http.sendFile('path/to/file.png', 'image/png')
+    
+    // sending response JSON:
+    respond.send.data({first, second, optional_id}, 200)
+    // or just:
+    return {first, second, optional_id}
+
+})
+
+// fetching data from POST request:
+
+http.post('/', ({http}) => {
+
+    const {someData} = http.data
+
+})
+
+// fetching data from POST miltipart/form-data:
+
+http.post('/', async ({http}) => {
+
+    const {fields, files} = await http.form.fetchFormData()
+
+})
+
+// connecting services and models:
+
+import {SampleService} from "./services/sample"
+import {SampleModel} from "./models/sample"
+
+http.get('/', async ({service, model}) => {
+
+    const sampleService = service.sample as SampleService
+    const sampleModel = model.sample as SampleModel
+
+    const users = await sampleModel.query.select().table('users')
+
+    sampleService.scope.http.send({users})
+
+})
+
+```
+
+---
+
+### START UNDER DEVELOPMENT SERVER
 ```
 npm run dev
 ```
 
-### RUN UNDER PRODUCTION
+### START UNDER PRODUCTION
 ```
 npm run start
 ```

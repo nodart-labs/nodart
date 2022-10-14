@@ -7,13 +7,26 @@ import {HTTP_SERVICE_ACCEPTOR_COMMON_ACTION, HttpServiceHandler} from "../servic
 import {HttpServiceRouteObject} from "../interfaces/service";
 import {HttpServiceLoader} from "../loaders/http_service_loader";
 
+let warnings = false
+
 export = async (app: App, request: Http2ServerRequest, response: Http2ServerResponse) => {
 
     const http = app.get('http').call([request, response]) as HttpClient
 
+    if (http.responseIsSent) return
+
+    /**************************************
+     CORS LOADER
+     ***************************************/
+
+    http.setCorsHeaders()
+
+    if (request.method === 'OPTIONS') http.send('')
+
+
     /**************************************
      STATIC LOADER
-    ***************************************/
+     ***************************************/
 
     const staticLoader = <StaticLoader>app.get('static')
 
@@ -25,8 +38,24 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
 
     /**************************************
+     FETCH REQUEST DATA (POST, PUT, PATCH)
+     ***************************************/
+
+    if (app.config.get.fetchDataOnRequest === true) {
+
+        await http.fetchData()
+
+    } else if (!warnings) {
+
+        warnings = true
+
+        console.log('Auto fetching data from request is disabled in configuration. Use "http.fetchData()" instead.')
+    }
+
+
+    /**************************************
      HTTP SERVICE LOADER
-    ***************************************/
+     ***************************************/
 
     if (app.httpServiceRoutes.length) {
 
@@ -34,15 +63,15 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
         const runHttpService = async (filterRoute: (route: HttpServiceRouteObject) => boolean): Promise<true | void> => {
 
-            const routeData = httpServiceHandler.getRouteData(filterRoute, http.parseURL)
+            const route = httpServiceHandler.getRouteData(filterRoute, http.parseURL)
 
-            const routeObject = routeData ? httpServiceHandler.findRouteByRouteData(routeData) : null
+            const routeObject = route ? httpServiceHandler.findRouteByRouteData(route) : null
 
-            if (routeObject && routeData) {
+            if (routeObject && route) {
 
-                const scope = {http, route: routeData, app}
+                const scope = {http, route, app}
 
-                await httpServiceHandler.runRoute(routeObject, scope, app.get('http_service') as HttpServiceLoader)
+                await httpServiceHandler.runService(routeObject, scope, app.get('http_service') as HttpServiceLoader)
 
                 return true
             }
@@ -50,17 +79,15 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
         await runHttpService((route) => route.action === HTTP_SERVICE_ACCEPTOR_COMMON_ACTION)
 
-        if (http.responseIsSent) return
-
-        const httpMethod = request.method.toLowerCase()
-
-        if (await runHttpService((route) => route.action === httpMethod)) return
+        if (http.responseIsSent || (await runHttpService((route) => {
+            return route.action === request.method.toLowerCase()
+        }))) return
     }
 
 
     /**************************************
      CONTROLLER LOADER
-    ***************************************/
+     ***************************************/
 
     const handler = new HttpHandler(app, http)
 

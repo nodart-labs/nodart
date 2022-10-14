@@ -3,15 +3,22 @@ import {DIReferenceEntries} from "./di";
 import {SessionConfigInterface} from "./session";
 import {EngineConfigInterface} from "./engine";
 import {OrmConfig} from "./orm";
-import {HttpClientConfigInterface, HttpResponseDataInterface} from "./http";
+import {
+    HttpClientConfigInterface,
+    HttpResponseDataInterface,
+    HttpFormDataConfigInterface
+} from "./http";
 import {CommandLineConfigInterface} from "./cmd";
 import {RouteEntry} from "./router";
 import {Exception, ExceptionHandler, ExceptionLog} from "../core/exception";
 import {AppExceptionResolve} from "../core/app";
+import {Engine} from "../core/engine";
+import {HttpResponder} from "../core/http_respond";
 
 export type AppLoaders =
     | 'app_builder'
     | 'http'
+    | 'http_form'
     | 'http_service'
     | 'http_respond'
     | 'controller'
@@ -43,12 +50,15 @@ export interface AppConfigInterface {
     storeName?: string
     stateName?: string
     routes?: RouteEntry
+    fetchDataOnRequest?: boolean
     loaders?: {
         [K in AppLoaders]?: typeof AppLoader
     }
     reference?: DIReferenceEntries
     session?: SessionConfigInterface
-    engine?: EngineConfigInterface
+    engine?: typeof Engine
+    engineConfig?: EngineConfigInterface
+    httpResponder?: typeof HttpResponder
     orm?: { [key: string]: any } & OrmConfig
     httpClient?: HttpClientConfigInterface
     database?: string
@@ -62,6 +72,7 @@ export interface AppConfigInterface {
         resolve?: typeof AppExceptionResolve
         template?: string | ((response: HttpResponseDataInterface) => string | void)  // Path to html (from views directory)
     }
+    formData?: HttpFormDataConfigInterface
 
     [addon: string]: any
 }

@@ -21,9 +21,8 @@ class ControllerLoader extends app_loader_1.AppLoader {
         this._http = http;
     }
     _resolve(target) {
-        if (!target)
-            return;
-        return this._target = Reflect.construct(target, [this._app, this._http, this._route]);
+        if (target)
+            return Reflect.construct(target, [this._app, this._http, this._route]);
     }
     onGetDependency(target) {
         if (target instanceof service_1.Service && this._pushDependency(target) && this._target instanceof controller_1.Controller) {

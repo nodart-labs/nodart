@@ -2,7 +2,12 @@ import {App} from "../core/app";
 import {AppLoader} from "../core/app_loader";
 import {HttpClient} from "../core/http_client";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
-import {HttpResponseData, HttpClientConfigInterface, BaseHttpResponseHandlerInterface} from "../interfaces/http";
+import {
+    HttpResponseData,
+    HttpClientConfigInterface,
+    BaseHttpResponseHandlerInterface
+} from "../interfaces/http";
+import {RuntimeException} from "../core/exception";
 
 export class HttpClientLoader extends AppLoader {
 
@@ -26,16 +31,22 @@ export class HttpClientLoader extends AppLoader {
     ]) {
         this._request = args?.[0]
         this._response = args?.[1]
-        this._config = args?.[2]
+        this._config = args?.[2] ?? {} as HttpClientConfigInterface
     }
 
-    protected _resolve(target?: BaseHttpResponseHandlerInterface, args?: any[]): any {
+    protected _resolve(): any {
 
         const client = new HttpClient(this._request, this._response, this._config)
 
         const app = this._app
 
         client.host = this._app.host
+
+        Object.assign(client, {
+            get form() {
+                return this._form ||= app.get('http_form').call([client])
+            }
+        })
 
         client.setResponseData = async function (data: HttpResponseData) {
             await App.system.listen({
@@ -45,7 +56,11 @@ export class HttpClientLoader extends AppLoader {
             })
         }
 
-        return this._target = client
+        client.onError = async function () {
+            await app.resolveExceptionOnHttp(new RuntimeException(this), this.request, this.response)
+        }
+
+        return client
     }
 
     protected _onGenerate(repository: string) {

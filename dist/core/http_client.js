@@ -1,29 +1,109 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HttpClient = exports.DEFAULT_CONTENT_TYPE = exports.DEFAULT_FILE_MIME_TYPE = void 0;
+exports.HttpFormData = exports.HttpClient = exports.MULTIPART_FORM_DATA_TYPE = exports.DEFAULT_CONTENT_TYPE = exports.DEFAULT_FILE_MIME_TYPE = void 0;
 const utils_1 = require("../utils");
 const http_1 = require("../interfaces/http");
-const exception_1 = require("./exception");
 exports.DEFAULT_FILE_MIME_TYPE = 'application/octet-stream';
 exports.DEFAULT_CONTENT_TYPE = 'application/json';
+exports.MULTIPART_FORM_DATA_TYPE = 'multipart/form-data';
 class HttpClient {
     constructor(request, response, config = {}) {
         var _a;
         this.request = request;
         this.response = response;
         this.config = config;
+        this.corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Request-Method': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS, GET',
+            'Access-Control-Allow-Headers': '*',
+        };
+        this._data = {};
+        this.isDataFetched = false;
         this.config = Object.assign(Object.assign({}, config), { mimeTypes: Object.assign(Object.assign({}, http_1.HTTP_CONTENT_MIME_TYPES), (_a = config.mimeTypes) !== null && _a !== void 0 ? _a : {}), fileMimeType: config.fileMimeType || exports.DEFAULT_FILE_MIME_TYPE });
     }
+    set host(data) {
+        this._host = data;
+    }
+    get data() {
+        return Object.assign({}, this._data);
+    }
+    get ready() {
+        return !!this.isDataFetched;
+    }
+    get buffer() {
+        return this._buffer;
+    }
+    get form() {
+        return (this._form || (this._form = new HttpFormData(this)));
+    }
+    set form(formDataHandler) {
+        this._form = formDataHandler;
+    }
+    get isFormData() {
+        var _a;
+        return (_a = this.request.headers['content-type']) === null || _a === void 0 ? void 0 : _a.includes(exports.MULTIPART_FORM_DATA_TYPE);
+    }
+    get hasError() {
+        return !!(this.exceptionMessage || this.exceptionData || this.form.hasError);
+    }
     get responseIsSent() {
-        return this.response.writableEnded || this.response.writableFinished;
+        return this.response.headersSent || this.response.writableEnded || this.response.writableFinished;
     }
     get parseURL() {
         return this._dataURL || (this._dataURL = HttpClient.getParsedURL(this._host
             ? HttpClient.getURI(this._host) + '/' + utils_1.$.trimPath(this.request.url)
             : this.request.url));
     }
-    set host(data) {
-        this._host = data;
+    setCorsHeaders(headers) {
+        headers = Object.assign(Object.assign({}, this.corsHeaders), headers !== null && headers !== void 0 ? headers : {});
+        Object.entries(headers).forEach(([header, value]) => {
+            this.response.getHeader(header) || this.response.setHeader(header, value);
+        });
+    }
+    fetchData() {
+        return new Promise((resolve, reject) => {
+            if (this.isDataFetched || this.isFormData) {
+                resolve(this._data);
+                return;
+            }
+            const chunks = [];
+            this.request.on('data', chunk => chunks.push(chunk));
+            this.request.on('end', () => {
+                this._buffer = Buffer.concat(chunks);
+                this._data = {};
+                const data = this._buffer.toString();
+                const readQuery = (data) => {
+                    try {
+                        for (const [key, value] of new URLSearchParams(data).entries())
+                            this._data[key] = value;
+                    }
+                    catch (err) {
+                        reject(err);
+                        this.handleError(err, 'Failed to fetch data from request');
+                    }
+                };
+                try {
+                    data.startsWith('{') || data.startsWith('[')
+                        ? this._data = JSON.parse(data)
+                        : readQuery(data);
+                }
+                catch (e) {
+                    readQuery(data);
+                }
+                this.isDataFetched = true;
+                resolve(this._data);
+            });
+            this.request.on('error', (err) => {
+                reject(err);
+                this.handleError(err, 'Failed to fetch data from request');
+                this.onError();
+            });
+            this.request.on('aborted', () => {
+                reject({ message: 'request aborted' });
+                this.handleError();
+            });
+        });
     }
     send(data, status = http_1.HTTP_STATUS_CODES.OK, contentType) {
         this.setResponseData({
@@ -47,17 +127,28 @@ class HttpClient {
         });
     }
     sendFile(filePath, contentType) {
-        utils_1.fs.system.readFile(filePath, (err, buffer) => {
-            var _a;
-            if (err) {
-                this.exceptionMessage = `Could not read data from file ${filePath}.`;
-                this.exceptionData = err;
-                throw new exception_1.RuntimeException(this);
-            }
-            const ext = utils_1.$.trim((_a = utils_1.fs.parseFile(filePath).ext) !== null && _a !== void 0 ? _a : '', '.');
-            contentType || (contentType = HttpClient.getDefaultContentType(ext, this.config.mimeTypes, exports.DEFAULT_FILE_MIME_TYPE));
-            this.setResponseData({ content: { buffer }, contentType });
+        const stat = utils_1.fs.stat(filePath);
+        const parse = utils_1.fs.parseFile(filePath);
+        this.responseIsSent || this.response.writeHead(http_1.HTTP_STATUS_CODES.OK, {
+            'Content-Type': contentType || HttpClient.getDefaultContentType(utils_1.$.trim(parse.ext, '.'), this.config.mimeTypes, exports.DEFAULT_FILE_MIME_TYPE),
+            'Content-Length': stat.size
         });
+        const readStream = utils_1.fs.system.createReadStream(filePath);
+        readStream.on('error', err => {
+            this.handleError(err, `Could not read data from file ${filePath}.`);
+            this.onError();
+        });
+        readStream.pipe(this.response);
+    }
+    onError() {
+    }
+    handleError(err, message) {
+        this._data = {};
+        this._buffer = undefined;
+        if (err) {
+            this.exceptionMessage = message !== null && message !== void 0 ? message : err === null || err === void 0 ? void 0 : err.message;
+            this.exceptionData = err;
+        }
     }
     setResponseData(data) {
         this.responseData = data;
@@ -121,4 +212,96 @@ class HttpClient {
     }
 }
 exports.HttpClient = HttpClient;
+class HttpFormData {
+    constructor(http, config = { options: {} }) {
+        var _a;
+        var _b;
+        this.http = http;
+        this.config = config;
+        this.client = require('busboy');
+        this._fields = {};
+        this._files = {};
+        this._stat = {
+            fields: {},
+            files: {},
+        };
+        this.isDataFetched = false;
+        this._errors = [];
+        (_a = (_b = this.config).options) !== null && _a !== void 0 ? _a : (_b.options = {});
+    }
+    get uploadDir() {
+        return utils_1.fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir();
+    }
+    get form() {
+        var _a;
+        return this.client(Object.assign(Object.assign({}, (_a = this.config.options) !== null && _a !== void 0 ? _a : {}), { headers: this.http.request.headers }));
+    }
+    get ready() {
+        return !!this.isDataFetched;
+    }
+    get fields() {
+        return Object.assign({}, this._fields);
+    }
+    get files() {
+        return Object.assign({}, this._files);
+    }
+    get hasError() {
+        return this._errors.length >= 1;
+    }
+    get errors() {
+        return this._errors.slice();
+    }
+    stat(field) {
+        return this._stat.fields[field] || this._stat.files[field];
+    }
+    fetchFormData(onFile) {
+        const form = this.form;
+        const uploadDir = this.uploadDir;
+        return new Promise((resolve, reject) => {
+            if (this.isDataFetched) {
+                resolve(this);
+                return;
+            }
+            const promises = [];
+            form.on('file', (name, file, info) => {
+                var _a, _b;
+                let resolver = null;
+                let error = null;
+                promises.push(new Promise(res => resolver = res));
+                const hash = utils_1.$.random.hex();
+                const path = utils_1.fs.path(uploadDir, hash);
+                const writeStream = utils_1.fs.system.createWriteStream(path);
+                (_a = this._files)[name] || (_a[name] = []);
+                (_b = this._stat.files)[name] || (_b[name] = []);
+                writeStream.on('close', () => {
+                    if (error) {
+                        this._errors.push({ field: name, error });
+                    }
+                    else {
+                        info.path = path;
+                        this._files[name].push(path);
+                        this._stat.files[name].push(info);
+                    }
+                    resolver();
+                });
+                writeStream.on('error', (err) => error = err);
+                file.pipe(writeStream);
+            });
+            form.on('field', (name, value, info) => {
+                this._fields[name] = value;
+                this._stat.fields[name] = info;
+            });
+            form.on('close', () => {
+                this.isDataFetched = true;
+                Promise.all(promises).then(() => resolve(this));
+            });
+            form.on('error', (error) => {
+                this._errors.push({ error });
+                reject(error);
+            });
+            this.http.request.pipe(form);
+        });
+    }
+}
+exports.HttpFormData = HttpFormData;
 //# sourceMappingURL=http_client.js.map

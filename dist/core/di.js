@@ -198,7 +198,7 @@ class DependencyInterceptor {
         const props = this.interceptor.getReferenceProps(reference);
         let dependency, target;
         if ((target = this.interceptor.getReferenceTarget(reference))) {
-            dependency = this.reference.get(reference + '/' + target, props ? props : []);
+            dependency = this.reference.get(reference + '/' + target, props !== null && props !== void 0 ? props : []);
         }
         else if (reference.includes('/')) {
             const split = reference.split('/');
@@ -229,11 +229,8 @@ class DependencyInterceptor {
             get: (key, descriptor) => {
                 var _a, _b;
                 (_b = (_a = this.interceptor).onWatchProperty) === null || _b === void 0 ? void 0 : _b.call(_a, property, descriptor);
-                const { prop, path, source, isTarget } = descriptor;
-                if (isTarget) {
-                    return this._interceptProperty(property, source, reference + '/' + (path.length ? path.join('/') + '/' : '') + prop.toString());
-                }
-                return source === null || source === void 0 ? void 0 : source[prop];
+                const { prop, path, source } = descriptor;
+                return this._interceptProperty(property, source, reference + '/' + (path.length ? path.join('/') + '/' + prop : prop));
             }
         });
         return observer.get;

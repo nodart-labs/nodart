@@ -1,5 +1,5 @@
 import {AppLoader} from "../core/app_loader";
-import {HttpRespond} from "../core/http_respond";
+import {HttpRespond, HttpResponder} from "../core/http_respond";
 import {Engine} from "../core/engine";
 import {HttpClient} from "../core/http_client";
 import {RuntimeException} from "../core/exception";
@@ -30,12 +30,18 @@ export class HttpRespondLoader extends AppLoader {
 
             protected _engine: Engine
 
+            protected _httpResponder: HttpResponder
+
             constructor() {
                 super(http)
             }
 
             get engine() {
                 return this._engine ||= <Engine>app.get('engine').call()
+            }
+
+            get httpResponder() {
+                return this._httpResponder ||= new (app.config.get.httpResponder || HttpResponder)(this)
             }
         }
 

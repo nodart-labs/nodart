@@ -88,13 +88,21 @@ class HttpServiceHandler {
         this.routes = routes;
     }
     getRouteData(filter, url) {
-        const routes = this.routes.filter(route => filter(route)).map(r => r.route);
+        const routes = this.routes.filter(route => filter(route)).map(r => {
+            const route = r.route instanceof Object ? r.route : { path: r.route };
+            route.action = r.action;
+            route.callback = r.callback;
+            return route;
+        });
         return this.router.findRoute(routes, url);
     }
     findRouteByRouteData(data) {
-        return this.routes.find(r => utils_1.$.trimPath(typeof r.route === 'string' ? r.route : r.route.path) === data.path);
+        return this.routes.find(r => {
+            const path = utils_1.$.trimPath(typeof r.route === 'string' ? r.route : r.route.path);
+            return path === data.path && r.action === data.action;
+        });
     }
-    runRoute(route, scope, loader) {
+    runService(route, scope, loader) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const httpService = loader.call([scope]);

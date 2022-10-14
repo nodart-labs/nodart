@@ -114,17 +114,31 @@ export class HttpServiceHandler {
 
     getRouteData(filter: (route: HttpServiceRouteObject) => boolean, url: HttpURL): RouteData | void {
 
-        const routes = this.routes.filter(route => filter(route)).map(r => r.route)
+        const routes = this.routes.filter(route => filter(route)).map(r => {
+
+            const route = r.route instanceof Object ? r.route : {path: r.route}
+
+            route.action = r.action
+
+            route.callback = r.callback
+
+            return route
+        })
 
         return this.router.findRoute(routes, url)
     }
 
     findRouteByRouteData(data: RouteData): HttpServiceRouteObject | void {
 
-        return this.routes.find(r => $.trimPath(typeof r.route === 'string' ? r.route : r.route.path) === data.path)
+        return this.routes.find(r => {
+
+            const path = $.trimPath(typeof r.route === 'string' ? r.route : r.route.path)
+
+            return path === data.path && r.action === data.action
+        })
     }
 
-    async runRoute(route: HttpServiceRouteObject, scope: HttpServiceScope, loader: HttpServiceLoader): Promise<any> {
+    async runService(route: HttpServiceRouteObject, scope: HttpServiceScope, loader: HttpServiceLoader): Promise<any> {
 
         const httpService = loader.call([scope]) as HttpService
 

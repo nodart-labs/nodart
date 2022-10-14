@@ -32,9 +32,7 @@ export class ControllerLoader extends AppLoader {
 
     protected _resolve(target?: typeof Controller): any {
 
-        if (!target) return
-
-        return this._target = Reflect.construct(target, [this._app, this._http, this._route])
+        if (target) return Reflect.construct(target, [this._app, this._http, this._route])
     }
 
     onGetDependency(target: any): void {

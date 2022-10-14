@@ -5,8 +5,11 @@ const utils_1 = require("../utils");
 class Router {
     constructor(_routes) {
         this._routes = _routes;
-        this._retrieveRouteParamPattern = /^:(\+)?([a-z\d_]+)(\?)?$/i;
-        this._routeParamEntryPointer = ':';
+        this._routeEntryPointers = {
+            param: ':',
+            number: '+',
+            optional: '?',
+        };
     }
     httpRoute(http) {
         const { pathname, query } = http.parseURL;
@@ -48,7 +51,7 @@ class Router {
         path = utils_1.$.trimPath(path);
         if (path === urlPath)
             return { path, pathname: urlPath, params: {} };
-        if (false === path.includes(this._routeParamEntryPointer))
+        if (false === path.includes(this._routeEntryPointers.param))
             return;
         const pathSplit = path.split('/');
         const params = {};
@@ -56,13 +59,10 @@ class Router {
             return;
         for (const [index, entry] of pathSplit.entries()) {
             const target = urlPathSplit[index];
-            if (false === entry.startsWith(this._routeParamEntryPointer)) {
-                if (target === entry)
-                    continue;
-                return;
-            }
-            const { param, isOptional, isNumber } = this.parseRoutePathEntryParam(entry);
-            if (!param)
+            if (target === entry)
+                continue;
+            const { param, isOptional, isNumber } = this.parseRoutePathEntry(entry);
+            if (param === undefined)
                 return;
             if (isOptional && target === undefined)
                 return {
@@ -76,13 +76,17 @@ class Router {
         }
         return { path, params, pathname: urlPath };
     }
-    parseRoutePathEntryParam(pathEntry) {
-        const match = pathEntry.match(this._retrieveRouteParamPattern); // /^:(\+)?([a-z\d_]+)(\?)?$/i
-        return {
-            param: match === null || match === void 0 ? void 0 : match[2],
-            isOptional: !!(match === null || match === void 0 ? void 0 : match[3]),
-            isNumber: !!(match === null || match === void 0 ? void 0 : match[1]),
-        };
+    parseRoutePathEntry(pathEntry) {
+        if (pathEntry[0] !== this._routeEntryPointers.param)
+            return {};
+        let param = '', i = 1, end = pathEntry.length;
+        let isNumber = pathEntry[1] === this._routeEntryPointers.number;
+        let isOptional = pathEntry.at(-1) === this._routeEntryPointers.optional;
+        isNumber && (i += 1);
+        isOptional && (end -= 1);
+        for (; i < end; i++)
+            param += pathEntry[i];
+        return { param, isOptional, isNumber };
     }
     fetchRoutePathEntryParamTypes(route, params) {
         var _a;
@@ -101,7 +105,7 @@ class Router {
         const { path, params } = data;
         const arrange = [];
         path.split('/').forEach(entry => {
-            const data = this.parseRoutePathEntryParam(entry);
+            const data = this.parseRoutePathEntry(entry);
             data.param && (data.param in params) && arrange.push(params[data.param]);
         });
         return arrange;

@@ -7,8 +7,8 @@ import {
 
 export class Observer {
 
-    protected _setter: ObserverSetter = undefined
-    protected _getter: ObserverGetter = undefined
+    protected _setter?: ObserverSetter
+    protected _getter?: ObserverGetter
 
     constructor(readonly observable: any = {}, handlers?: ObserverHandlers) {
         handlers && this.handlers(handlers)
@@ -59,29 +59,42 @@ export class Observer {
 
 }
 
-const setPath = (prop, path, delim) => path += path ? delim + prop : prop
-const getPath = (path, delim) => path.split(delim).slice(0, -1)
+const setPath = (prop: string, path: string, delim: string) => {
+
+    return path += path ? delim + prop : prop
+}
+const getPath = (path: string, delim: string) => {
+
+    return path.split(delim).slice(0, -1)
+}
 
 class Observable {
 
     private static _stackPointer = 'stack'
 
-    static get stackPointer() {
+    static get(source: object, observer: Observer, {
+        path: path = '',
+        pathDelim: pathDelim = '',
+        lastCall: lastCall = ''
+    } = {}): any {
 
-        return Observable._stackPointer
-    }
-
-    static get(source: any, observer: Observer, path: string = '', pathDelim: string = ''): any {
-
-        pathDelim ||= require('crypto').randomBytes(10).toString('hex')
+        pathDelim ||= Math.random().toString(20)
 
         return new Proxy(source, {
 
             set: (t: any, p: string, value: any): any => {
 
-                path = setPath(p, path, pathDelim)
+                const newPath = setPath(p, path, pathDelim)
 
-                source[p] = observer.push({prop: p, source, path: getPath(path, pathDelim), value, old: source[p]})
+                lastCall === newPath || (path = newPath)
+
+                source[p] = observer.push({
+                    prop: p,
+                    source,
+                    path: getPath(path, pathDelim),
+                    value,
+                    old: source[p]
+                })
 
                 return true
             },
@@ -89,16 +102,28 @@ class Observable {
             get: (t: any, p: string): any => {
 
                 const isStackPointer = Observable.isStackPointer(source, p)
-                const isTarget = isStackPointer || !Observer.isObject(source[p]) || Object.keys(source[p]).length === 0
 
-                isStackPointer || (path = setPath(p, path, pathDelim))
+                const isObject = Observer.isObject(source[p])
 
-                const prop = isStackPointer && path ? path.split(pathDelim).at(-1) : p
-                const descriptor = {prop, source, path: getPath(path, pathDelim), isTarget}
+                const isTarget = !isStackPointer && (!isObject || Object.keys(source[p]).length === 0)
 
-                source[prop] = observer.pull(descriptor)
+                if (false === isStackPointer) {
 
-                return descriptor.isTarget ? source[prop] : Observable.get(source[prop], observer, path, pathDelim)
+                    const newPath = setPath(p, path, pathDelim)
+
+                    lastCall === newPath || (path = newPath)
+
+                    isTarget && (source[p] = observer.pull({prop: p, source, path: getPath(path, pathDelim)}))
+
+                    lastCall = path + pathDelim + p
+
+                }
+
+                if (isTarget) return source[p]
+
+                if (isObject) return Observable.get(source[p], observer, {path, pathDelim, lastCall})
+
+                return source[p]
             }
         })
     }
@@ -106,7 +131,7 @@ class Observable {
     private static isStackPointer(source: any, prop: string): boolean {
         return ((Array.isArray(source) && isNaN(+prop))
                 || (source instanceof Object && !source.hasOwnProperty(prop)))
-            || Observable.stackPointer === prop && !(prop in source)
+            || Observable._stackPointer === prop && !(prop in source)
     }
 
 }

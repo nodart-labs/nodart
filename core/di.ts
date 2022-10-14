@@ -285,13 +285,13 @@ export class DependencyInterceptor {
 
         if (!reference || !this.reference) return
 
-        const props = this.interceptor.getReferenceProps(reference)
+        const props = this.interceptor.getReferenceProps(reference) as Array<any>
 
         let dependency, target
 
         if ((target = this.interceptor.getReferenceTarget(reference))) {
 
-            dependency = this.reference.get(reference + '/' + target, props ? props : [])
+            dependency = this.reference.get(reference + '/' + target, props ?? [])
 
         } else if (reference.includes('/')) {
 
@@ -342,18 +342,13 @@ export class DependencyInterceptor {
 
                 this.interceptor.onWatchProperty?.(property, descriptor)
 
-                const {prop, path, source, isTarget} = descriptor
+                const {prop, path, source} = descriptor
 
-                if (isTarget) {
-
-                    return this._interceptProperty(
-                        property,
-                        source,
-                        reference + '/' + (path.length ? path.join('/') + '/' : '') + prop.toString()
-                    )
-                }
-
-                return source?.[prop]
+                return this._interceptProperty(
+                    property,
+                    source,
+                    reference + '/' + (path.length ? path.join('/') + '/' + prop : prop)
+                )
             }
         })
 

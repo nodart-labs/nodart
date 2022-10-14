@@ -8,9 +8,9 @@ import {Engine} from "./core/engine";
 import {Service} from "./core/service";
 import {Model} from "./core/model";
 import {Orm, OrmMigrationSource, OrmMigrator, OrmSeedSource, OrmSeeder} from "./core/orm";
-import {HttpClient} from "./core/http_client";
+import {HttpClient, HttpFormData} from "./core/http_client";
 import {HttpHandler} from "./core/http_handler";
-import {HttpRespond} from "./core/http_respond";
+import {HttpRespond, HttpResponder} from "./core/http_respond";
 import {HttpService, HttpServiceAcceptor} from "./services/http";
 import {Router} from "./core/router";
 import {Session} from "./core/session";
@@ -31,6 +31,7 @@ import {OrmLoader} from "./loaders/orm_loader";
 import {ExceptionHandlerLoader} from "./loaders/exception_handler_loader";
 import {CommandLineLoader} from "./loaders/cmd_loader"
 import {HttpClientLoader} from "./loaders/http_client_loader";
+import {HttpFormDataLoader} from "./loaders/http_form_data_loader";
 import {ExceptionLogLoader} from "./loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "./loaders/exception_template_loader";
 import {HttpServiceLoader} from "./loaders/http_service_loader";
@@ -56,8 +57,10 @@ export {
     AppStore,
     AppListener,
     HttpClient,
+    HttpFormData,
     HttpHandler,
     HttpRespond,
+    HttpResponder,
     HttpService,
     HttpServiceAcceptor,
     Router,
@@ -94,6 +97,7 @@ export {
     ExceptionTemplateLoader,
     CommandLineLoader,
     HttpClientLoader,
+    HttpFormDataLoader,
     HttpServiceLoader,
     HttpRespondLoader,
 }

@@ -7,7 +7,7 @@ class Engine {
         this.client = require('nunjucks');
         this.client.configure(config.views, config.options);
     }
-    view(templatePath, args, callback) {
+    getTemplate(templatePath, args, callback) {
         return this.client.render(this.normalize(templatePath), args, callback);
     }
     normalize(templatePath) {

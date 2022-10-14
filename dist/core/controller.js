@@ -24,6 +24,9 @@ let Controller = class Controller extends http_respond_1.HttpRespond {
     get engine() {
         return this._engine || (this._engine = this.app.get('engine').call());
     }
+    get httpResponder() {
+        return this._httpResponder || (this._httpResponder = new (this.app.config.get.httpResponder || http_respond_1.HttpResponder)(this));
+    }
 };
 __decorate([
     (0, di_1.injects)('service')

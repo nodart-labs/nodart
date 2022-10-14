@@ -1,15 +1,15 @@
-import {EngineConfigInterface} from "../interfaces/engine";
+import {EngineConfigExtended, EngineInterface} from "../interfaces/engine";
 
-export class Engine {
+export class Engine implements EngineInterface {
 
     readonly client = require('nunjucks')
 
-    constructor(readonly config: EngineConfigInterface) {
+    constructor(readonly config: EngineConfigExtended) {
 
         this.client.configure(config.views, config.options)
     }
 
-    view(templatePath: string, args?: object, callback?: Function) {
+    getTemplate(templatePath: string, args?: object, callback?: Function): string {
 
         return this.client.render(this.normalize(templatePath), args, callback)
     }

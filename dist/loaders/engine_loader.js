@@ -10,19 +10,24 @@ class EngineLoader extends app_loader_1.AppLoader {
         super(_app);
         this._app = _app;
         this._repository = app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
-        this._repository = (_b = (_a = _app.config.get.engine) === null || _a === void 0 ? void 0 : _a.views) !== null && _b !== void 0 ? _b : app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
+        this._repository = (_b = (_a = _app.config.get.engineConfig) === null || _a === void 0 ? void 0 : _a.views) !== null && _b !== void 0 ? _b : app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
+    }
+    get targetType() {
+        return engine_1.Engine;
+    }
+    _onCall(target) {
+        var _a;
+        this._engine = (_a = target !== null && target !== void 0 ? target : this._app.config.get.engine) !== null && _a !== void 0 ? _a : engine_1.Engine;
     }
     _resolve(target, args) {
         var _a;
-        return new engine_1.Engine((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this.getEngineConfig());
+        return new this._engine((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this.getEngineConfig());
     }
     getEngineConfig() {
         var _a;
-        const config = Object.assign({}, (_a = this._app.config.get.engine) !== null && _a !== void 0 ? _a : {});
+        const config = Object.assign({}, (_a = this._app.config.get.engineConfig) !== null && _a !== void 0 ? _a : {});
         config.views = this.getRepo();
         return config;
-    }
-    _onCall(target, args) {
     }
     _onGenerate(repository) {
     }

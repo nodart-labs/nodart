@@ -65,8 +65,31 @@ export const HTTP_CONTENT_MIME_TYPES = Object.freeze({
 })
 
 export type HttpContentExtensions =
-    | 'html' | 'htm' | 'text' | 'txt' | 'js' | 'css' | 'json' | 'png' | 'ico' | 'jpg' | 'gif'
-    | 'svg' | 'wav' | 'mp3' | 'aac' | 'mp4' | 'mpeg' | 'avi' | 'woff'| 'woff2' | 'ttf' | 'eot' | 'otf' | 'wasm' | string
+    | 'html'
+    | 'htm'
+    | 'text'
+    | 'txt'
+    | 'js'
+    | 'css'
+    | 'json'
+    | 'png'
+    | 'ico'
+    | 'jpg'
+    | 'gif'
+    | 'svg'
+    | 'wav'
+    | 'mp3'
+    | 'aac'
+    | 'mp4'
+    | 'mpeg'
+    | 'avi'
+    | 'woff'
+    | 'woff2'
+    | 'ttf'
+    | 'eot'
+    | 'otf'
+    | 'wasm'
+    | string
 
 export type HttpFileMimeType = 'application/octet-stream' | string
 
@@ -85,7 +108,9 @@ export interface BaseHttpResponseInterface extends BaseExceptionInterface {
 
 export interface BaseHttpResponseHandlerInterface extends BaseHttpResponseInterface {
     setResponseData(data: HttpResponseData)
+
     getHttpResponse(assignData?: HttpResponseData): BaseHttpResponseInterface
+
     responseIsSent: boolean
 }
 
@@ -95,6 +120,45 @@ export interface HttpResponseDataInterface {
     content: string
     request?: Http2ServerRequest
     response?: Http2ServerResponse
+}
+
+export interface HttpFormDataInterface {
+    config: HttpFormDataConfigInterface
+    fields: { [field: string]: any }
+    files: { [field: string]: any }
+
+    fetchFormData(...args: any): Promise<this>
+}
+
+export interface HttpFormDataConfigInterface {
+    uploadDir?: string // OS system temp folder by default
+    options?: unknown
+
+    [addon: string]: any
+}
+
+export type HttpFormDataConfigExtended = HttpFormDataConfigInterface & { options: HttpFormDataOptions }
+
+export type HttpFormDataOptions = {
+    headers?: { [name: string]: string } // These are the HTTP headers of the incoming request, which are used by individual parsers.
+    highWaterMark?: number // highWaterMark to use for the parser stream. Default: node's stream.Writable default.
+    fileHwm?: number // highWaterMark to use for individual file streams. Default: node's stream.Readable default.
+    defCharset?: string // Default character set to use when one isn't defined. Default: 'utf8'.
+    defParamCharset?: string // For multipart forms, the default character set to use for values
+    // of part header parameters (e.g. filename) that are not extended parameters
+    // (that contain an explicit charset). Default: 'latin1'.
+    preservePath?: boolean // If paths in filenames from file parts in a 'multipart/form-data' request shall be preserved. Default: false.
+    limits?: {
+        fieldNameSize?: number // Max field name size = 100 bytes
+        fieldSize?: number // Max field value size (in bytes) = 1048576 (1MB)
+        fields?: number // Max number of non-file fields = Infinity
+        fileSize?: number // For multipart forms, the max file size (in bytes) = Infinity
+        files?: number // For multipart forms, the max number of file fields = Infinity
+        parts?: number // For multipart forms, the max number of parts (fields + files) = Infinity
+        headerPairs?: number // For multipart forms, the max number of header key=>value pairs to parse = 2000
+    }
+
+    [addon: string]: any
 }
 
 export interface HttpAcceptorInterface {
@@ -110,6 +174,18 @@ export interface HttpAcceptorInterface {
     delete(...args): any
 
     head(...args): any
+
+    connect?: (...args) => any
+
+    trace?: (...args) => any
+}
+
+export interface HttpResponderInterface {
+    data(body: JSONObjectInterface | string, ...args: any): void
+
+    view(template: string, assign?: object, ...args: any): void
+
+    [addon: string]: any
 }
 
 export const HTTP_STATUS_CODES = Object.freeze({

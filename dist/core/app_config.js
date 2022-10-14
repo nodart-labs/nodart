@@ -22,6 +22,9 @@ const exception_template_loader_1 = require("../loaders/exception_template_loade
 const app_builder_loader_1 = require("../loaders/app_builder_loader");
 const http_service_loader_1 = require("../loaders/http_service_loader");
 const http_respond_loader_1 = require("../loaders/http_respond_loader");
+const http_form_data_loader_1 = require("../loaders/http_form_data_loader");
+const engine_1 = require("./engine");
+const http_respond_1 = require("./http_respond");
 const STORE = require('../store/system');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -55,10 +58,13 @@ exports.APP_CONFIG = Object.freeze({
     storeName: exports.CLIENT_STORE_NAME,
     stateName: exports.CLIENT_STATE_NAME,
     httpClient: {},
+    fetchDataOnRequest: true,
     routes: {},
-    engine: {},
+    engine: engine_1.Engine,
+    engineConfig: {},
+    httpResponder: http_respond_1.HttpResponder,
     session: {
-        secret: undefined
+        secret: utils_1.$.random.hex()
     },
     orm: {},
     database: exports.DEFAULT_DATABASE_REPOSITORY,
@@ -79,6 +85,7 @@ exports.APP_CONFIG = Object.freeze({
     loaders: {
         app_builder: app_builder_loader_1.AppBuilderLoader,
         http: http_client_loader_1.HttpClientLoader,
+        http_form: http_form_data_loader_1.HttpFormDataLoader,
         http_service: http_service_loader_1.HttpServiceLoader,
         http_respond: http_respond_loader_1.HttpRespondLoader,
         controller: controller_loader_1.ControllerLoader,
@@ -97,7 +104,8 @@ exports.APP_CONFIG = Object.freeze({
     reference: {
         service: (app, target, props) => app.get('service').require(target).call(props),
         model: (app, target, props) => app.get('model').require(target).call(props),
-    }
+    },
+    formData: {}
 });
 class AppConfig {
     constructor() {

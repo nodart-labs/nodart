@@ -22,7 +22,7 @@ export class ExceptionTemplateLoader extends AppLoader {
 
         if (!template || !engineLoader?.isFile(engine?.normalize(template))) return
 
-        return engine.view(template, {response: args[0] ?? {}})
+        return engine.getTemplate(template, {response: args[0] ?? {}})
     }
 
     protected _onGenerate(repository: string) {

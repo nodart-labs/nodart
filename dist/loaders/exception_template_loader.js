@@ -16,7 +16,7 @@ class ExceptionTemplateLoader extends app_loader_1.AppLoader {
         const engine = engineLoader.call();
         if (!template || !(engineLoader === null || engineLoader === void 0 ? void 0 : engineLoader.isFile(engine === null || engine === void 0 ? void 0 : engine.normalize(template))))
             return;
-        return engine.view(template, { response: (_a = args[0]) !== null && _a !== void 0 ? _a : {} });
+        return engine.getTemplate(template, { response: (_a = args[0]) !== null && _a !== void 0 ? _a : {} });
     }
     _onGenerate(repository) {
     }

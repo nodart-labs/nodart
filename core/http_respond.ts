@@ -1,28 +1,36 @@
 import {HttpClient} from "./http_client";
 import {JSONObjectInterface} from "../interfaces/object";
 import {Engine} from "./engine";
+import {EngineInterface} from "../interfaces/engine";
+import {HttpResponderInterface} from "../interfaces/http";
 
 export abstract class HttpRespond {
 
-    abstract engine: Engine
+    abstract engine: Engine | EngineInterface
+
+    abstract httpResponder: HttpResponder | HttpResponderInterface
 
     protected constructor(readonly http: HttpClient) {
     }
 
     get send() {
 
-        return {
+        return this.httpResponder
+    }
+}
 
-            data: (body: JSONObjectInterface | string, status?: number, contentType?: string): void => {
+export class HttpResponder implements HttpResponderInterface {
 
-                this.http.send(body, status, contentType)
-            },
-
-            view: (template: string, args?: object, status?: number, callback?: Function): void => {
-
-                this.http.sendHtml(this.engine.view(template, args, callback), status)
-            }
-        }
+    constructor(readonly respond: HttpRespond) {
     }
 
+    data(body: JSONObjectInterface | string, status?: number, contentType?: string): void {
+
+        this.respond.http.send(body, status, contentType)
+    }
+
+    view(template: string, assign?: object, status?: number, callback?: Function): void {
+
+        this.respond.http.sendHtml(this.respond.engine.getTemplate(template, assign, callback), status)
+    }
 }
