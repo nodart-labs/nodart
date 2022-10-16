@@ -31,9 +31,6 @@ class HttpClient {
     get ready() {
         return !!this.isDataFetched;
     }
-    get buffer() {
-        return this._buffer;
-    }
     get form() {
         return (this._form || (this._form = new HttpFormData(this)));
     }
@@ -70,29 +67,16 @@ class HttpClient {
             const chunks = [];
             this.request.on('data', chunk => chunks.push(chunk));
             this.request.on('end', () => {
-                this._buffer = Buffer.concat(chunks);
                 this._data = {};
-                const data = this._buffer.toString();
-                const readQuery = (data) => {
-                    try {
-                        for (const [key, value] of new URLSearchParams(data).entries())
-                            this._data[key] = value;
-                    }
-                    catch (err) {
+                this._onFetchData(Buffer.concat(chunks), (err) => {
+                    if (err) {
                         reject(err);
                         this.handleError(err, 'Failed to fetch data from request');
+                        return;
                     }
-                };
-                try {
-                    data.startsWith('{') || data.startsWith('[')
-                        ? this._data = JSON.parse(data)
-                        : readQuery(data);
-                }
-                catch (e) {
-                    readQuery(data);
-                }
-                this.isDataFetched = true;
-                resolve(this._data);
+                    this.isDataFetched = true;
+                    resolve(this._data);
+                });
             });
             this.request.on('error', (err) => {
                 reject(err);
@@ -104,6 +88,26 @@ class HttpClient {
                 this.handleError();
             });
         });
+    }
+    _onFetchData(buffer, callback) {
+        const data = buffer.toString().trim();
+        const readQuery = () => {
+            for (const [key, value] of new URLSearchParams(data).entries()) {
+                if (key in this._data) {
+                    Array.isArray(this._data[key]) || (this._data[key] = [this._data[key]]);
+                    this._data[key].push(value);
+                    continue;
+                }
+                this._data[key] = value;
+            }
+        };
+        try {
+            data.startsWith('{') || data.startsWith('[') ? this._data = JSON.parse(data) : readQuery();
+            callback();
+        }
+        catch (e) {
+            callback(e);
+        }
     }
     send(data, status = http_1.HTTP_STATUS_CODES.OK, contentType) {
         this.setResponseData({
@@ -144,7 +148,6 @@ class HttpClient {
     }
     handleError(err, message) {
         this._data = {};
-        this._buffer = undefined;
         if (err) {
             this.exceptionMessage = message !== null && message !== void 0 ? message : err === null || err === void 0 ? void 0 : err.message;
             this.exceptionData = err;
@@ -227,10 +230,12 @@ class HttpFormData {
         };
         this.isDataFetched = false;
         this._errors = [];
+        this._filePromises = [];
         (_a = (_b = this.config).options) !== null && _a !== void 0 ? _a : (_b.options = {});
+        this.config.uploadDir = utils_1.fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir();
     }
     get uploadDir() {
-        return utils_1.fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir();
+        return this.config.uploadDir;
     }
     get form() {
         var _a;
@@ -254,46 +259,26 @@ class HttpFormData {
     stat(field) {
         return this._stat.fields[field] || this._stat.files[field];
     }
-    fetchFormData(onFile) {
+    fetchFormData(filter = {}) {
         const form = this.form;
-        const uploadDir = this.uploadDir;
+        this._filePromises = [];
         return new Promise((resolve, reject) => {
             if (this.isDataFetched) {
                 resolve(this);
                 return;
             }
-            const promises = [];
-            form.on('file', (name, file, info) => {
-                var _a, _b;
-                let resolver = null;
-                let error = null;
-                promises.push(new Promise(res => resolver = res));
-                const hash = utils_1.$.random.hex();
-                const path = utils_1.fs.path(uploadDir, hash);
-                const writeStream = utils_1.fs.system.createWriteStream(path);
-                (_a = this._files)[name] || (_a[name] = []);
-                (_b = this._stat.files)[name] || (_b[name] = []);
-                writeStream.on('close', () => {
-                    if (error) {
-                        this._errors.push({ field: name, error });
-                    }
-                    else {
-                        info.path = path;
-                        this._files[name].push(path);
-                        this._stat.files[name].push(info);
-                    }
-                    resolver();
-                });
-                writeStream.on('error', (err) => error = err);
-                file.pipe(writeStream);
-            });
             form.on('field', (name, value, info) => {
-                this._fields[name] = value;
-                this._stat.fields[name] = info;
+                this._onFieldUpload(name, value, info, filter === null || filter === void 0 ? void 0 : filter.field);
+            });
+            form.on('file', (name, file, info) => {
+                this._onFileUpload(name, file, info, filter === null || filter === void 0 ? void 0 : filter.file);
             });
             form.on('close', () => {
                 this.isDataFetched = true;
-                Promise.all(promises).then(() => resolve(this));
+                Promise.all(this._filePromises).then(() => {
+                    resolve(this);
+                    this._filePromises = [];
+                });
             });
             form.on('error', (error) => {
                 this._errors.push({ error });
@@ -301,6 +286,53 @@ class HttpFormData {
             });
             this.http.request.pipe(form);
         });
+    }
+    _onFieldUpload(field, value, info, filter) {
+        if (false === (filter === null || filter === void 0 ? void 0 : filter(field, value, info)))
+            return;
+        if (field in this._fields) {
+            Array.isArray(this._fields[field]) || (this._fields[field] = [this._fields[field]]);
+            Array.isArray(this._stat[field]) || (this._stat[field] = [this._stat[field]]);
+            this._fields[field].push(value);
+            this._stat[field].push(info);
+            return;
+        }
+        this._fields[field] = value;
+        this._stat.fields[field] = info;
+    }
+    _onFileUpload(field, file, info, filter) {
+        var _a, _b;
+        (_a = this._files)[field] || (_a[field] = []);
+        (_b = this._stat.files)[field] || (_b[field] = []);
+        if (false === (filter === null || filter === void 0 ? void 0 : filter(field, info)))
+            return;
+        let resolver = null;
+        let error = null;
+        this._filePromises.push(new Promise(res => resolver = res));
+        const path = utils_1.fs.path(this.uploadDir, utils_1.$.random.hex());
+        const writeStream = utils_1.fs.system.createWriteStream(path);
+        writeStream.on('close', () => {
+            if (error) {
+                this._errors.push({ field, error });
+                resolver();
+                return;
+            }
+            if (info.filename === undefined) {
+                const stat = utils_1.fs.stat(path);
+                if (!stat || stat.size === 0) {
+                    utils_1.fs.isFile(path) && utils_1.fs.system.unlink(path, () => {
+                    });
+                    resolver();
+                    return;
+                }
+            }
+            info.path = path;
+            this._files[field].push(path);
+            this._stat.files[field].push(info);
+            resolver();
+        });
+        writeStream.on('error', (err) => error = err);
+        file.pipe(writeStream);
     }
 }
 exports.HttpFormData = HttpFormData;

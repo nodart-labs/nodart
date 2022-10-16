@@ -25,6 +25,7 @@ class App {
     constructor(config) {
         this.httpServiceRoutes = [];
         this._host = { port: null, protocol: null, host: null, hostname: null };
+        this._isStart = false;
         this.config = new app_config_1.AppConfig().set(config);
         this.factory = new app_factory_1.AppFactory(this);
         this.di = new di_1.DIManager(this.config.getStrict('reference'), this);
@@ -46,15 +47,18 @@ class App {
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.factory.createApp();
             this.factory.createStore();
             this.factory.createState();
             this.factory.createEventListener();
+            yield this.factory.createApp();
             return this;
         });
     }
+    get isStart() {
+        return this._isStart;
+    }
     start(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST) {
-        this.factory.createStore();
+        this._isStart = true;
         this.factory.createState();
         this.factory.createEventListener();
         const server = this.serve(port, protocol, host);

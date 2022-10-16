@@ -161,6 +161,31 @@ export type HttpFormDataOptions = {
     [addon: string]: any
 }
 
+export type HttpFormDataClientsField = {
+    nameTruncated?: boolean, // Whether name was truncated or not (due to a configured limits.fieldNameSize limit)
+    valueTruncated?: boolean, // Whether value was truncated or not (due to a configured limits.fieldSize limit)
+    encoding?: string, // The field's 'Content-Transfer-Encoding' value.
+    mimeType?: string, // The field's 'Content-Type' value.
+}
+
+export type HttpFormDataClientsFile = {
+    path?: string, // The path to uploaded file with randomly generated name
+    filename?: string, // If supplied, this contains the file's filename.
+    // WARNING: You should almost never use this value as-is
+    // (especially if you are using preservePath: true in your config)
+    // as it could contain malicious input. You are better off generating your own (safe)
+    encoding?: string, // The file's 'Content-Transfer-Encoding' value.
+    mimeType?: string // The file's 'Content-Type' value.
+}
+
+export type HttpFormDataClientsFieldFilter = (
+    field: string,
+    value: any,
+    info: HttpFormDataClientsField) => boolean
+export type HttpFormDataClientsFileFilter = (
+    field: string,
+    info: HttpFormDataClientsFile) => boolean
+
 export interface HttpAcceptorInterface {
 
     get(...args): any

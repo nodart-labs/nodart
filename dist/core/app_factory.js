@@ -75,10 +75,10 @@ class AppFactory {
     }
     createStore() {
         const { store, repo } = this.storeData;
-        repo && store && app_store_1.AppStore.add(store, this._app.rootDir + '/' + repo);
+        repo && store && app_store_1.AppStore.add(store, utils_1.fs.path(this._app.rootDir, repo));
     }
     createState() {
-        app_1.App.system.store || app_store_1.AppStore.add(app_config_1.SYSTEM_STORE_NAME, __dirname + '/../' + app_config_1.SYSTEM_STORE);
+        app_1.App.system.store || app_store_1.AppStore.add(app_config_1.SYSTEM_STORE_NAME, utils_1.fs.path(__dirname, '../' + app_config_1.SYSTEM_STORE));
         app_1.App.system.state.app || app_1.App.system.setup({ app: this._app });
     }
     createEventListener() {

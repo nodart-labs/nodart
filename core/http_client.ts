@@ -6,17 +6,21 @@ import {
     HttpHost,
     HttpContentExtensions,
     HttpMimeTypes,
-    HttpFormDataOptions,
+    HttpFormDataConfigExtended,
+    HttpFormDataClientsFile,
+    HttpFormDataClientsField,
+    HttpFormDataClientsFieldFilter,
+    HttpFormDataClientsFileFilter,
     BaseHttpResponseInterface,
     HttpClientConfigInterface,
     BaseHttpResponseHandlerInterface,
     HttpResponseDataInterface,
     HttpFormDataInterface,
-    HttpFormDataConfigInterface,
     HTTP_STATUS_CODES,
     HTTP_CONTENT_MIME_TYPES,
 } from "../interfaces/http";
-import {JSONObjectInterface} from "../interfaces/object";
+import {JSONLikeInterface, JSONObjectInterface} from "../interfaces/object";
+import {Stream} from "stream";
 
 export const DEFAULT_FILE_MIME_TYPE = 'application/octet-stream'
 export const DEFAULT_CONTENT_TYPE = 'application/json'
@@ -31,9 +35,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         'Access-Control-Allow-Headers': '*',
     }
 
-    protected _data: JSONObjectInterface = {}
-
-    protected _buffer: Buffer
+    protected _data: JSONLikeInterface = {}
 
     protected _dataURL: HttpURL
 
@@ -66,7 +68,7 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
         this._host = data
     }
 
-    get data(): JSONObjectInterface {
+    get data(): JSONLikeInterface {
 
         return {...this._data}
     }
@@ -74,11 +76,6 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     get ready(): boolean {
 
         return !!this.isDataFetched
-    }
-
-    get buffer(): Buffer | undefined {
-
-        return this._buffer
     }
 
     get form(): HttpFormData {
@@ -127,7 +124,6 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
     fetchData(): Promise<any> {
 
         return new Promise((resolve, reject) => {
-
             if (this.isDataFetched || this.isFormData) {
                 resolve(this._data)
                 return
@@ -137,30 +133,16 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
 
             this.request.on('data', chunk => chunks.push(chunk))
             this.request.on('end', () => {
-                this._buffer = Buffer.concat(chunks)
                 this._data = {}
-
-                const data = this._buffer.toString()
-                const readQuery = (data) => {
-                    try {
-                        for (const [key, value] of new URLSearchParams(data).entries()) this._data[key] = value
-                    } catch (err) {
+                this._onFetchData(Buffer.concat(chunks), (err) => {
+                    if (err) {
                         reject(err)
                         this.handleError(err, 'Failed to fetch data from request')
+                        return
                     }
-                }
-
-                try {
-                    data.startsWith('{') || data.startsWith('[')
-                        ? this._data = JSON.parse(data)
-                        : readQuery(data)
-                } catch (e) {
-                    readQuery(data)
-                }
-
-                this.isDataFetched = true
-
-                resolve(this._data)
+                    this.isDataFetched = true
+                    resolve(this._data)
+                })
             })
 
             this.request.on('error', (err) => {
@@ -174,6 +156,27 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
                 this.handleError()
             })
         })
+    }
+
+    protected _onFetchData(buffer: Buffer, callback: (err?: Error) => void) {
+        const data = buffer.toString().trim()
+        const readQuery = () => {
+            for (const [key, value] of new URLSearchParams(data).entries()) {
+                if (key in this._data) {
+                    Array.isArray(this._data[key]) || (this._data[key] = [this._data[key]])
+                    this._data[key].push(value)
+                    continue
+                }
+                this._data[key] = value
+            }
+        }
+
+        try {
+            data.startsWith('{') || data.startsWith('[') ? this._data = JSON.parse(data) : readQuery()
+            callback()
+        } catch (e) {
+            callback(e)
+        }
     }
 
     send(data: JSONObjectInterface | string, status: number = HTTP_STATUS_CODES.OK, contentType?: string) {
@@ -229,7 +232,6 @@ export class HttpClient implements BaseHttpResponseHandlerInterface {
 
     handleError(err?: Error, message?: string) {
         this._data = {}
-        this._buffer = undefined
         if (err) {
             this.exceptionMessage = message ?? err?.message
             this.exceptionData = err
@@ -338,22 +340,8 @@ export class HttpFormData implements HttpFormDataInterface {
     protected _files: { [field: string]: string[] } = {}
 
     protected _stat: {
-        fields: {
-            [field: string]: {
-                nameTruncated?: boolean,
-                valueTruncated?: boolean,
-                encoding?: string,
-                mimeType?: string,
-            }
-        },
-        files: {
-            [field: string]: Array<{
-                path?: string,
-                filename?: string,
-                encoding?: string,
-                mimeType?: string
-            }>
-        }
+        fields: { [field: string]: HttpFormDataClientsField | Array<HttpFormDataClientsField> },
+        files: { [field: string]: Array<HttpFormDataClientsFile> }
     } = {
         fields: {},
         files: {},
@@ -363,16 +351,19 @@ export class HttpFormData implements HttpFormDataInterface {
 
     protected _errors: { field?: string, error: Error }[] = []
 
+    protected _filePromises: Promise<void>[] = []
+
     constructor(
         readonly http: BaseHttpResponseHandlerInterface,
-        readonly config: HttpFormDataConfigInterface & { options: HttpFormDataOptions } = {options: {}}) {
+        readonly config: HttpFormDataConfigExtended = {options: {}}) {
 
         this.config.options ??= {}
+        this.config.uploadDir = fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir()
     }
 
     get uploadDir() {
 
-        return fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir()
+        return this.config.uploadDir
     }
 
     get form() {
@@ -410,11 +401,14 @@ export class HttpFormData implements HttpFormDataInterface {
         return this._stat.fields[field] || this._stat.files[field]
     }
 
-    fetchFormData(onFile?: {}): Promise<this> {
+    fetchFormData(filter: {
+        field?: HttpFormDataClientsFieldFilter,
+        file?: HttpFormDataClientsFileFilter
+    } = {}): Promise<this> {
 
         const form = this.form
 
-        const uploadDir = this.uploadDir
+        this._filePromises = []
 
         return new Promise((resolve, reject) => {
 
@@ -423,46 +417,20 @@ export class HttpFormData implements HttpFormDataInterface {
                 return
             }
 
-            const promises = []
-
-            form.on('file', (name, file, info) => {
-
-                let resolver = null
-                let error = null
-
-                promises.push(new Promise(res => resolver = res))
-
-                const hash = $.random.hex()
-                const path = fs.path(uploadDir, hash)
-                const writeStream = fs.system.createWriteStream(path)
-
-                this._files[name] ||= []
-                this._stat.files[name] ||= []
-
-                writeStream.on('close', () => {
-                    if (error) {
-                        this._errors.push({field: name, error})
-                    } else {
-                        info.path = path
-                        this._files[name].push(path)
-                        this._stat.files[name].push(info)
-                    }
-                    resolver()
-                })
-
-                writeStream.on('error', (err) => error = err)
-
-                file.pipe(writeStream)
+            form.on('field', (name, value, info) => {
+                this._onFieldUpload(name, value, info, filter?.field)
             })
 
-            form.on('field', (name, value, info) => {
-                this._fields[name] = value
-                this._stat.fields[name] = info
+            form.on('file', (name, file, info) => {
+                this._onFileUpload(name, file, info, filter?.file)
             })
 
             form.on('close', () => {
                 this.isDataFetched = true
-                Promise.all(promises).then(() => resolve(this))
+                Promise.all(this._filePromises).then(() => {
+                    resolve(this)
+                    this._filePromises = []
+                })
             })
 
             form.on('error', (error) => {
@@ -472,6 +440,74 @@ export class HttpFormData implements HttpFormDataInterface {
 
             this.http.request.pipe(form)
         })
+    }
+
+    protected _onFieldUpload(
+        field: string,
+        value: any,
+        info: HttpFormDataClientsField,
+        filter?: HttpFormDataClientsFieldFilter) {
+
+        if (false === filter?.(field, value, info)) return
+
+        if (field in this._fields) {
+            Array.isArray(this._fields[field]) || (this._fields[field] = [this._fields[field]])
+            Array.isArray(this._stat[field]) || (this._stat[field] = [this._stat[field]])
+            this._fields[field].push(value)
+            this._stat[field].push(info)
+            return
+        }
+
+        this._fields[field] = value
+        this._stat.fields[field] = info
+    }
+
+    protected _onFileUpload(
+        field: string,
+        file: Stream,
+        info: HttpFormDataClientsFile,
+        filter?: HttpFormDataClientsFileFilter) {
+
+        this._files[field] ||= []
+        this._stat.files[field] ||= []
+
+        if (false === filter?.(field, info)) return
+
+        let resolver = null
+        let error = null
+
+        this._filePromises.push(new Promise(res => resolver = res))
+
+        const path = fs.path(this.uploadDir, $.random.hex())
+        const writeStream = fs.system.createWriteStream(path)
+
+        writeStream.on('close', () => {
+            if (error) {
+                this._errors.push({field, error})
+                resolver()
+                return
+            }
+
+            if (info.filename === undefined) {
+                const stat = fs.stat(path)
+
+                if (!stat || stat.size === 0) {
+                    fs.isFile(path) && fs.system.unlink(path, () => {
+                    })
+                    resolver()
+                    return
+                }
+            }
+
+            info.path = path
+            this._files[field].push(path)
+            this._stat.files[field].push(info)
+            resolver()
+        })
+
+        writeStream.on('error', (err) => error = err)
+
+        file.pipe(writeStream)
     }
 
 }

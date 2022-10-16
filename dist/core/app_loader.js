@@ -100,7 +100,7 @@ class AppLoader {
         if (!repo)
             return '';
         const path = utils_1.fs.path(rootDir, repo);
-        utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
+        this._app.isStart || utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
         return path;
     }
     absPath(path, rootDir) {

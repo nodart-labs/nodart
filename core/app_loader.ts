@@ -147,7 +147,7 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         const path = fs.path(rootDir, repo)
 
-        fs.isDir(path) || fs.mkDeepDir(path)
+        this._app.isStart || fs.isDir(path) || fs.mkDeepDir(path)
 
         return path
     }

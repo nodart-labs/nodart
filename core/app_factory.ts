@@ -86,11 +86,11 @@ export class AppFactory {
 
     createStore() {
         const {store, repo} = this.storeData
-        repo && store && AppStore.add(store, this._app.rootDir + '/' + repo)
+        repo && store && AppStore.add(store, fs.path(this._app.rootDir, repo))
     }
 
     createState() {
-        App.system.store || AppStore.add(SYSTEM_STORE_NAME, __dirname + '/../' + SYSTEM_STORE)
+        App.system.store || AppStore.add(SYSTEM_STORE_NAME, fs.path(__dirname, '../' + SYSTEM_STORE))
         App.system.state.app || App.system.setup({app: this._app})
     }
 

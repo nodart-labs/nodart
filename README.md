@@ -93,7 +93,8 @@ const config = require('./config')
 
 // Be aware that this fundamental initialization 
 // automatically creates the necessary app files and folders.
-// (database folder, controllers folder, models folder, services folder, views folder and etc.)
+// (database folder, controllers folder, models folder, 
+// services folder, views folder and etc.)
 
 new App({...config}).init().then(app => {
 
@@ -162,10 +163,12 @@ http.post('/', ({http}) => {
 http.post('/', async ({http}) => {
 
     const {fields, files} = await http.form.fetchFormData()
+    
+    const stat = http.form.stat('field_name')
 
 })
 
-// connecting services and models:
+// dealing with services and models:
 
 import {SampleService} from "./services/sample"
 import {SampleModel} from "./models/sample"

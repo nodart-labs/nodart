@@ -45,6 +45,8 @@ export class App {
 
     private _host: HttpHost = {port: null, protocol: null, host: null, hostname: null}
 
+    private _isStart: boolean = false
+
     constructor(config: AppConfigInterface) {
 
         this.config = new AppConfig().set(config)
@@ -79,20 +81,25 @@ export class App {
 
     async init() {
 
-        await this.factory.createApp()
-
         this.factory.createStore()
 
         this.factory.createState()
 
         this.factory.createEventListener()
 
+        await this.factory.createApp()
+
         return this
+    }
+
+    get isStart() {
+
+        return this._isStart
     }
 
     start(port: number = DEFAULT_PORT, protocol: Protocols | {[K in Protocols]: any} = 'http', host: string = DEFAULT_HOST) {
 
-        this.factory.createStore()
+        this._isStart = true
 
         this.factory.createState()
 

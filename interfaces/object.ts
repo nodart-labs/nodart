@@ -15,6 +15,10 @@ export interface JSONObjectInterface {
 
 export interface JSONArrayInterface extends Array<JSONValue> { }
 
+export interface JSONLikeInterface {
+    [x: string]: any
+}
+
 export type FunctionArgumentParseData = {
     arg: string,
     type: 'string' | 'number' | 'object' | 'array' | 'function' | 'boolean' | undefined,
