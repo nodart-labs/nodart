@@ -74,9 +74,9 @@ npx nodart create-app
 ```
 
 
-it creates a microservice application file. Use flag "--es" when you are not using typescript in project.
+it creates a microservice application file. Use flag "--js" when you are not using typescript in project.
 ```shell
-npx nodart microapp --es[optional]
+npx nodart microapp --js[optional]
 ```
 
 ---
