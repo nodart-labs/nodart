@@ -80,10 +80,10 @@ const mkdir = (path: string, chmod: number = 0o744) => fs.mkdirSync(path, chmod)
 
 const mkDeepDir = (path: string, chmod = 0o744) => fs.mkdirSync(path, {recursive: true, mode: chmod})
 
-const copy = (src: string, dest: string, callback: Function = (() => undefined), chmod: number): boolean => {
+const copy = (src: string, dest: string, callback: Function = (() => undefined)): boolean => {
 
     if (isFile(src)) {
-        fs.copyFile(src, dest, chmod, callback)
+        fs.copyFile(src, dest, callback)
         return true
     }
 

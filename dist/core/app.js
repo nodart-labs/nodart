@@ -199,11 +199,18 @@ class AppBuilder {
         const tsConfig = this.app.factory.tsConfig;
         return ((_a = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) === null || _a === void 0 ? void 0 : _a.outDir) === buildDirName ? buildDir : null;
     }
+    get envIsCommonJS() {
+        return !this.app.factory.tsConfigExists;
+    }
     get envIsBuild() {
+        if (this.envIsCommonJS)
+            return true;
         const buildDir = this.buildDir;
         return !!(buildDir && this.app.rootDir.startsWith(buildDir));
     }
     build(onError) {
+        if (this.envIsCommonJS)
+            return;
         const buildDir = this.buildDir;
         if (buildDir === null)
             throw new exception_1.RuntimeException('App Build failed. Cannot retrieve a build directory name.'

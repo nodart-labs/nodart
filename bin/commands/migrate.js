@@ -52,7 +52,11 @@ module.exports = async ({app, cmd}) => {
             name = data.name
             migrations = data.migrations
 
-            getSource('migrate/migrate_source', (file) => {
+            const sourcePath = app.builder.envIsCommonJS ? 'migrate/js/migrate_source' : 'migrate/migrate_source'
+
+            app.get('orm').generate()
+
+            getSource(sourcePath, (file) => {
 
                 const pathName = $.camel2Snake($.hyphen2Camel(fs.formatPath(name))).toLowerCase()
                 const content = fs.read(file)
@@ -66,14 +70,14 @@ module.exports = async ({app, cmd}) => {
                     fs.mkDeepDir(dest)
                 }
 
-                dest = fs.path(dest, $.camel2Snake(name).toLowerCase() + '.ts')
+                dest = fs.path(dest, $.camel2Snake(name).toLowerCase() + (app.builder.envIsCommonJS ? '.js' : '.ts'))
 
                 if (fs.isFile(dest)) {
                     console.log(`A migration source by path ${dest} is already in use.`)
                     process.exit(1)
                 }
 
-                let output = content.replace('[NAME]', $.capitalize(name))
+                let output = content.replace(/\[(NAME)]/g, $.capitalize(name))
 
                 if (Array.isArray(migrations) && migrations.length) {
                     const parts = output.split('MIGRATION>>>')

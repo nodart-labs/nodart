@@ -55,6 +55,9 @@ class AppFactory {
         var _a;
         return (_a = utils_1.fs.json(utils_1.fs.path(this.baseDir, this.tsConfigFileName))) !== null && _a !== void 0 ? _a : {};
     }
+    get tsConfigExists() {
+        return utils_1.fs.isFile(utils_1.fs.path(this.baseDir, this.tsConfigFileName));
+    }
     get storeData() {
         return {
             store: this._app.config.get.storeName,

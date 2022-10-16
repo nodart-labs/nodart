@@ -57,9 +57,9 @@ const json = (path) => {
 const read = (path) => isFile(path) ? fs.readFileSync(path, 'utf8') : null;
 const mkdir = (path, chmod = 0o744) => fs.mkdirSync(path, chmod);
 const mkDeepDir = (path, chmod = 0o744) => fs.mkdirSync(path, { recursive: true, mode: chmod });
-const copy = (src, dest, callback = (() => undefined), chmod) => {
+const copy = (src, dest, callback = (() => undefined)) => {
     if (isFile(src)) {
-        fs.copyFile(src, dest, chmod, callback);
+        fs.copyFile(src, dest, callback);
         return true;
     }
     return false;

@@ -91,6 +91,19 @@ if (fs.existsSync(target)) {
             return true
         }
     })
+
+    const microApp = path.resolve(__dirname, 'sources/nodart-micro-app')
+    const microAppJs = path.resolve(__dirname, 'sources/nodart-js-micro-app')
+
+    if (fs.existsSync(microApp + '/package.json')) {
+        const package = fs.readFileSync(microApp + '/package.json', {encoding: "utf-8"})
+        fs.writeFileSync(microApp + '/package.json', ver(package, pack.version), {encoding: "utf-8"})
+    }
+
+    if (fs.existsSync(microAppJs + '/package.json')) {
+        const package = fs.readFileSync(microAppJs + '/package.json', {encoding: "utf-8"})
+        fs.writeFileSync(microAppJs + '/package.json', ver(package, pack.version), {encoding: "utf-8"})
+    }
 }
 
 process.exit()

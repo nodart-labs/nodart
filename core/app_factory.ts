@@ -65,6 +65,10 @@ export class AppFactory {
         return fs.json(fs.path(this.baseDir, this.tsConfigFileName)) ?? {}
     }
 
+    get tsConfigExists(): boolean {
+        return fs.isFile(fs.path(this.baseDir, this.tsConfigFileName))
+    }
+
     get storeData() {
         return {
             store: this._app.config.get.storeName,

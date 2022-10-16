@@ -10,6 +10,8 @@ module.exports = async ({app, cmd}) => {
 
         const err = 'Warning: Failed to apply package version from existing source.'
 
+        console.log('done!')
+
         try {
             const pack = JSON.parse(fs.readFileSync(app.rootDir + '/package.json', {encoding: "utf-8"}))
 
@@ -28,13 +30,12 @@ module.exports = async ({app, cmd}) => {
                 {encoding: "utf-8"}
             )
 
-            console.log('done!')
-
         } catch (e) {
             console.log(err)
         }
+
     }).catch(() => {
-        console.error('Failed to load base application resource file.')
+        console.error('Failed to unpack base application resource file.')
     })
 
 }

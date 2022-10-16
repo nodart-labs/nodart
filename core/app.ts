@@ -309,7 +309,7 @@ export class AppBuilder {
     constructor(readonly app: App) {
     }
 
-    get buildDir() {
+    get buildDir(): string | null {
 
         const buildDirName = this.app.config.get.buildDirName || DEFAULT_APP_BUILD_DIR
 
@@ -320,7 +320,14 @@ export class AppBuilder {
         return tsConfig?.compilerOptions?.outDir === buildDirName ? buildDir : null
     }
 
-    get envIsBuild() {
+    get envIsCommonJS(): boolean {
+
+        return !this.app.factory.tsConfigExists
+    }
+
+    get envIsBuild(): boolean {
+
+        if (this.envIsCommonJS) return true
 
         const buildDir = this.buildDir
 
@@ -328,6 +335,8 @@ export class AppBuilder {
     }
 
     build(onError?: Function) {
+
+        if (this.envIsCommonJS) return
 
         const buildDir = this.buildDir
 

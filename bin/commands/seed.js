@@ -41,7 +41,7 @@ module.exports = async ({app, cmd}) => {
             const data = fetchSeeds(name)
             name = $.camel2Snake(data.name).toLowerCase()
             await orm().seeder().make(name).then(() => console.log(
-                `A new seed "${name}" was created in directory ${fs.formatPath(orm().config.seeds.directory)}`
+                `A new seed "${name}" was created in directory ${fs.path(orm().config.seeds.directory)}`
             ))
         },
 
@@ -52,7 +52,11 @@ module.exports = async ({app, cmd}) => {
             name = data.name
             seeds = data.seeds
 
-            getSource('migrate/seed_source', (file) => {
+            const sourcePath = app.builder.envIsCommonJS ? 'migrate/js/seed_source' : 'migrate/seed_source'
+
+            app.get('orm').generate()
+
+            getSource(sourcePath, (file) => {
 
                 const pathName = $.camel2Snake($.hyphen2Camel(fs.formatPath(name))).toLowerCase()
                 const content = fs.read(file)
@@ -66,14 +70,14 @@ module.exports = async ({app, cmd}) => {
                     fs.mkDeepDir(dest)
                 }
 
-                dest = fs.path(dest, $.camel2Snake(name).toLowerCase() + '.ts')
+                dest = fs.path(dest, $.camel2Snake(name).toLowerCase() + (app.builder.envIsCommonJS ? '.js' : '.ts'))
 
                 if (fs.isFile(dest)) {
                     console.log(`A SEED source by path ${dest} is already in use.`)
                     process.exit(1)
                 }
 
-                let output = content.replace('[NAME]', $.capitalize(name))
+                let output = content.replace(/\[(NAME)]/g, $.capitalize(name))
 
                 if (Array.isArray(seeds) && seeds.length) {
                     const parts = output.split('SEED>>>')

@@ -1,0 +1,24 @@
+const {OrmMigrationSource} = require("nodart")
+
+class [NAME]Migration extends OrmMigrationSource {
+
+    migrations = {
+MIGRATION>>>
+        /*
+        [MIGRATION_NAME]: {
+            up(client) {
+                return client.schema
+                    .createTable('', function (table) {
+                        table.increments('id')
+                    })
+            },
+            down(client) {
+                return client.schema.dropTable('')
+            }
+        },
+        */
+MIGRATION>>>
+    }
+}
+
+module.exports = {[NAME]Migration}
