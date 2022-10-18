@@ -13,7 +13,11 @@ module.exports = async ({app, cmd}) => {
         console.log('done!')
 
         try {
-            const pack = JSON.parse(fs.readFileSync(app.rootDir + '/package.json', {encoding: "utf-8"}))
+            const packJson = app.rootDir + '/package.json'
+
+            if (!fs.existsSync(packJson)) return
+
+            const pack = JSON.parse(fs.readFileSync(packJson, {encoding: "utf-8"}))
 
             if (!pack?.dependencies?.nodart) {
                 console.log(err)
