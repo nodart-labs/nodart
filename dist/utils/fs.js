@@ -90,7 +90,11 @@ const getSource = (path, sourceProtoObject) => {
 const filename = (path) => isFile(path) ? _path.basename(path) : null;
 const parseFile = (path) => isFile(path) ? _path.parse(path) : {};
 const formatPath = (path) => index_1.$.trimPath(path !== null && path !== void 0 ? path : '').replace(/\\/g, '/').replace(/\/$/, '');
-const path = (path, to = '') => _path.resolve(path, to);
+const path = (path, to = '') => {
+    return to
+        ? _path.resolve(path, to)
+        : _path.join(path.startsWith(_path.sep) ? path : _path.sep === '/' ? '/' + path : path, '');
+};
 const skipExtension = (path) => path.replace(/\.[a-z\d]+$/i, '');
 module.exports = {
     system: fs,

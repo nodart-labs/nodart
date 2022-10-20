@@ -124,10 +124,9 @@ class AppConfig {
         return this;
     }
     validate() {
-        this._config.rootDir = utils_1.$.trimPath(this._config.rootDir);
-        if (!this._config.rootDir || !utils_1.fs.isDir(this._config.rootDir)) {
+        this._config.rootDir = utils_1.fs.path(utils_1.$.trimPath(this._config.rootDir));
+        if (!this._config.rootDir || !utils_1.fs.isDir(this._config.rootDir))
             throw new exception_2.RuntimeException('AppConfig: The App Root directory is not defined or does not exist.');
-        }
     }
 }
 exports.AppConfig = AppConfig;

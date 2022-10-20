@@ -77,7 +77,7 @@ export = {
 
     trimPath(pathLike: string) {
 
-        return this.trim(pathLike, ['/', '\\'])
+        return pathLike?.trim().replace(/^[\\|\/]*/g, '').replace(/[\\|\/]*$/g, '') || ''
     },
 
     prettyNumber(x: string | number): string | number {

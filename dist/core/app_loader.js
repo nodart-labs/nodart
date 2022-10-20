@@ -94,12 +94,12 @@ class AppLoader {
             yield this._onGenerate(this.getRepo());
         });
     }
-    getRepo(rootDir) {
+    getRepo(rootDir, repoName) {
         rootDir || (rootDir = this._app.rootDir);
-        const repo = this.repository;
-        if (!repo)
+        repoName || (repoName = this.repository);
+        if (!repoName)
             return '';
-        const path = utils_1.fs.path(rootDir, repo);
+        const path = utils_1.fs.path(rootDir, repoName);
         this._app.isStart || utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
         return path;
     }

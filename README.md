@@ -3,7 +3,7 @@
 <img src="sources/img/nodart-logo.svg" width="90">
 </p>
 <h3 align="center">NodArt - The Art of Node.js.</h3>
-<h3 align="center">A complete web framework 
+<h3 align="center">A complete framework 
 <br/>
 for creating microservices and 
 <br/>
@@ -56,6 +56,12 @@ The framework is independent, thus it doesn't rely on other frameworks like Expr
 
 
 ### APPLICATION CREATION, INITIALISATION AND START
+
+### System requirements: 
+
+* OS Linux or Windows
+* Node.js >= **v16.14.2**
+
 
 #### 1. GIT
 

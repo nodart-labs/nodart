@@ -137,15 +137,15 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
         await this._onGenerate(this.getRepo())
     }
 
-    getRepo(rootDir?: string): string {
+    getRepo(rootDir?: string, repoName?: string): string {
 
         rootDir ||= this._app.rootDir
 
-        const repo = this.repository
+        repoName ||= this.repository
 
-        if (!repo) return ''
+        if (!repoName) return ''
 
-        const path = fs.path(rootDir, repo)
+        const path = fs.path(rootDir, repoName)
 
         this._app.isStart || fs.isDir(path) || fs.mkDeepDir(path)
 

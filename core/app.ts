@@ -14,7 +14,7 @@ import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig, DEFAULT_APP_BUILD_DIR} 
 import {AppConfigInterface, AppLoaders} from "../interfaces/app";
 import {HttpHost, HttpResponseDataInterface} from "../interfaces/http";
 import {HttpClient} from "./http_client";
-import {fs} from "../utils";
+import {fs, $} from "../utils";
 
 const events = require('../store/system').events
 
@@ -62,7 +62,7 @@ export class App {
 
     get rootDir() {
 
-        return fs.path(this.config.get.rootDir)
+        return this.config.get.rootDir
     }
 
     get(loader: AppLoaders): AppLoader {
@@ -313,7 +313,7 @@ export class AppBuilder {
 
         const buildDirName = this.app.config.get.buildDirName || DEFAULT_APP_BUILD_DIR
 
-        const buildDir = fs.path(this.app.rootDir, buildDirName)
+        const buildDir = fs.path(this.app.factory.baseDir, buildDirName)
 
         const tsConfig = this.app.factory.tsConfig
 
@@ -350,5 +350,12 @@ export class AppBuilder {
             err || require('child_process').execFileSync('tsc', ['--build'], {shell: true, encoding: "utf-8"})
             err && onError?.(err)
         })
+    }
+
+    substractRootDir(buildDir: string, rootDir: string) {
+
+        const substract = $.trimPath(rootDir.replace(this.app.factory.baseDir, ''))
+
+        return substract ? fs.path(buildDir, substract) : buildDir
     }
 }

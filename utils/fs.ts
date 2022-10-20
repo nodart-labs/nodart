@@ -131,7 +131,11 @@ const parseFile = (path: string): object => isFile(path) ? _path.parse(path) : {
 
 const formatPath = (path: string) => $.trimPath(path ?? '').replace(/\\/g, '/').replace(/\/$/, '')
 
-const path = (path: string, to: string = '') => _path.resolve(path, to)
+const path = (path: string, to: string = '') => {
+    return to
+        ? _path.resolve(path, to)
+        : _path.join(path.startsWith(_path.sep) ? path : _path.sep === '/' ? '/' + path : path, '')
+}
 
 const skipExtension = (path: string) => path.replace(/\.[a-z\d]+$/i, '')
 

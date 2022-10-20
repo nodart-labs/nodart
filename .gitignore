@@ -52,6 +52,7 @@ package-lock.json
 
 errlog
 
+/cmd
 /tests/app/*
 !/tests/app/config
 !/tests/app/index.ts

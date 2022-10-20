@@ -1,6 +1,6 @@
 import {App} from "./app";
 import {$, fs, object} from "../utils"
-import {DEFAULT_CMD_COMMANDS_DIR, DEFAULT_CMD_DIR} from "./app_config";
+import {DEFAULT_CMD_COMMANDS_DIR, DEFAULT_CMD_DIR, getSourcesDir} from "./app_config";
 import {Command, CommandList, CommandExecutor, CommandSource} from "../interfaces/cmd";
 import {FunctionArgumentParseData} from "../interfaces/object";
 
@@ -28,20 +28,35 @@ export class CommandLine {
     readonly parser: CommandLineParser
 
     constructor(readonly app: App) {
+
         this.parser = new CommandLineParser()
+
         CommandLine._state = this
     }
 
     get command(): Command {
+
         return this._command ||= CommandLineParser.parseCommand()
     }
 
     get appCmdDir() {
+
         return fs.formatPath(fs.path(this.app.rootDir, DEFAULT_CMD_DIR))
     }
 
     get commandsDirectory() {
+
         return fs.path(this.appCmdDir, (this.app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR))
+    }
+
+    lock() {
+
+        CommandLine._lock = true
+    }
+
+    unlock() {
+
+        CommandLine._lock = false
     }
 
     commandList(directory?: string): CommandList {
@@ -80,34 +95,13 @@ export class CommandLine {
     }
 
     get state(): CommandLine {
+
         return CommandLine._state
     }
 
     get system() {
-        const commandsDir = fs.path(SYSTEM_BIN_DIR, DEFAULT_CMD_COMMANDS_DIR)
-        return {
-            commandsDir,
-            source: (commandName?: string) => this.getCommandSource(commandName, commandsDir),
-            commands: () => this.commandList(commandsDir),
-            run: (commandName?: string) => this.run(commandName, commandsDir),
-            fetchAppState: (app: App) => {
-                CommandLine._lock = true
-                fs.include(this.appCmdDir, {
-                    error: () => fs.include(fs.path(app.builder.buildDir, DEFAULT_CMD_DIR))
-                })
-                Object.assign(app, this.state.app)
-                CommandLine._lock = false
-                return this.state
-            },
-            buildApp: (app: App, exitOnError: boolean = true) => {
-                const dist = app.builder.buildDir
-                app.builder.build(() => {
-                    console.error('The App build directory does not exist.')
-                    exitOnError && process.exit(1)
-                })
-                fs.isDir(dist) && app.config.set({rootDir: dist})
-            }
-        }
+
+        return new SystemCommandLine(this)
     }
 
     async run(commandName?: string, directory?: string, onGetExecutor?: (executor: CommandExecutor) => CommandExecutor) {
@@ -139,6 +133,81 @@ export class CommandLine {
 
         return await Reflect.apply(func, data, values)
     }
+}
+
+class SystemCommandLine {
+
+    protected _commandsDir: string
+
+    constructor(readonly cmd: CommandLine) {
+
+        this._commandsDir = fs.path(SYSTEM_BIN_DIR, DEFAULT_CMD_COMMANDS_DIR)
+    }
+
+    get commandsDir() {
+
+        return this._commandsDir
+    }
+
+    init() {
+
+        const repo = fs.path(this.cmd.app.factory.baseDir, DEFAULT_CMD_DIR)
+
+        const cmdDir = fs.path(repo, this.cmd.app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR)
+
+        const dest = repo + '/index.js'
+
+        fs.isFile(dest) || fs.copy(getSourcesDir(DEFAULT_CMD_DIR + '/index.js'), dest)
+
+        fs.isDir(cmdDir) || fs.mkDeepDir(cmdDir)
+
+        return this.cmd
+    }
+
+    source(commandName?: string) {
+
+        return this.cmd.getCommandSource(commandName, this.commandsDir)
+    }
+
+    commands() {
+
+        return this.cmd.commandList(this.commandsDir)
+    }
+
+    run(commandName?: string) {
+
+        return this.cmd.run(commandName, this.commandsDir)
+    }
+
+    fetchAppState(app: App) {
+
+        this.cmd.lock()
+
+        fs.include(this.cmd.appCmdDir, {error: () => fs.include(fs.path(app.builder.buildDir, DEFAULT_CMD_DIR))})
+
+        Object.assign(app, this.cmd.state.app)
+
+        this.cmd.unlock()
+
+        return this.cmd.state
+    }
+
+    buildApp(app: App, exitOnError: boolean = true) {
+
+        const dist = app.builder.buildDir
+
+        const rootDir = app.builder.substractRootDir(dist, app.rootDir)
+
+        app.builder.build(() => {
+
+            console.error('The App build directory does not exist.')
+
+            exitOnError && process.exit(1)
+        })
+
+        fs.isDir(rootDir) && app.config.set({rootDir})
+    }
+
 }
 
 export class CommandLineParser {

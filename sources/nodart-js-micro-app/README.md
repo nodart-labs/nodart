@@ -3,6 +3,12 @@
 
 ### INSTALL APPLICATION
 
+### System requirements:
+
+* OS Linux or Windows
+* Node.js >= **v16.14.2**
+
+
 ### 1. GIT
 
 it downloads the current framework version's application with full usage examples.

@@ -33,7 +33,7 @@ class App {
         this.builder = new AppBuilder(this);
     }
     get rootDir() {
-        return utils_1.fs.path(this.config.get.rootDir);
+        return this.config.get.rootDir;
     }
     get(loader) {
         return this.factory.createLoader(loader);
@@ -195,7 +195,7 @@ class AppBuilder {
     get buildDir() {
         var _a;
         const buildDirName = this.app.config.get.buildDirName || app_config_1.DEFAULT_APP_BUILD_DIR;
-        const buildDir = utils_1.fs.path(this.app.rootDir, buildDirName);
+        const buildDir = utils_1.fs.path(this.app.factory.baseDir, buildDirName);
         const tsConfig = this.app.factory.tsConfig;
         return ((_a = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) === null || _a === void 0 ? void 0 : _a.outDir) === buildDirName ? buildDir : null;
     }
@@ -220,6 +220,10 @@ class AppBuilder {
             err || require('child_process').execFileSync('tsc', ['--build'], { shell: true, encoding: "utf-8" });
             err && (onError === null || onError === void 0 ? void 0 : onError(err));
         });
+    }
+    substractRootDir(buildDir, rootDir) {
+        const substract = utils_1.$.trimPath(rootDir.replace(this.app.factory.baseDir, ''));
+        return substract ? utils_1.fs.path(buildDir, substract) : buildDir;
     }
 }
 exports.AppBuilder = AppBuilder;

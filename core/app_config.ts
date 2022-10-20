@@ -135,11 +135,12 @@ export class AppConfig {
     }
 
     private validate() {
-        this._config.rootDir = $.trimPath(this._config.rootDir)
 
-        if (!this._config.rootDir || !fs.isDir(this._config.rootDir)) {
+        this._config.rootDir = fs.path($.trimPath(this._config.rootDir))
+
+        if (!this._config.rootDir || !fs.isDir(this._config.rootDir))
+
             throw new RuntimeException('AppConfig: The App Root directory is not defined or does not exist.')
-        }
     }
 }
 

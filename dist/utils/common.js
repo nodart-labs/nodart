@@ -60,7 +60,7 @@ module.exports = {
         return str;
     },
     trimPath(pathLike) {
-        return this.trim(pathLike, ['/', '\\']);
+        return (pathLike === null || pathLike === void 0 ? void 0 : pathLike.trim().replace(/^[\\|\/]*/g, '').replace(/[\\|\/]*$/g, '')) || '';
     },
     prettyNumber(x) {
         return (x === null || x === void 0 ? void 0 : x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")) || 0;
