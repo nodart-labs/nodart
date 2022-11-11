@@ -32,7 +32,7 @@ class Observer {
     }
     push(data) {
         const { prop, value } = data;
-        return this._setter ? this._setter(prop, value, data) : value;
+        return this._setter ? this._setter(prop, value, data) : undefined;
     }
     static isObject(data) {
         return data instanceof Object && data.constructor === Object;
@@ -52,13 +52,15 @@ class Observable {
             set: (t, p, value) => {
                 const newPath = setPath(p, path, pathDelim);
                 lastCall === newPath || (path = newPath);
-                source[p] = observer.push({
+                const data = observer.push({
                     prop: p,
                     source,
                     path: getPath(path, pathDelim),
                     value,
                     old: source[p]
                 });
+                if (data !== undefined)
+                    source[p] = data;
                 return true;
             },
             get: (t, p) => {

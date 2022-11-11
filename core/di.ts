@@ -72,7 +72,8 @@ export class DIContainer {
             get: (property, descriptor) => {
 
                 return this.getDependency(scope, descriptor.value || null)
-            }
+            },
+
         }).get
     }
 

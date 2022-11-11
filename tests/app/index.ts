@@ -132,7 +132,7 @@ new App({...config}).init().then(async app => {
 
         // measure.start('C')
 
-        service().sample
+        // service().sample
 
         // measure.end('C', 'D')
 

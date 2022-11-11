@@ -39,7 +39,7 @@ class DIContainer {
         return new observer_1.Observer(dependency, {
             get: (property, descriptor) => {
                 return this.getDependency(scope, descriptor.value || null);
-            }
+            },
         }).get;
     }
     static container(target, property, reference) {

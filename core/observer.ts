@@ -47,7 +47,7 @@ export class Observer {
 
     push(data: ObserverDescriptor) {
         const {prop, value} = data
-        return this._setter ? this._setter(prop, value, data) : value
+        return this._setter ? this._setter(prop, value, data) : undefined
     }
 
     static isObject(data: any) {
@@ -85,13 +85,15 @@ class Observable {
 
                 lastCall === newPath || (path = newPath)
 
-                source[p] = observer.push({
+                const data = observer.push({
                     prop: p,
                     source,
                     path: getPath(path, pathDelim),
                     value,
                     old: source[p]
                 })
+
+                if (data !== undefined) source[p] = data
 
                 return true
             },
