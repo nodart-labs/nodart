@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "nodart": "^4.0.1"
+    "nodart": "^4.0.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

@@ -240,10 +240,8 @@ The framework is built on the premise that performance
 and application architecture should be perfectly balanced.
 The performance of some well-known **server-side** frameworks is compared here.
 
-```
-Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
-and in some aspects surpasses it and all other frameworks.
-```
+> Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
+> and in some aspects surpasses it and all other frameworks.
 
 Environment:
 
