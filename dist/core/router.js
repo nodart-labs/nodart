@@ -63,7 +63,7 @@ class Router {
         this.paramEntries[method] = [...[routeData], ...this.paramEntries[method]];
     }
     getRouteByURL(url, method) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const pathname = url.pathname;
         const route = url.pathname || '/';
         const routeData = ((_a = this.entries[route]) === null || _a === void 0 ? void 0 : _a[method]) || ((_b = this.entries[route]) === null || _b === void 0 ? void 0 : _b['any']);
@@ -75,17 +75,27 @@ class Router {
             if (path.length > data.path.length)
                 continue;
             const params = {};
+            let paramLength = 0;
             for (const [index, entry] of path.entries()) {
                 const param = data.paramNames[index];
                 if (param) {
                     params[param] = entry;
-                    const { optional, number } = data.route.paramTypes[param] || {};
+                    const { number } = data.route.paramTypes[param] || {};
                     const type = (_c = data.route.types) === null || _c === void 0 ? void 0 : _c[param];
-                    if (false === this.validateParam(params, param, { optional, number, type }))
+                    if (false === this.validateParam(params, param, { number, type }))
                         continue OUTER;
+                    paramLength += 1;
                 }
                 else if (entry !== data.path[index])
                     continue OUTER;
+            }
+            if (paramLength < data.route.paramNames.length) {
+                const types = Object.keys(data.route.paramTypes);
+                for (let i = 0; i < types.length; i++) {
+                    const optional = (_d = data.route.paramTypes[types[i]]) === null || _d === void 0 ? void 0 : _d.optional;
+                    if (params[types[i]] === undefined && !optional)
+                        continue OUTER;
+                }
             }
             return Object.assign(Object.assign({}, data.route), { query: url.query, params, pathname });
         }
@@ -109,8 +119,6 @@ class Router {
     }
     validateParam(params, name, opts) {
         var _a;
-        if (opts.optional && params[name] === undefined)
-            return;
         if (opts.number && (isNaN(params[name] = +params[name])))
             return false;
         if (opts.type instanceof Function)

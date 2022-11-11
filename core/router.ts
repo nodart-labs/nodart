@@ -116,6 +116,8 @@ export class Router {
 
             const params = {}
 
+            let paramLength = 0
+
             for (const [index, entry] of path.entries()) {
 
                 const param = data.paramNames[index]
@@ -124,12 +126,26 @@ export class Router {
 
                     params[param] = entry
 
-                    const {optional, number} = data.route.paramTypes[param] || {}
+                    const {number} = data.route.paramTypes[param] || {}
                     const type = data.route.types?.[param]
 
-                    if (false === this.validateParam(params, param, {optional, number, type})) continue OUTER
+                    if (false === this.validateParam(params, param, {number, type})) continue OUTER
+
+                    paramLength += 1
 
                 } else if (entry !== data.path[index]) continue OUTER
+            }
+
+            if (paramLength < data.route.paramNames.length) {
+
+                const types = Object.keys(data.route.paramTypes)
+
+                for (let i = 0; i < types.length; i++) {
+
+                    const optional = data.route.paramTypes[types[i]]?.optional
+
+                    if (params[types[i]] === undefined && !optional) continue OUTER
+                }
             }
 
             return {...data.route, query: url.query, params, pathname}
@@ -160,12 +176,9 @@ export class Router {
         params: object,
         name: string,
         opts: {
-            optional: boolean,
-            number: boolean,
-            type: RouteDescriptorParamTypes
+            number?: boolean,
+            type?: RouteDescriptorParamTypes
         }): boolean | void {
-
-        if (opts.optional && params[name] === undefined) return
 
         if (opts.number && (isNaN(params[name] = +params[name]))) return false
 

@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A complete framework for creating microservices and large-scale server-side applications for businesses",
   "repository": {
     "type": "git",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@types/node": "^18.11.3",
     "copy-dir": "^1.3.0",
-    "nodart": "^3.3.5",
+    "nodart": "^4.0.0",
     "nodemon": "^2.0.20",
     "typescript": "^4.8.4"
   },
