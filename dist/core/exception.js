@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExceptionLog = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.ExceptionHandler = exports.RuntimeException = exports.HttpException = exports.Exception = void 0;
-const http_1 = require("../interfaces/http");
+const http_1 = require("./interfaces/http");
 const http_client_1 = require("./http_client");
 const utils_1 = require("../utils");
 class Exception {
@@ -44,7 +44,7 @@ class HttpException extends Exception {
         exception.responseData || (exception.responseData = {});
         ((_a = this._assign) === null || _a === void 0 ? void 0 : _a.status) && (exception.responseData.status = this._assign.status);
         ((_b = this._assign) === null || _b === void 0 ? void 0 : _b.contentType) && (exception.responseData.contentType = this._assign.contentType);
-        (_c = exception.responseData).status || (_c.status = http_1.HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR);
+        (_c = exception.responseData).status || (_c.status = http_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
         return exception;
     }
 }
@@ -108,12 +108,12 @@ class ExceptionLog {
     dump() {
         if (!this.dumpData.query && !this.dumpData.error)
             return;
-        console.error(utils_1.$.date.currentDateTime() + ':', this.dumpData.query);
+        console.error(`[${utils_1.$.date.currentDateTime()}]`, this.dumpData.query);
         this.dumpData.error && console.error(this.dumpData.error);
     }
-    onHttp(req, res) {
+    onHttp(request, response) {
         var _a;
-        const responseData = this.getHttpResponseData(req, res);
+        const responseData = this.getHttpResponseData(request, response);
         this.dumpData.query = 'HTTP ' + this.http.request.method.toUpperCase()
             + ': ' + this.http.request.url
             + ': ' + responseData.status
@@ -123,8 +123,8 @@ class ExceptionLog {
             : this.http.exceptionData;
         return this;
     }
-    getHttpResponseData(req, res) {
-        const exception = this._getHttpException(req, res);
+    getHttpResponseData(request, response) {
+        const exception = this._getHttpException(request, response);
         if (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException) {
             const data = http_client_1.HttpClient.getHttpResponseData(exception);
             const content = http_client_1.HttpClient.getHttpResponseDataContent(data);
@@ -136,19 +136,19 @@ class ExceptionLog {
         }
         return http_client_1.HttpClient.getDataFromStatusCode(exception);
     }
-    _getHttpException(req, res) {
+    _getHttpException(request, response) {
         var _a;
         const exception = this.exception;
-        exception.request || (exception.request = req);
-        exception.response || (exception.response = res);
+        exception.request || (exception.request = request);
+        exception.response || (exception.response = response);
         this.http = (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException
             ? exception
-            : new http_client_1.HttpClient(req, res));
+            : new http_client_1.HttpContainer({ request, response }));
         this.http.exceptionMessage = exception.exceptionMessage;
         this.http.exceptionData = exception.exceptionData || exception.exceptionMessage;
         (_a = this.http).responseData || (_a.responseData = {});
-        if (!this.http.responseData.status || this.http.responseData.status === http_1.HTTP_STATUS_CODES.OK) {
-            this.http.responseData.status = http_1.HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR;
+        if (!this.http.responseData.status || this.http.responseData.status === http_1.HTTP_STATUS.OK) {
+            this.http.responseData.status = http_1.HTTP_STATUS.INTERNAL_SERVER_ERROR;
         }
         return this.http;
     }

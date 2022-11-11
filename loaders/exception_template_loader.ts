@@ -1,31 +1,30 @@
 import {AppLoader} from "../core/app_loader";
-import {Engine} from "../core/engine";
-import {HttpResponseDataInterface} from "../interfaces/http";
+import {HttpResponseDataInterface} from "../core/interfaces/http";
 
 export class ExceptionTemplateLoader extends AppLoader {
 
     getTemplate(response: HttpResponseDataInterface) {
 
-        const template = this._app.config.get.exception.template
+        const template = this.app.config.get.exception?.template
 
         return template instanceof Function ? template(response) : template
     }
 
-    protected _onCall(target: any, args?: any[]) {
-    }
-
-    protected _resolve(target?: any, args?: [response: HttpResponseDataInterface]): any {
+    call(args: [response: HttpResponseDataInterface]): string | void {
 
         const template = this.getTemplate(args[0])
-        const engineLoader = this._app.get('engine')
-        const engine = engineLoader.call() as Engine
+        const engineLoader = this.app.get('engine')
+        const engine = engineLoader.call()
 
-        if (!template || !engineLoader?.isFile(engine?.normalize(template))) return
+        if (!template || !engineLoader.isFile(engine.normalize(template))) return
 
-        return engine.getTemplate(template, {response: args[0] ?? {}})
+        return engine.getTemplate(template, {response: args[0]})
     }
 
-    protected _onGenerate(repository: string) {
+    onCall() {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

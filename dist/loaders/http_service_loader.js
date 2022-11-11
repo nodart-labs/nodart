@@ -3,61 +3,54 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpServiceLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const http_1 = require("../services/http");
-const utils_1 = require("../utils");
-const http_client_1 = require("../core/http_client");
+const controller_1 = require("../core/controller");
 const exception_1 = require("../core/exception");
-const service_1 = require("../core/service");
-const http_handler_1 = require("../core/http_handler");
+const utils_1 = require("../utils");
+const app_1 = require("../core/app");
 class HttpServiceLoader extends app_loader_1.AppLoader {
-    _onCall(target) {
-        this._target = http_1.HttpService;
-        this._target.prototype.model || this.constructProperty('model');
-        this._target.prototype.service || this.constructProperty('service');
-    }
-    _resolve(target, args) {
-        var _a, _b, _c, _d;
-        const scope = (_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : {};
-        if (scope.http && !(scope.http instanceof http_client_1.HttpClient))
-            throw new exception_1.RuntimeException('HttpServiceLoader: missing required scope argument "HttpClient".');
-        if (scope.route && !(("path" in scope.route) && ("pathname" in scope.route)))
-            throw new exception_1.RuntimeException('HttpServiceLoader: invalid scope argument "route".');
-        (_b = scope.app) !== null && _b !== void 0 ? _b : (scope.app = this._app);
-        if (scope.http) {
-            (_c = scope.respond) !== null && _c !== void 0 ? _c : (scope.respond = this._app.get('http_respond').call([scope.http]));
-            (_d = scope.session) !== null && _d !== void 0 ? _d : (scope.session = this._app.get('session').call([scope.http]));
-        }
-        if (scope.http && scope.route) {
-            const controller = http_handler_1.HttpHandler.getControllerByRouteDescriptor(this._app, scope.route, scope.http);
-            controller && (scope.controller = controller);
-        }
-        return this._target = new this._target(scope);
-    }
-    onGetDependency(target) {
-        if (target instanceof service_1.Service && this._pushDependency(target) && this._target instanceof http_1.HttpService) {
-            const scope = this._target.scope;
-            this.serviceScope = {
-                model: scope.model,
-                service: scope.service,
-                http: scope.http,
-                route: scope.route,
-                session: scope.session,
-                respond: scope.respond,
-                controller: scope.controller
-            };
-        }
-        super.onGetDependency(target);
-    }
-    constructProperty(name) {
-        this._target.prototype[name] = {};
-        const repo = this._app.get(name).getRepo();
-        utils_1.fs.dir(repo, ({ file }) => {
-            if (!file)
-                return;
-            const path = utils_1.fs.skipExtension(utils_1.fs.formatPath(file.replace(repo, ''))).replace('/', '.');
-            path && utils_1.object.set(this._target.prototype[name], path, {});
+    call(args) {
+        const scope = args[0] || {};
+        if (!scope.app || !scope.http || !scope.route)
+            throw new exception_1.RuntimeException('HttpServiceLoader: Missing required scope properties: app | http | route');
+        const http = new http_1.HttpService(scope);
+        this.intercept(http, scope.app);
+        http.setScope({
+            model: scope.model || (scope.model = () => http.model),
+            service: scope.service || (scope.service = () => http.service),
+            controller: scope.controller || (scope.controller = () => this.getController(scope)),
+            scope
         });
+        return http;
     }
-    _onGenerate(repository) {
+    getDependency(service, property, dependency) {
+        switch (property) {
+            case 'service':
+                return this.resolve(dependency, [{
+                        app: service.scope.app,
+                        controller: () => service.scope.controller(),
+                        model: () => service.scope.model(),
+                        service: () => service.scope.service(),
+                        http: service.scope.http,
+                        route: service.scope.route,
+                        scope: service.scope
+                    }]);
+            case 'model':
+                return (0, app_1.loaders)().model.call([service.scope.app, dependency]);
+        }
+    }
+    getController(scope, loader) {
+        var _a, _b, _c;
+        const controller = (_b = (_a = scope.route).controller) === null || _b === void 0 ? void 0 : _b.call(_a, scope.route);
+        if (controller) {
+            if (false === utils_1.object.isProtoConstructor(controller, controller_1.BaseController))
+                throw `The provided type "${(_c = utils_1.object.getProtoConstructor(controller)) === null || _c === void 0 ? void 0 : _c.name}" is not a "Controller".`;
+            loader || (loader = scope.app.get('controller'));
+            return loader.call([scope.app, scope.http, scope.route, controller]);
+        }
+    }
+    onCall() {
+    }
+    onGenerate(repository) {
     }
 }
 exports.HttpServiceLoader = HttpServiceLoader;

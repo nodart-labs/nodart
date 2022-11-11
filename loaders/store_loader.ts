@@ -8,21 +8,22 @@ export class StoreLoader extends AppLoader {
     constructor(app: App) {
         super(app)
 
-        const repository = app.factory.storeRepo
-        repository && (this._repository = repository)
+        const repository = app.service.store.repo
+        repository && (this.repository = repository)
     }
 
-    protected _onCall(target: any) {
+    onCall(target: any) {
     }
 
-    protected _onGenerate(repository: string) {
+    onGenerate(repository: string) {
 
         if (!repository) return
 
-        const state = $.trimPath(this._app.config.get.stateName) || CLIENT_STATE_NAME
-        const dest = repository + '/' + state + '.ts'
+        const ext = this.app.env.isCommonJS ? '.js' : '.ts'
+        const state = $.trimPath(this.app.config.get.stateName) || CLIENT_STATE_NAME
+        const dest = repository + '/' + state + ext
 
-        fs.isFile(dest) || fs.copy(getSourcesDir('store/app.ts'), dest)
+        fs.isFile(dest) || fs.copy(getSourcesDir('store/app' + ext), dest)
     }
 
 }

@@ -1,8 +1,8 @@
 import {App} from "./app";
 import {$, fs, object} from "../utils"
 import {DEFAULT_CMD_COMMANDS_DIR, DEFAULT_CMD_DIR, getSourcesDir} from "./app_config";
-import {Command, CommandList, CommandExecutor, CommandSource} from "../interfaces/cmd";
-import {FunctionArgumentParseData} from "../interfaces/object";
+import {Command, CommandList, CommandExecutor, CommandSource} from "./interfaces/cmd";
+import {FunctionArgumentParseData} from "./interfaces/object";
 
 export const OPTION_POINTER = '--'
 export const SYSTEM_DIR = fs.path(__dirname, '../..')
@@ -151,11 +151,11 @@ class SystemCommandLine {
 
     init() {
 
-        const repo = fs.path(this.cmd.app.factory.baseDir, DEFAULT_CMD_DIR)
+        const repo = fs.path(this.cmd.app.env.baseDir, DEFAULT_CMD_DIR)
 
         const cmdDir = fs.path(repo, this.cmd.app.config.get.cli.commandDirName || DEFAULT_CMD_COMMANDS_DIR)
 
-        const dest = repo + '/index.js'
+        const dest = fs.path(repo, 'index.js')
 
         fs.isFile(dest) || fs.copy(getSourcesDir(DEFAULT_CMD_DIR + '/index.js'), dest)
 

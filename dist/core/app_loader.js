@@ -11,115 +11,87 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppLoader = void 0;
 const utils_1 = require("../utils");
-const service_1 = require("./service");
-class AppLoader {
-    constructor(_app) {
-        this._app = _app;
+const di_1 = require("./di");
+class AppLoader extends di_1.DependencyInterceptor {
+    constructor(app) {
+        super();
+        this.app = app;
         this._repository = '';
+        this._repositoryPath = '';
         this._pathSuffix = '';
-        this._targetPath = '';
-        this._serviceScope = {};
-        this._dependencies = [];
     }
-    get serviceScope() {
-        return Object.assign(Object.assign({}, this._serviceScope), { app: this._app });
+    getDependency(acceptor, property, dependency) {
     }
-    set serviceScope(scope) {
-        Object.assign(this._serviceScope, scope);
-    }
-    _resolve(target, args) {
-        var _a;
-        if ((_a = target === null || target === void 0 ? void 0 : target.prototype) === null || _a === void 0 ? void 0 : _a.constructor)
-            return Reflect.construct(target, args !== null && args !== void 0 ? args : []);
-        return target;
+    get rootDir() {
+        return this.app.rootDir;
     }
     get repository() {
-        return utils_1.$.trimPath(this._repository);
+        return this._repository;
     }
-    getTarget() {
-        return this._target;
+    set repository(name) {
+        this._repository = utils_1.$.trimPathEnd(name);
     }
-    setTarget(type) {
-        this._target = type;
-    }
-    onGetDependency(target) {
-        target instanceof service_1.Service && target.setScope(this.serviceScope);
-        this._pushDependency(target);
-    }
-    _hasDependency(target) {
-        return !!((target === null || target === void 0 ? void 0 : target.constructor) && this._dependencies.includes(target.constructor));
-    }
-    _pushDependency(target) {
-        if (!(target === null || target === void 0 ? void 0 : target.constructor) || this._hasDependency(target))
-            return false;
-        this._dependencies.push(target.constructor);
-        return true;
-    }
-    onGetProperty(property, value, reference) {
-    }
-    getUnderScorePath(targetPath) {
-        targetPath || (targetPath = this._targetPath);
-        return targetPath.replace('/', '_');
-    }
-    getReferenceTarget(referencePathLike, targetPath) {
-        targetPath || (targetPath = this._targetPath);
-        if (!targetPath || !referencePathLike)
-            return;
-        const path = this.getUnderScorePath(targetPath);
-        if (this.isTarget(referencePathLike + '/' + path))
-            return path;
-        if (this.isTarget(referencePathLike + '/' + this._targetPath))
-            return targetPath;
-    }
-    getReferenceProps(reference) {
-    }
-    intercept() {
-        this._app.di.interceptor(this).intercept();
-    }
-    require(path, targetObjectType) {
-        this._target = undefined;
-        this.isSource(path) && (this._target = utils_1.fs.getSource(this.absPath(path), targetObjectType || this.targetType));
-        return this;
-    }
-    get targetType() {
+    get sourceType() {
         return undefined;
     }
-    call(args = []) {
-        this._onCall(this._target, args);
+    setSource(object) {
+        this._source = object;
+    }
+    load(path, sourceType, rootDir) {
+        return utils_1.fs.getSource(this.absPath(path, rootDir), sourceType || this.sourceType);
+    }
+    require(path, sourceType, rootDir) {
+        this._source = this.load(path, sourceType, rootDir);
+        return this;
+    }
+    call(args = [], path, sourceType, rootDir) {
+        path && this.require(path, sourceType, rootDir);
+        this.onCall(this._source, args);
+        this._source = this.resolve(this._source, args);
         this.intercept();
-        return this._target = this._resolve(this._target, args);
+        return this._source;
+    }
+    resolve(source, args) {
+        var _a;
+        if ((_a = source === null || source === void 0 ? void 0 : source.prototype) === null || _a === void 0 ? void 0 : _a.constructor)
+            return Reflect.construct(source, args || []);
+        return source;
+    }
+    intercept(source, app) {
+        app || (app = this.app);
+        app.di.intercept(source || this._source, this);
     }
     generate() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._onGenerate(this.getRepo());
+            const repo = this.getRepo();
+            this.app.isStart || utils_1.fs.isDir(repo) || utils_1.fs.mkDeepDir(repo);
+            yield this.onGenerate(repo);
         });
     }
     getRepo(rootDir, repoName) {
-        rootDir || (rootDir = this._app.rootDir);
-        repoName || (repoName = this.repository);
-        if (!repoName)
+        if (rootDir || repoName) {
+            rootDir || (rootDir = this.rootDir);
+            repoName || (repoName = this.repository);
+            return utils_1.fs.join(rootDir, repoName);
+        }
+        if (!this.repository)
             return '';
-        const path = utils_1.fs.path(rootDir, repoName);
-        this._app.isStart || utils_1.fs.isDir(path) || utils_1.fs.mkDeepDir(path);
-        return path;
+        return this._repositoryPath || (this._repositoryPath = utils_1.fs.join(this.rootDir, this.repository));
     }
     absPath(path, rootDir) {
         const repo = this.getRepo(rootDir);
         path = this.securePath(path);
-        return repo ? utils_1.fs.path(repo, utils_1.$.trimPath(path) + this._pathSuffix) : '';
+        return repo ? utils_1.fs.join(repo, path) + this._pathSuffix : '';
     }
-    isTarget(path) {
-        return utils_1.fs.isFile(utils_1.fs.path(this._app.rootDir, utils_1.$.trimPath(path)), ['ts', 'js']);
+    isSource(path, rootDir) {
+        return utils_1.fs.isFile(this.absPath(path, rootDir), ['ts', 'js']);
     }
-    isSource(path) {
-        return utils_1.fs.isFile(this.absPath(path), ['ts', 'js']);
-    }
-    isFile(path) {
-        return utils_1.fs.isFile(this.absPath(path));
+    isFile(path, rootDir) {
+        return utils_1.fs.isFile(this.absPath(path, rootDir));
     }
     securePath(path) {
-        var _a;
-        return (_a = path === null || path === void 0 ? void 0 : path.replace(/(\.\.\\|\.\.\/)/g, '')) !== null && _a !== void 0 ? _a : '';
+        path || (path = '');
+        return path.includes('.') ? path.replace(/(\.\.\\|\.\.\/)/g, '') : path;
     }
 }
 exports.AppLoader = AppLoader;

@@ -1,62 +1,154 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HttpFormData = exports.HttpClient = exports.MULTIPART_FORM_DATA_TYPE = exports.DEFAULT_CONTENT_TYPE = exports.DEFAULT_FILE_MIME_TYPE = void 0;
+exports.HttpClient = exports.HttpFormData = exports.HttpContainer = exports.FORM_CONTENT_TYPE = exports.HTML_CONTENT_TYPE = exports.TEXT_CONTENT_TYPE = exports.JSON_CONTENT_TYPE = exports.FILE_CONTENT_TYPE = void 0;
 const utils_1 = require("../utils");
-const http_1 = require("../interfaces/http");
-exports.DEFAULT_FILE_MIME_TYPE = 'application/octet-stream';
-exports.DEFAULT_CONTENT_TYPE = 'application/json';
-exports.MULTIPART_FORM_DATA_TYPE = 'multipart/form-data';
-class HttpClient {
-    constructor(request, response, config = {}) {
-        var _a;
-        this.request = request;
-        this.response = response;
+const http_1 = require("./interfaces/http");
+const http_responder_1 = require("./http_responder");
+const engine_1 = require("./engine");
+const session_1 = require("./session");
+const exception_1 = require("./exception");
+exports.FILE_CONTENT_TYPE = 'application/octet-stream';
+exports.JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
+exports.TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
+exports.HTML_CONTENT_TYPE = 'text/html';
+exports.FORM_CONTENT_TYPE = 'multipart/form-data';
+class HttpContainer {
+    constructor(config) {
         this.config = config;
-        this.corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Request-Method': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS, GET',
-            'Access-Control-Allow-Headers': '*',
-        };
-        this._data = {};
         this.isDataFetched = false;
-        this.config = Object.assign(Object.assign({}, config), { mimeTypes: Object.assign(Object.assign({}, http_1.HTTP_CONTENT_MIME_TYPES), (_a = config.mimeTypes) !== null && _a !== void 0 ? _a : {}), fileMimeType: config.fileMimeType || exports.DEFAULT_FILE_MIME_TYPE });
+        this._data = {};
+        this.exceptionMessage = "";
+        this._method = config.request.method.toLowerCase();
     }
-    set host(data) {
-        this._host = data;
+    get url() {
+        return this.config.url;
+    }
+    get uri() {
+        return HttpClient.getURI(this.config.host);
+    }
+    get method() {
+        return this._method;
+    }
+    get host() {
+        return this.config.host;
+    }
+    get request() {
+        return this.config.request;
+    }
+    get response() {
+        return this.config.response;
     }
     get data() {
-        return Object.assign({}, this._data);
+        return this._data;
     }
     get ready() {
         return !!this.isDataFetched;
     }
     get form() {
-        return (this._form || (this._form = new HttpFormData(this)));
+        return (this._form || (this._form = new HttpFormData(this, this.config.form)));
     }
     set form(formDataHandler) {
         this._form = formDataHandler;
     }
     get isFormData() {
         var _a;
-        return (_a = this.request.headers['content-type']) === null || _a === void 0 ? void 0 : _a.includes(exports.MULTIPART_FORM_DATA_TYPE);
+        return (_a = this.request.headers['content-type']) === null || _a === void 0 ? void 0 : _a.includes(exports.FORM_CONTENT_TYPE);
     }
     get hasError() {
         return !!(this.exceptionMessage || this.exceptionData || this.form.hasError);
     }
     get responseIsSent() {
-        return this.response.headersSent || this.response.writableEnded || this.response.writableFinished;
+        return HttpClient.getResponseIsSent(this.response);
     }
-    get parseURL() {
-        return this._dataURL || (this._dataURL = HttpClient.getParsedURL(this._host
-            ? HttpClient.getURI(this._host) + '/' + utils_1.$.trimPath(this.request.url)
-            : this.request.url));
+    get respond() {
+        var _a, _b;
+        if (this._responder)
+            return this._responder;
+        const responder = this.config.responder || http_responder_1.HttpResponder;
+        const engineConfig = ((_a = this.config.engine) === null || _a === void 0 ? void 0 : _a.config) || {};
+        const engine = ((_b = this.config.engine) === null || _b === void 0 ? void 0 : _b.client) instanceof Function
+            ? this.config.engine.client(engineConfig)
+            : new engine_1.Engine(engineConfig);
+        return this._responder = Reflect.construct(responder, [this, engine]);
     }
-    setCorsHeaders(headers) {
-        headers = Object.assign(Object.assign({}, this.corsHeaders), headers !== null && headers !== void 0 ? headers : {});
-        Object.entries(headers).forEach(([header, value]) => {
-            this.response.getHeader(header) || this.response.setHeader(header, value);
+    get session() {
+        var _a, _b;
+        if (this._session)
+            return this._session;
+        const sessionConfig = ((_a = this.config.session) === null || _a === void 0 ? void 0 : _a.config) || {};
+        return this._session = ((_b = this.config.session) === null || _b === void 0 ? void 0 : _b.client) instanceof Function
+            ? this.config.session.client(sessionConfig, this)
+            : new session_1.Session(sessionConfig).load(this);
+    }
+    assignData(config) {
+        Object.assign(this.config, config);
+    }
+    getHttpResponse(assignResponseData) {
+        return {
+            response: this.response,
+            request: this.request,
+            responseData: HttpClient.getHttpResponseData(this, assignResponseData),
+            exceptionData: this.exceptionData,
+            exceptionMessage: this.exceptionMessage,
+        };
+    }
+    setResponseData(responseData) {
+        var _a, _b;
+        this.responseData = responseData;
+        (_b = (_a = this.config).onSetResponseData) === null || _b === void 0 ? void 0 : _b.call(_a, responseData);
+    }
+    send(content, status = http_1.HTTP_STATUS.OK, contentType) {
+        this.setResponseData({
+            status,
+            contentType: contentType || HttpClient.getDefaultContentType('json', this.config.mimeTypes),
+            content: { json: content }
         });
+    }
+    sendText(content, status = http_1.HTTP_STATUS.OK, contentType) {
+        this.setResponseData({
+            status,
+            contentType: contentType || HttpClient.getDefaultContentType('text', this.config.mimeTypes, exports.TEXT_CONTENT_TYPE),
+            content: { text: content }
+        });
+    }
+    sendHtml(content, status = http_1.HTTP_STATUS.OK, contentType) {
+        this.setResponseData({
+            status,
+            contentType: contentType || HttpClient.getDefaultContentType('html', this.config.mimeTypes, exports.HTML_CONTENT_TYPE),
+            content: { html: content }
+        });
+    }
+    sendFile(filePath, contentType) {
+        if (this.responseIsSent)
+            return;
+        this.response.writeHead(http_1.HTTP_STATUS.OK, {
+            'Content-Type': contentType || HttpClient.getDefaultContentType(utils_1.fs.getExtension(filePath), this.config.mimeTypes, exports.FILE_CONTENT_TYPE)
+        });
+        const readStream = utils_1.fs.system.createReadStream(filePath);
+        readStream.on('error', err => {
+            var _a, _b;
+            this.handleError(err, `Could not read data from file ${filePath}.`);
+            (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
+        });
+        readStream.pipe(this.response);
+    }
+    handleError(err, message) {
+        this._data = {};
+        if (err) {
+            this.exceptionMessage = message !== null && message !== void 0 ? message : err.message;
+            this.exceptionData = err;
+        }
+    }
+    throw(status, message, data) {
+        message && (this.exceptionMessage = message);
+        data && (this.exceptionData = data);
+        throw new exception_1.HttpException(this, { status });
+    }
+    exit(status, message, data) {
+        message && (this.exceptionMessage = message);
+        data && (this.exceptionData = data);
+        this.response.statusCode = status;
+        throw new exception_1.RuntimeException(this);
     }
     fetchData() {
         return new Promise((resolve, reject) => {
@@ -68,7 +160,7 @@ class HttpClient {
             this.request.on('data', chunk => chunks.push(chunk));
             this.request.on('end', () => {
                 this._data = {};
-                this._onFetchData(Buffer.concat(chunks), (err) => {
+                this.onFetchData(Buffer.concat(chunks), (err) => {
                     if (err) {
                         reject(err);
                         this.handleError(err, 'Failed to fetch data from request');
@@ -79,9 +171,10 @@ class HttpClient {
                 });
             });
             this.request.on('error', (err) => {
+                var _a, _b;
                 reject(err);
                 this.handleError(err, 'Failed to fetch data from request');
-                this.onError();
+                (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
             });
             this.request.on('aborted', () => {
                 reject({ message: 'request aborted' });
@@ -89,7 +182,7 @@ class HttpClient {
             });
         });
     }
-    _onFetchData(buffer, callback) {
+    onFetchData(buffer, callback) {
         const data = buffer.toString().trim();
         const readQuery = () => {
             for (const [key, value] of new URLSearchParams(data).entries()) {
@@ -109,116 +202,11 @@ class HttpClient {
             callback(e);
         }
     }
-    send(data, status = http_1.HTTP_STATUS_CODES.OK, contentType) {
-        this.setResponseData({
-            status,
-            contentType: contentType || HttpClient.getDefaultContentType('json', this.config.mimeTypes),
-            content: { json: data }
-        });
-    }
-    sendText(data, status = http_1.HTTP_STATUS_CODES.OK, contentType) {
-        this.setResponseData({
-            status,
-            contentType: contentType || HttpClient.getDefaultContentType('text', this.config.mimeTypes, 'text/plain'),
-            content: { text: data }
-        });
-    }
-    sendHtml(content, status = http_1.HTTP_STATUS_CODES.OK, contentType) {
-        this.setResponseData({
-            status,
-            contentType: contentType || HttpClient.getDefaultContentType('html', this.config.mimeTypes, 'text/html'),
-            content: { html: content }
-        });
-    }
-    sendFile(filePath, contentType) {
-        const stat = utils_1.fs.stat(filePath);
-        const parse = utils_1.fs.parseFile(filePath);
-        this.responseIsSent || this.response.writeHead(http_1.HTTP_STATUS_CODES.OK, {
-            'Content-Type': contentType || HttpClient.getDefaultContentType(utils_1.$.trim(parse.ext, '.'), this.config.mimeTypes, exports.DEFAULT_FILE_MIME_TYPE),
-            'Content-Length': stat.size
-        });
-        const readStream = utils_1.fs.system.createReadStream(filePath);
-        readStream.on('error', err => {
-            this.handleError(err, `Could not read data from file ${filePath}.`);
-            this.onError();
-        });
-        readStream.pipe(this.response);
-    }
-    onError() {
-    }
-    handleError(err, message) {
-        this._data = {};
-        if (err) {
-            this.exceptionMessage = message !== null && message !== void 0 ? message : err === null || err === void 0 ? void 0 : err.message;
-            this.exceptionData = err;
-        }
-    }
-    setResponseData(data) {
-        this.responseData = data;
-    }
-    getHttpResponse(assignResponseData) {
-        return {
-            response: this.response,
-            request: this.request,
-            responseData: HttpClient.getHttpResponseData(this, assignResponseData),
-            exceptionData: this.exceptionData,
-            exceptionMessage: this.exceptionMessage,
-        };
-    }
-    static getHttpResponseData(http, assignData) {
-        var _a, _b, _c, _d, _e;
-        http.responseData || (http.responseData = {});
-        (assignData === null || assignData === void 0 ? void 0 : assignData.content) && (http.responseData.content = assignData === null || assignData === void 0 ? void 0 : assignData.content);
-        http.responseData.status = (_c = (_b = (_a = assignData === null || assignData === void 0 ? void 0 : assignData.status) !== null && _a !== void 0 ? _a : http.responseData.status) !== null && _b !== void 0 ? _b : http.response.statusCode) !== null && _c !== void 0 ? _c : http_1.HTTP_STATUS_CODES.OK;
-        http.responseData.contentType = (_e = (_d = assignData === null || assignData === void 0 ? void 0 : assignData.contentType) !== null && _d !== void 0 ? _d : http.responseData.contentType) !== null && _e !== void 0 ? _e : http.response.getHeader('content-type');
-        HttpClient.getHttpResponseDataContent(http.responseData);
-        return http.responseData;
-    }
-    static getHttpResponseDataContent(data) {
-        data.content || (data.content = { json: '' });
-        const contentEntry = Object.keys(data.content)[0];
-        contentEntry === 'json'
-            && data.content[contentEntry] instanceof Object
-            && (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]));
-        data.contentType || (data.contentType = HttpClient.getDefaultContentType(contentEntry));
-        return data.content[contentEntry];
-    }
-    static getDefaultContentType(entry, mimeTypes = {}, defaultMimeType = exports.DEFAULT_CONTENT_TYPE) {
-        var _a;
-        const contentTypes = Object.assign(Object.assign({ buffer: exports.DEFAULT_FILE_MIME_TYPE }, http_1.HTTP_CONTENT_MIME_TYPES), mimeTypes);
-        return (_a = contentTypes[entry]) !== null && _a !== void 0 ? _a : defaultMimeType;
-    }
-    static getStatusCodeMessage(status) {
-        for (const [key, value] of Object.entries(http_1.HTTP_STATUS_CODES)) {
-            if (status === value)
-                return key;
-        }
-        return '';
-    }
-    static getDataFromStatusCode(http, setStatusIfNone) {
-        var _a, _b, _c, _d;
-        http.responseData || (http.responseData = {});
-        const status = (_b = (_a = http.responseData.status) !== null && _a !== void 0 ? _a : setStatusIfNone) !== null && _b !== void 0 ? _b : http.response.statusCode;
-        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader('content-type')) !== null && _d !== void 0 ? _d : exports.DEFAULT_CONTENT_TYPE;
-        const content = HttpClient.getStatusCodeMessage(status);
-        return { status, contentType, content };
-    }
-    static getParsedURL(url) {
-        return require('url').parse(url, true);
-    }
-    static fetchHostData(data) {
-        const { port, protocol, host, hostname } = HttpClient.getParsedURL(HttpClient.getURI(data));
-        return { port, protocol, host, hostname };
-    }
-    static getURI(data) {
-        return `${utils_1.$.trim(data.protocol, ':')}://${utils_1.$.trim(data.host, ':' + data.port)}` + (data.port ? ':' + data.port : '');
-    }
 }
-exports.HttpClient = HttpClient;
+exports.HttpContainer = HttpContainer;
 class HttpFormData {
     constructor(http, config = { options: {} }) {
         var _a;
-        var _b;
         this.http = http;
         this.config = config;
         this.client = require('busboy');
@@ -231,15 +219,14 @@ class HttpFormData {
         this.isDataFetched = false;
         this._errors = [];
         this._filePromises = [];
-        (_a = (_b = this.config).options) !== null && _a !== void 0 ? _a : (_b.options = {});
+        (_a = this.config).options || (_a.options = {});
         this.config.uploadDir = utils_1.fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir();
     }
     get uploadDir() {
         return this.config.uploadDir;
     }
     get form() {
-        var _a;
-        return this.client(Object.assign(Object.assign({}, (_a = this.config.options) !== null && _a !== void 0 ? _a : {}), { headers: this.http.request.headers }));
+        return this.client(Object.assign(Object.assign({}, this.config.options || {}), { headers: this.http.request.headers }));
     }
     get ready() {
         return !!this.isDataFetched;
@@ -302,6 +289,8 @@ class HttpFormData {
     }
     _onFileUpload(field, file, info, filter) {
         var _a, _b;
+        if (info.filename === undefined)
+            return;
         (_a = this._files)[field] || (_a[field] = []);
         (_b = this._stat.files)[field] || (_b[field] = []);
         if (false === (filter === null || filter === void 0 ? void 0 : filter(field, info)))
@@ -309,22 +298,13 @@ class HttpFormData {
         let resolver = null;
         let error = null;
         this._filePromises.push(new Promise(res => resolver = res));
-        const path = utils_1.fs.path(this.uploadDir, utils_1.$.random.hex());
+        const path = utils_1.fs.join(this.uploadDir, utils_1.$.random.hex());
         const writeStream = utils_1.fs.system.createWriteStream(path);
         writeStream.on('close', () => {
             if (error) {
                 this._errors.push({ field, error });
                 resolver();
                 return;
-            }
-            if (info.filename === undefined) {
-                const stat = utils_1.fs.stat(path);
-                if (!stat || stat.size === 0) {
-                    utils_1.fs.isFile(path) && utils_1.fs.system.unlink(path, () => {
-                    });
-                    resolver();
-                    return;
-                }
             }
             info.path = path;
             this._files[field].push(path);
@@ -336,4 +316,88 @@ class HttpFormData {
     }
 }
 exports.HttpFormData = HttpFormData;
+class HttpClient {
+    static getResponseIsSent(response) {
+        return response.headersSent || response.writableEnded || response.writableFinished;
+    }
+    static setCorsHeaders(response, headers) {
+        headers = Object.assign(Object.assign({}, HttpClient.corsHeaders), headers || {});
+        Object.entries(headers).forEach(([header, value]) => {
+            response.getHeader(header) || response.setHeader(header, value);
+        });
+    }
+    static mimeTypes(assign) {
+        return assign ? Object.assign(Object.assign({}, http_1.HTTP_CONTENT_MIME_TYPES), assign) : http_1.HTTP_CONTENT_MIME_TYPES;
+    }
+    static getHttpResponseData(http, assignData) {
+        http.responseData || (http.responseData = {});
+        (assignData === null || assignData === void 0 ? void 0 : assignData.content) && (http.responseData.content = assignData === null || assignData === void 0 ? void 0 : assignData.content);
+        http.responseData.status = (assignData === null || assignData === void 0 ? void 0 : assignData.status)
+            || http.responseData.status || http.response.statusCode || http_1.HTTP_STATUS.OK;
+        http.responseData.contentType = (assignData === null || assignData === void 0 ? void 0 : assignData.contentType)
+            || http.responseData.contentType || http.response.getHeader('content-type');
+        HttpClient.getHttpResponseDataContent(http.responseData);
+        return http.responseData;
+    }
+    static getHttpResponseDataContent(data) {
+        data.content || (data.content = { json: '' });
+        const contentEntry = Object.keys(data.content)[0];
+        contentEntry === 'json'
+            && data.content[contentEntry] instanceof Object
+            && (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]));
+        data.contentType || (data.contentType = HttpClient.getDefaultContentType(contentEntry));
+        return data.content[contentEntry];
+    }
+    static getDefaultContentType(entry, mimeTypes = {}, defaultMimeType = exports.JSON_CONTENT_TYPE) {
+        return mimeTypes[entry] || http_1.HTTP_CONTENT_MIME_TYPES[entry] || defaultMimeType;
+    }
+    static getStatusCodeMessage(status) {
+        for (const [key, value] of Object.entries(http_1.HTTP_STATUS)) {
+            if (status === value)
+                return key;
+        }
+        return '';
+    }
+    static getDataFromStatusCode(http, setStatusIfNone) {
+        var _a, _b, _c, _d;
+        http.responseData || (http.responseData = {});
+        const status = (_b = (_a = http.responseData.status) !== null && _a !== void 0 ? _a : setStatusIfNone) !== null && _b !== void 0 ? _b : http.response.statusCode;
+        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader('content-type')) !== null && _d !== void 0 ? _d : exports.JSON_CONTENT_TYPE;
+        const content = HttpClient.getStatusCodeMessage(status);
+        return { status, contentType, content };
+    }
+    static getParsedURL(url) {
+        const data = require('url').parse(url, true);
+        data.pathname = utils_1.$.trimPath(data.pathname);
+        return data;
+    }
+    static fetchHostData(data) {
+        const { port, protocol, host, hostname } = HttpClient.getParsedURL(HttpClient.getURI(data));
+        return { port, protocol, host, hostname };
+    }
+    static getURI(data) {
+        return `${data.protocol.replace(':', '')}://${data.host.replace(':' + data.port, '')}` + (data.port ? ':' + data.port : '');
+    }
+    static sendJSON(response, body, status = http_1.HTTP_STATUS.OK) {
+        response.writeHead(status, { 'Content-Type': exports.JSON_CONTENT_TYPE });
+        response.end(body instanceof Object ? JSON.stringify(body) : body);
+    }
+    static throwBadRequest() {
+        throw new exception_1.HttpException('The current HTTP method receives no response from the request method.', {
+            status: http_1.HTTP_STATUS.BAD_REQUEST
+        });
+    }
+    static throwNoContent() {
+        throw new exception_1.HttpException('The current HTTP method receives no content from the request method.', {
+            status: http_1.HTTP_STATUS.NO_CONTENT
+        });
+    }
+}
+exports.HttpClient = HttpClient;
+HttpClient.corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Request-Method': '*',
+    'Access-Control-Allow-Methods': 'OPTIONS, GET',
+    'Access-Control-Allow-Headers': '*',
+};
 //# sourceMappingURL=http_client.js.map

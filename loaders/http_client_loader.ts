@@ -1,69 +1,55 @@
 import {App} from "../core/app";
 import {AppLoader} from "../core/app_loader";
-import {HttpClient} from "../core/http_client";
-import {Http2ServerRequest, Http2ServerResponse} from "http2";
+import {HttpContainer} from "../core/http_client";
 import {
     HttpResponseData,
-    HttpClientConfigInterface,
-    BaseHttpResponseHandlerInterface
-} from "../interfaces/http";
+    HttpContainerConfigInterface,
+    HttpDataInterface
+} from "../core/interfaces/http";
 import {RuntimeException} from "../core/exception";
 
 export class HttpClientLoader extends AppLoader {
 
-    protected _request: Http2ServerRequest
+    call(args: [app: App, config: HttpContainerConfigInterface & HttpDataInterface]): HttpContainer {
 
-    protected _response: Http2ServerResponse
+        const app = args[0]
+        const config = {...app.config.get.http, ...args[1] || {}} as HttpContainerConfigInterface & HttpDataInterface
+        const session = config.session || {client: null, config: {secret: ''}}
+        const engine = config.engine || {client: null, config: {options: {}}}
+        const container = new HttpContainer(config)
 
-    protected _target: BaseHttpResponseHandlerInterface
-
-    protected _config: HttpClientConfigInterface
-
-    protected get targetType() {
-
-        return HttpClient
-    }
-
-    protected _onCall(target: BaseHttpResponseHandlerInterface, args?: [
-        request: Http2ServerRequest,
-        response: Http2ServerResponse,
-        config: HttpClientConfigInterface
-    ]) {
-        this._request = args?.[0]
-        this._response = args?.[1]
-        this._config = args?.[2] ?? {} as HttpClientConfigInterface
-    }
-
-    protected _resolve(): any {
-
-        const client = new HttpClient(this._request, this._response, this._config)
-
-        const app = this._app
-
-        client.host = this._app.host
-
-        Object.assign(client, {
-            get form() {
-                return this._form ||= app.get('http_form').call([client])
+        container.assignData({
+            onSetResponseData: config.onSetResponseData || (async function (data: HttpResponseData) {
+                await App.system.listen({
+                    event: {
+                        [App.system.events.HTTP_RESPONSE]: [app, container.getHttpResponse(data)]
+                    }
+                })
+            }),
+            onError: config.onError || (async function () {
+                await app.resolveException(new RuntimeException(container), this.request, this.response)
+            }),
+            session: {
+                config: session.config,
+                client: session.client || (function () {
+                    return app.get('session').call([container, session.config])
+                })
+            },
+            engine: {
+                config: engine.config,
+                client: engine.client || (function () {
+                    return app.get('engine').call([engine.config])
+                })
             }
         })
 
-        client.setResponseData = async function (data: HttpResponseData) {
-            await App.system.listen({
-                event: {
-                    [App.system.events.HTTP_RESPONSE]: [app, client.getHttpResponse(this.responseData = data)]
-                }
-            })
-        }
-
-        client.onError = async function () {
-            await app.resolveExceptionOnHttp(new RuntimeException(this), this.request, this.response)
-        }
-
-        return client
+        return container
     }
 
-    protected _onGenerate(repository: string) {
+    onCall() {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

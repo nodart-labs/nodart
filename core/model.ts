@@ -1,4 +1,4 @@
-import {BaseModelInterface, OrmQueryBuilder} from "../interfaces/orm";
+import {BaseModelInterface, OrmQueryBuilder} from "./interfaces/orm";
 import {Orm} from "./orm";
 
 export abstract class Model implements BaseModelInterface {

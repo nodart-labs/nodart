@@ -19,7 +19,7 @@ if (fs.existsSync(app + '/package.json')) {
 
 if (fs.existsSync(appCli + '/package.json')) {
 
-    const targetZip = path.resolve(__dirname, 'sources/nodart-app')
+    const targetZip = path.resolve(__dirname, 'sources/app')
 
     const excludeMod = [...exclude, ...['.history']]
 
@@ -28,7 +28,7 @@ if (fs.existsSync(appCli + '/package.json')) {
     copydir.sync(appCli, targetZip, {
         utimes: true,  // keep add time and modify time
         mode: true,    // keep file mode
-        cover: true,    // cover file when exists, default is true
+        cover: true,   // cover file when exists, default is true
         filter: function(stat, filepath, filename) {
             if (stat === 'directory') return false === excludeMod.some(item => filepath.includes(item))
             return false === [
@@ -92,8 +92,8 @@ if (fs.existsSync(target)) {
         }
     })
 
-    const microApp = path.resolve(__dirname, 'sources/nodart-micro-app')
-    const microAppJs = path.resolve(__dirname, 'sources/nodart-js-micro-app')
+    const microApp = path.resolve(__dirname, 'sources/micro-app')
+    const microAppJs = path.resolve(__dirname, 'sources/micro-app-js')
 
     if (fs.existsSync(microApp + '/package.json')) {
         const package = fs.readFileSync(microApp + '/package.json', {encoding: "utf-8"})

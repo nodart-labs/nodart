@@ -5,11 +5,7 @@ export = {
     },
 
     isPlainObject(value: any) {
-        return !this.isNil(value)
-            && !Array.isArray(value)
-            && typeof value !== 'function'
-            && value instanceof Object
-            && value.constructor === Object
+        return value instanceof Object && value.constructor === Object
     },
 
     isObject(value: any) {
@@ -78,6 +74,11 @@ export = {
     trimPath(pathLike: string) {
 
         return pathLike?.trim().replace(/^[\\|\/]*/g, '').replace(/[\\|\/]*$/g, '') || ''
+    },
+
+    trimPathEnd(pathLike: string) {
+
+        return pathLike?.trim().replace(/[\\|\/]*$/g, '') || ''
     },
 
     prettyNumber(x: string | number): string | number {

@@ -1,97 +1,127 @@
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
-import {App} from '../core/app'
-import {HttpHandler} from "../core/http_handler";
-import {StaticLoader} from "../loaders/static_loader";
-import {HttpClient} from "../core/http_client";
-import {HTTP_SERVICE_ACCEPTOR_COMMON_ACTION, HttpServiceHandler} from "../services/http";
-import {HttpServiceRouteObject} from "../interfaces/service";
-import {HttpServiceLoader} from "../loaders/http_service_loader";
+import {App, loaders} from "../core/app";
+import {JSON_CONTENT_TYPE, HttpClient} from "../core/http_client";
+import {HTTP_METHODS, HTTP_STATUS} from "../core/interfaces/http";
+import {HttpException} from "../core/exception";
+import {CONTROLLER_INITIAL_ACTION} from "../core/controller";
 
-let warnings = false
+const warnings = {
+    useCors: false,
+    fetchDataOnRequest: false
+}
 
 export = async (app: App, request: Http2ServerRequest, response: Http2ServerResponse) => {
 
-    const http = app.get('http').call([request, response]) as HttpClient
+    if (HttpClient.getResponseIsSent(response)) return
 
-    if (http.responseIsSent) return
+    const config = app.config.get
+    const configHttp = config.http || {}
 
     /**************************************
      CORS LOADER
      ***************************************/
 
-    http.setCorsHeaders()
+    if (configHttp.useCors) {
 
-    if (request.method === 'OPTIONS') http.send('')
+        HttpClient.setCorsHeaders(response)
 
-
-    /**************************************
-     STATIC LOADER
-     ***************************************/
-
-    const staticLoader = <StaticLoader>app.get('static')
-
-    const filePath = http.parseURL.pathname === '/' ? app.config.get.staticIndex : http.parseURL.pathname
-
-    const file = staticLoader.require(filePath).call()
-
-    if (file) return staticLoader.send(file, http)
-
-
-    /**************************************
-     FETCH REQUEST DATA (POST, PUT, PATCH)
-     ***************************************/
-
-    if (app.config.get.fetchDataOnRequest === true) {
-
-        await http.fetchData()
-
-    } else if (!warnings) {
-
-        warnings = true
-
-        console.log('Auto fetching data from request is disabled in configuration. Use "http.fetchData()" instead.')
-    }
-
-
-    /**************************************
-     HTTP SERVICE LOADER
-     ***************************************/
-
-    if (app.httpServiceRoutes.length) {
-
-        const httpServiceHandler = new HttpServiceHandler(app.router, app.httpServiceRoutes)
-
-        const runHttpService = async (filterRoute: (route: HttpServiceRouteObject) => boolean): Promise<true | void> => {
-
-            const route = httpServiceHandler.getRouteData(filterRoute, http.parseURL)
-
-            const routeObject = route ? httpServiceHandler.findRouteByRouteData(route) : null
-
-            if (routeObject && route) {
-
-                const scope = {http, route, app}
-
-                await httpServiceHandler.runService(routeObject, scope, app.get('http_service') as HttpServiceLoader)
-
-                return true
-            }
+        if (request.method === 'OPTIONS') {
+            response.writeHead(HTTP_STATUS.OK, {'Content-Type': JSON_CONTENT_TYPE})
+            response.end()
+            return
         }
 
-        await runHttpService((route) => route.action === HTTP_SERVICE_ACCEPTOR_COMMON_ACTION)
+    } else if (!warnings.useCors) {
 
-        if (http.responseIsSent || (await runHttpService((route) => {
-            return route.action === request.method.toLowerCase()
-        }))) return
+        warnings.useCors = true
+
+        console.log('The CORS headers are disabled in configuration. Set "useCors" to enable if needed.')
     }
+
+    /**************************************
+     SERVE STATIC
+     ***************************************/
+
+    const path = loaders().static.call([app, config, response], request.url)
+
+    if (false === path) return
+
+    const sent = path && (await loaders().static.send(path as string, {
+        app,
+        mimeTypes: HttpClient.mimeTypes(configHttp.mimeTypes),
+        request,
+        response
+    }))
+
+    if (sent) return
 
 
     /**************************************
-     CONTROLLER LOADER
+     FETCHING REQUEST DATA
      ***************************************/
 
-    const handler = new HttpHandler(app, http)
+    const url = HttpClient.getParsedURL(HttpClient.getURI(app.host) + request.url)
 
-    if (app.httpHandlerPayload) await app.httpHandlerPayload(handler)
+    const http = loaders().http.call([app, {request, response, url, host: app.host}])
 
-    await handler.runController()
+    if (configHttp.fetchDataOnRequest) {
+
+        ['POST', 'PUT', 'PATCH'].includes(request.method) && await http.fetchData()
+
+    } else if (!warnings.fetchDataOnRequest) {
+
+        warnings.fetchDataOnRequest = true
+
+        console.log('Auto fetching data on request is disabled in configuration. Use "fetchData" method manually instead.')
+    }
+
+    /**************************************
+     HTTP HANDLER
+     ***************************************/
+
+    const route = app.router.getRouteByURL(url, http.method)
+
+    if (route.callback instanceof Function) {
+
+        const service = loaders().httpService.call([{http, route, app}])
+
+        const data = await route.callback(service.scope)
+
+        if (HttpClient.getResponseIsSent(response)) return
+
+        data && HttpClient.sendJSON(response, data)
+
+        return
+    }
+
+    const controller = loaders().httpService.getController({app, route, http}, loaders().controller)
+
+        || loaders().controller.getControllerByRoute(app, route, http)
+
+    if (!controller) throw new HttpException(http, {status: HTTP_STATUS.NOT_FOUND})
+
+    const data = await controller[CONTROLLER_INITIAL_ACTION]()
+
+    if (HttpClient.getResponseIsSent(response)) return
+
+    if (data) return HttpClient.sendJSON(response, data)
+
+    const action = controller.route.action || http.method
+
+    if (HTTP_METHODS.includes(action) && action !== http.method) HttpClient.throwBadRequest()
+
+    if (controller[action] instanceof Function) {
+
+        const args = app.router.arrangeRouteParams(route)
+
+        const data = await controller[action].apply(controller, args)
+
+        if (HttpClient.getResponseIsSent(response)) return
+
+        data && HttpClient.sendJSON(response, data)
+
+        return
+    }
+
+    HttpClient.throwNoContent()
 }

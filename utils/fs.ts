@@ -1,13 +1,28 @@
 import {$, object} from './index'
-import {JSONObjectInterface} from "../interfaces/object";
+import {JSONLikeInterface} from "../core/interfaces/object";
+import {FSCashier} from "./fs_cashier";
 
 const fs = require('fs')
 
-const _path = require("path")
+const _path = require('path')
 
-const stat = (path: string) => fs.existsSync(path) ? fs.statSync(path) : null
+const separator = _path.sep
 
-const dir = (directory: string, callback?: (data: {file?: string, directory?: string}) => void): string[] => {
+const cashier = FSCashier
+
+const stat = function (path: string) {
+    try {
+        return fs.statSync(path)
+    } catch {
+        return null
+    }
+}
+
+const dir = function (
+    directory: string,
+    callback?: (data: { file?: string, directory?: string }) => boolean | void,
+    excludeFolders?: string[]
+): string[] {
 
     if (!isDir(directory)) return []
 
@@ -21,22 +36,24 @@ const dir = (directory: string, callback?: (data: {file?: string, directory?: st
 
         if (isDir(file)) {
 
-            results = results.concat(dir(file, callback))
+            if (callback?.({directory: file}) === false) return
 
-            callback?.({directory: file})
+            if (excludeFolders && excludeFolders.some(v => file.endsWith(path($.trimPath(v))))) return
+
+            results = results.concat(dir(file, callback, excludeFolders))
 
             return
         }
 
-        results.push(file)
+        if (callback?.({file}) === false) return
 
-        callback?.({file})
+        results.push(file)
     })
 
     return results
 }
 
-const rmDir = (directory: string, callback?: Function) => {
+const rmDir = function (directory: string, callback?: Function) {
 
     if (!isDir(directory)) return callback?.()
 
@@ -52,45 +69,70 @@ const rmDir = (directory: string, callback?: Function) => {
     }
 }
 
-const write = (path: string, data: string = '') => {
-
-    fs.writeFileSync(path, data)
-}
-
-const isFile = (path: string, ext?: string[]): boolean => {
-
-    const exists = (path, ext) => !!stat(path + '.' + $.trim(ext, '.'))?.isFile()
-
-    return ext ? !!ext.some(ext => exists(path, ext)) : !!stat(path)?.isFile()
-}
-
-const isDir = (path: string): boolean => !!stat(path)?.isDirectory()
-
-const json = (path: string): JSONObjectInterface | void => {
+const write = function (path: string, data: string = ''): boolean {
     try {
-        if (isFile(path)) return JSON.parse(fs.readFileSync(path, 'utf8'))
+        fs.writeFileSync(path, data)
+        return true
+    } catch(e) {
+        console.log(e)
+        return false
+    }
+}
+
+const unlink = function (path: string, cb: Function = () => {}): boolean {
+    try {
+        fs.unlink(path, cb)
+        return true
+    } catch {
+        return false
+    }
+}
+
+const isFile = function (path: string, ext?: string[]): boolean {
+    const exists = (path, ext) => {
+        path = path + '.' + trimExtension(ext)
+        return cashier.isFile(path) || !!stat(path)?.isFile()
+    }
+    return ext ? !!ext.some(ext => exists(path, ext)) : cashier.isFile(path) || !!stat(path)?.isFile()
+}
+
+const isDir = function (path: string): boolean {
+    return !!stat(path)?.isDirectory()
+}
+
+const json = function (path: string): JSONLikeInterface | void {
+    try {
+        return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : undefined
     } catch (e) {
         console.error(e)
     }
 }
 
-const read = (path: string) => isFile(path) ? fs.readFileSync(path, 'utf8') : null
-
-const mkdir = (path: string, chmod: number = 0o744) => fs.mkdirSync(path, chmod)
-
-const mkDeepDir = (path: string, chmod = 0o744) => fs.mkdirSync(path, {recursive: true, mode: chmod})
-
-const copy = (src: string, dest: string, callback: Function = (() => undefined)): boolean => {
-
-    if (isFile(src)) {
-        fs.copyFile(src, dest, callback)
-        return true
+const read = function (path: string) {
+    try {
+        if (fs.existsSync(path)) return fs.readFileSync(path, 'utf8')
+    } catch {
     }
-
-    return false
 }
 
-const include = (
+const mkdir = function (path: string, chmod: number = 0o744) {
+    path && fs.mkdirSync(path, chmod)
+}
+
+const mkDeepDir = function (path: string, chmod = 0o744) {
+    path && fs.mkdirSync(path, {recursive: true, mode: chmod})
+}
+
+const copy = function (src: string, dest: string, callback: Function = (() => undefined)): boolean {
+    try {
+        fs.copyFile(src, dest, callback)
+        return true
+    } catch {
+        return false
+    }
+}
+
+const include = function (
     path: string,
     params: {
         skipExt?: boolean
@@ -98,12 +140,12 @@ const include = (
         error?: Function
         log?: boolean
     } = {log: true}
-): any | null => {
+): any | null {
     try {
         params.skipExt && (path = skipExtension(path))
-        const data = require(path)
-        params.success && params.success(data)
-        return data
+        const data = cashier.isFile(path) ? cashier.files[path].data : require(path)
+        const resolve = params.success && params.success(data)
+        return resolve || data
     } catch (e) {
         params.error && params.error(e)
         params.log && console.error(`Failed to load data from path "${path}".`, e)
@@ -111,36 +153,58 @@ const include = (
     }
 }
 
-const getSource = (path: string, sourceProtoObject?: any): any | null => {
+const getSource = function (path: string, sourceProtoObject?: any): any {
+    try {
+        const data = cashier.isFile(path) ? cashier.files[path].data : require(path)
 
-    const source = require(path)
+        if (!(data instanceof Object)) return null
 
-    if (!(source instanceof Object)) return null
+        for (const key of Object.keys(data)) {
 
-    for (let key of Object.keys(source)) {
-
-        if (object.isProtoConstructor(source[key], sourceProtoObject)) return source[key]
+            if (object.isProtoConstructor(data[key], sourceProtoObject)) return data[key]
+        }
+    } catch {
     }
-
-    return null
 }
 
-const filename = (path: string) => isFile(path) ? _path.basename(path) : null
+const filename = function (path: string) {
+    return isFile(path) ? _path.basename(path) : null
+}
 
-const parseFile = (path: string): object => isFile(path) ? _path.parse(path) : {}
+const parseFile = function (path: string): object {
+    return isFile(path) ? _path.parse(path) : {}
+}
 
-const formatPath = (path: string) => $.trimPath(path ?? '').replace(/\\/g, '/').replace(/\/$/, '')
+const formatPath = function (path: string) {
+    return path ? $.trimPathEnd(path).replace(/\\/g, '/').replace(/\/$/, '') : ''
+}
 
-const path = (path: string, to: string = '') => {
+const path = function (path: string, to: string = '') {
     return to
-        ? _path.resolve(path, to)
-        : _path.join(path.startsWith(_path.sep) ? path : _path.sep === '/' ? '/' + path : path, '')
+        ? _path.resolve(path, $.trimPath(to))
+        : _path.join(path[0] === separator ? path : separator === '/' ? '/' + path : path, '')
 }
 
-const skipExtension = (path: string) => path.replace(/\.[a-z\d]+$/i, '')
+const join = function (path: string, to: string) {
+    return _path.join(path, $.trimPath(to))
+}
+
+const skipExtension = function (path: string) {
+    return path.replace(/\.[a-z\d]+$/i, '')
+}
+
+const getExtension = function (path: string, withDot: boolean = false) {
+    const matches = path?.match(/(\.)([^.]+?)$/g)
+    return matches ? (withDot ? matches[0] : matches[0].replace('.', '')) : ''
+}
+
+const trimExtension = function (ext: string) {
+    return ext.replace(/^(\.)*/g, '')
+}
 
 export = {
     system: fs,
+    sep: separator,
     stat,
     filename,
     parseFile,
@@ -149,6 +213,7 @@ export = {
     write,
     json,
     read,
+    unlink,
     copy,
     isFile,
     isDir,
@@ -157,6 +222,9 @@ export = {
     getSource,
     include,
     path,
+    join,
     rmDir,
-    skipExtension
+    skipExtension,
+    getExtension,
+    trimExtension
 }

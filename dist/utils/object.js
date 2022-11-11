@@ -44,6 +44,16 @@ module.exports = {
         });
         return target;
     },
+    deepCopy(source, target = {}) {
+        for (let [key, value] of Object.entries(source)) {
+            if ($.isPlainObject(value)) {
+                target[key] = {};
+                this.deepCopy(value, target[key]);
+                continue;
+            }
+            target[key] = value;
+        }
+    },
     uniqBy(arr, key) {
         return [...new Map(arr.map(item => {
                 let uid = '';

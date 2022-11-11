@@ -8,12 +8,15 @@ class ServiceLoader extends app_loader_1.AppLoader {
         super(...arguments);
         this._repository = 'services';
     }
-    get targetType() {
+    get sourceType() {
         return service_1.Service;
     }
-    _onCall(target) {
+    call(args, path, rootDir) {
+        return this.resolve(path ? this.load(path, service_1.Service, rootDir) : this._source, args);
     }
-    _onGenerate(repository) {
+    onCall(target) {
+    }
+    onGenerate(repository) {
     }
 }
 exports.ServiceLoader = ServiceLoader;

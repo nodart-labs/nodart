@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.SYSTEM_LISTENERS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
+exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_FAVICON = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const app_1 = require("./app");
+const exception_1 = require("./exception");
 const controller_loader_1 = require("../loaders/controller_loader");
 const model_loader_1 = require("../loaders/model_loader");
 const store_loader_1 = require("../loaders/store_loader");
@@ -13,18 +14,12 @@ const static_loader_1 = require("../loaders/static_loader");
 const orm_loader_1 = require("../loaders/orm_loader");
 const cmd_loader_1 = require("../loaders/cmd_loader");
 const http_client_loader_1 = require("../loaders/http_client_loader");
-const exception_1 = require("./exception");
-const exception_2 = require("./exception");
 const exception_handler_loader_1 = require("../loaders/exception_handler_loader");
-const exception_3 = require("./exception");
 const exception_log_loader_1 = require("../loaders/exception_log_loader");
 const exception_template_loader_1 = require("../loaders/exception_template_loader");
 const app_builder_loader_1 = require("../loaders/app_builder_loader");
 const http_service_loader_1 = require("../loaders/http_service_loader");
-const http_respond_loader_1 = require("../loaders/http_respond_loader");
 const http_form_data_loader_1 = require("../loaders/http_form_data_loader");
-const engine_1 = require("./engine");
-const http_respond_1 = require("./http_respond");
 const STORE = require('../store/system');
 exports.SYSTEM_STORE = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
@@ -32,13 +27,14 @@ exports.SYSTEM_STATE_NAME = 'system';
 exports.CLIENT_STORE = 'store'; //client store repository name
 exports.CLIENT_STORE_NAME = 'app_store';
 exports.CLIENT_STATE_NAME = 'app';
-exports.SYSTEM_LISTENERS = {
+exports.SYSTEM_EVENTS = {
     [STORE.events.HTTP_REQUEST]: require('../events/http_request'),
     [STORE.events.HTTP_RESPONSE]: require('../events/http_response'),
 };
 exports.DEFAULT_CONTROLLER_NAME = 'index';
 exports.DEFAULT_STATIC_INDEX = 'index.html';
 exports.DEFAULT_STATIC_REPOSITORY = 'static';
+exports.DEFAULT_STATIC_FAVICON = 'favicon.ico';
 exports.DEFAULT_DATABASE_REPOSITORY = 'database';
 exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = 'migrations';
 exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = 'migration_sources';
@@ -51,43 +47,47 @@ exports.DEFAULT_APP_BUILD_DIR = 'build';
 exports.DEFAULT_ENV_FILE_NAME = 'env.ts';
 exports.APP_CONFIG = Object.freeze({
     rootDir: '',
-    envFileName: exports.DEFAULT_ENV_FILE_NAME,
-    buildDirName: exports.DEFAULT_APP_BUILD_DIR,
+    envFilename: exports.DEFAULT_ENV_FILE_NAME,
+    buildDirname: exports.DEFAULT_APP_BUILD_DIR,
     cli: {},
     store: true,
     storeName: exports.CLIENT_STORE_NAME,
     stateName: exports.CLIENT_STATE_NAME,
-    httpClient: {},
-    fetchDataOnRequest: true,
     routes: {},
-    engine: engine_1.Engine,
-    engineConfig: {},
-    httpResponder: http_respond_1.HttpResponder,
-    session: {
-        secret: utils_1.$.random.hex()
+    http: {
+        useCors: false,
+        fetchDataOnRequest: true,
+        session: {
+            config: {
+                secret: utils_1.$.random.hex()
+            }
+        },
     },
+    modules: {},
     orm: {},
     database: exports.DEFAULT_DATABASE_REPOSITORY,
-    static: exports.DEFAULT_STATIC_REPOSITORY,
-    staticIndex: exports.DEFAULT_STATIC_INDEX,
+    static: {
+        dirname: exports.DEFAULT_STATIC_REPOSITORY,
+        index: exports.DEFAULT_STATIC_INDEX,
+        favicon: exports.DEFAULT_STATIC_FAVICON,
+    },
     exception: {
         resolve: app_1.AppExceptionResolve,
         types: {
-            http: exception_2.HttpException,
-            runtime: exception_2.RuntimeException,
+            http: exception_1.HttpException,
+            runtime: exception_1.RuntimeException,
         },
         handlers: {
             http: exception_1.HttpExceptionHandler,
             runtime: exception_1.RuntimeExceptionHandler,
         },
-        log: exception_3.ExceptionLog,
+        log: exception_1.ExceptionLog,
     },
     loaders: {
         app_builder: app_builder_loader_1.AppBuilderLoader,
         http: http_client_loader_1.HttpClientLoader,
         http_form: http_form_data_loader_1.HttpFormDataLoader,
         http_service: http_service_loader_1.HttpServiceLoader,
-        http_respond: http_respond_loader_1.HttpRespondLoader,
         controller: controller_loader_1.ControllerLoader,
         model: model_loader_1.ModelLoader,
         store: store_loader_1.StoreLoader,
@@ -102,10 +102,9 @@ exports.APP_CONFIG = Object.freeze({
         exception_template: exception_template_loader_1.ExceptionTemplateLoader
     },
     reference: {
-        service: (app, target, props) => app.get('service').require(target).call(props),
-        model: (app, target, props) => app.get('model').require(target).call(props),
-    },
-    formData: {}
+        service: (app) => app.service.cashier.get('service'),
+        model: (app) => app.service.cashier.get('model'),
+    }
 });
 class AppConfig {
     constructor() {
@@ -124,9 +123,9 @@ class AppConfig {
         return this;
     }
     validate() {
-        this._config.rootDir = utils_1.fs.path(utils_1.$.trimPath(this._config.rootDir));
+        this._config.rootDir = utils_1.fs.path(utils_1.$.trimPathEnd(this._config.rootDir));
         if (!this._config.rootDir || !utils_1.fs.isDir(this._config.rootDir))
-            throw new exception_2.RuntimeException('AppConfig: The App Root directory is not defined or does not exist.');
+            throw new exception_1.RuntimeException('AppConfig: The App Root directory is not defined or does not exist.');
     }
 }
 exports.AppConfig = AppConfig;

@@ -1,10 +1,10 @@
-import {EngineConfigExtended, EngineInterface} from "../interfaces/engine";
+import {EngineClientConfigInterface, EngineInterface} from "./interfaces/engine";
 
 export class Engine implements EngineInterface {
 
     readonly client = require('nunjucks')
 
-    constructor(readonly config: EngineConfigExtended) {
+    constructor(readonly config: EngineClientConfigInterface) {
 
         this.client.configure(config.views, config.options)
     }

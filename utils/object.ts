@@ -1,4 +1,4 @@
-import {FunctionArgumentParseData} from "../interfaces/object";
+import {FunctionArgumentParseData} from "../core/interfaces/object";
 
 const $ = require('./common')
 
@@ -52,6 +52,17 @@ export = {
         })
 
         return target
+    },
+
+    deepCopy(source: object, target: object = {}) {
+        for (let [key, value] of Object.entries(source)) {
+            if ($.isPlainObject(value)) {
+                target[key] = {}
+                this.deepCopy(value, target[key])
+                continue
+            }
+            target[key] = value
+        }
     },
 
     uniqBy(arr, key: string | string[]) {

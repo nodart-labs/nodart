@@ -9,32 +9,30 @@ import {
     DEFAULT_DATABASE_SEED_REPOSITORY,
     DEFAULT_DATABASE_SEED_SRC_REPOSITORY
 } from "../core/app_config";
+import {OrmConfig} from "../core/interfaces/orm";
 
 export class OrmLoader extends AppLoader {
 
     protected _repository = DEFAULT_DATABASE_REPOSITORY
 
-    constructor(protected _app: App) {
-        super(_app)
-        this._repository = _app.config.get.database ?? DEFAULT_DATABASE_REPOSITORY
-    }
-
-    protected _onCall(target: any) {
+    constructor(readonly app: App) {
+        super(app)
+        this.repository = app.config.get.database || DEFAULT_DATABASE_REPOSITORY
     }
 
     get migrationSourceDirectory() {
 
-        return fs.path(this.getRepo(), DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY)
+        return fs.join(this.getRepo(), DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY)
     }
 
     get seedSourceDirectory() {
 
-        return fs.path(this.getRepo(), DEFAULT_DATABASE_SEED_SRC_REPOSITORY)
+        return fs.join(this.getRepo(), DEFAULT_DATABASE_SEED_SRC_REPOSITORY)
     }
 
-    protected _onGenerate(repository: string) {
+    onGenerate(repository: string) {
 
-        const db = this.database
+        const db = this.database(this.app.config.get.orm || {})
         const migrationsDir = db.migrations.directory
         const seedsDir = db.seeds.directory
         const srcDir = this.migrationSourceDirectory
@@ -47,11 +45,11 @@ export class OrmLoader extends AppLoader {
         fs.isDir(srcSeedDir) || fs.mkDeepDir(srcSeedDir)
     }
 
-    protected _resolve(target?: any, args?: any[]): any {
+    call(args?: [config: OrmConfig]): any {
 
         const getSources = () => this.migrationSourceDirectory
         const getSeedSources = () => this.seedSourceDirectory
-        const config = object.merge(this.database, (args?.[0] ?? this._app.config.get.orm) ?? {})
+        const config = this.database(object.merge(this.app.config.get.orm || {}, args?.[0] || {}))
 
         Orm.prototype.sources = function () {
             return this._sources || getSources()
@@ -63,22 +61,22 @@ export class OrmLoader extends AppLoader {
         return new Orm(config)
     }
 
-    get database() {
+    database(config: OrmConfig) {
 
-        const config = this._app.config.get.orm ?? {}
+        config ||= {}
         config.migrations ||= {}
         config.seeds ||= {}
 
-        const migrations = object.get(config, 'migrations')
-        const seeds = object.get(config, 'seeds')
+        const migrations = config.migrations
+        const seeds = config.seeds
         const repo = this.getRepo()
-        const ext = this._app.builder.envIsBuild ? 'js' : 'ts'
+        const ext = this.app.env.isBuild ? 'js' : 'ts'
         const loadExt = ['.js', '.ts']
 
         Array.isArray(migrations.loadExtensions) || (migrations.loadExtensions = [])
         Array.isArray(seeds.loadExtensions) || (seeds.loadExtensions = [])
 
-        return {
+        return object.merge(config, {
             migrations: {
                 tableName: migrations.tableName ||= DEFAULT_DATABASE_MIGRATION_REPOSITORY,
                 directory: migrations.directory ||= fs.path(repo, DEFAULT_DATABASE_MIGRATION_REPOSITORY),
@@ -90,7 +88,10 @@ export class OrmLoader extends AppLoader {
                 extension: seeds.extension ||= ext,
                 loadExtensions: seeds.loadExtensions = [...seeds.loadExtensions, ...loadExt],
             }
-        }
+        })
+    }
+
+    onCall(target: any) {
     }
 
 }

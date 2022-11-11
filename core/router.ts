@@ -1,152 +1,190 @@
 import {$} from '../utils'
-import {HttpClient} from "./http_client";
-import {Route, RouteEntry, RouteDescriptor, RouteData} from "../interfaces/router";
-import {HttpURL} from "../interfaces/http";
+import {
+    RouteEntry,
+    RouteData,
+    RouterEntries,
+    RouterParamEntries,
+    RouterParamEntryRoutes,
+    RouteDescriptorParamTypes
+} from "./interfaces/router";
+import {HTTP_METHODS, HttpMethod, HttpURL} from "./interfaces/http";
 
 export class Router {
 
-    protected _routeEntryPointers = {
+    readonly entries: RouterEntries = {}
+
+    readonly paramEntries: RouterParamEntries = {}
+
+    protected _paramEntryPointers = {
         param: ':',
         number: '+',
         optional: '?',
     }
 
     constructor(protected _routes: RouteEntry) {
+
+        this.paramEntries['any'] = []
+
+        this.addEntries(_routes)
     }
 
-    httpRoute(http: HttpClient): RouteData {
+    addEntries(routes: RouteEntry) {
 
-        const {pathname, query} = http.parseURL
+        Object.entries(routes).forEach(([name, data]) => {
 
-        const route: RouteData = {
-            route: '',
+            Array.isArray(data) || (data = [data])
+
+            for (let route of data as RouteData[]) {
+
+                const routeData = typeof route === 'string' ? {path: route} : route
+
+                this.addRoute(
+                    routeData as RouteData,
+                    (HTTP_METHODS.includes(route.action) ? route.action : 'any') as HttpMethod,
+                    name
+                )
+            }
+        })
+    }
+
+    addRoute(desc: string | RouteData, method: HttpMethod | 'any', route?: string) {
+
+        const data = this.getRouteData(typeof desc === 'string' ? {path: desc} : desc)
+
+        data.path = $.trimPath(data.path)
+        data.path ||= '/'
+        data.route = route || ''
+
+        if (false === data.path.includes(this._paramEntryPointers.param)) {
+            this.entries[data.path] ||= {}
+            this.entries[data.path][method] = Object.freeze(data)
+            return
+        }
+
+        this._addParamEntry(data, method)
+    }
+
+    protected _addParamEntry(data: RouteData, method: HttpMethod | 'any') {
+
+        const paramNames = {}
+
+        for (const [index, entry] of data.path.split('/').entries()) {
+
+            if (entry[0] !== this._paramEntryPointers.param) continue
+
+            const number = entry[1] === this._paramEntryPointers.number
+            const optional = entry.at(-1) === this._paramEntryPointers.optional
+
+            let start = 1, end = entry.length
+
+            number && (start += 1)
+            optional && (end -= 1)
+
+            const param = entry.slice(start, end)
+
+            paramNames[index] = param
+
+            data.paramNames.push(param)
+            data.paramTypes[param] = {optional, number}
+        }
+
+        this.paramEntries[method] ||= []
+
+        const routeData = {
+            route: Object.freeze(data),
+            path: data.path === '/' ? [] : data.path.split('/'),
+            paramNames
+        }
+
+        this.paramEntries[method] = [...[routeData], ...this.paramEntries[method]]
+    }
+
+    getRouteByURL(url: HttpURL, method: HttpMethod | 'any'): RouteData {
+
+        const pathname = url.pathname
+        const route = url.pathname || '/'
+        const routeData = this.entries[route]?.[method] || this.entries[route]?.['any']
+
+        if (routeData) return this.getRouteData({...routeData, query: url.query, pathname})
+
+        const routes = [...this.paramEntries[method] || [], ...this.paramEntries['any']] as RouterParamEntryRoutes
+        const path = pathname.split('/')
+
+        OUTER: for (const data of routes) {
+
+            if (path.length > data.path.length) continue
+
+            const params = {}
+
+            for (const [index, entry] of path.entries()) {
+
+                const param = data.paramNames[index]
+
+                if (param) {
+
+                    params[param] = entry
+
+                    const {optional, number} = data.route.paramTypes[param] || {}
+                    const type = data.route.types?.[param]
+
+                    if (false === this.validateParam(params, param, {optional, number, type})) continue OUTER
+
+                } else if (entry !== data.path[index]) continue OUTER
+            }
+
+            return {...data.route, query: url.query, params, pathname}
+        }
+
+        return this.getRouteData({query: url.query, pathname})
+    }
+
+    getRouteData(assign: object = {}): RouteData {
+
+        return Object.assign({
             name: '',
             path: '',
+            pathname: '',
+            route: '',
             action: '',
-            pathname,
+            query: {},
+            callback: null,
+            controller: null,
             params: {},
-            query,
-        }
-
-        for (let [routeName, routeData] of Object.entries(this._routes)) {
-
-            const data = this.findRoute(routeData, http.parseURL)
-
-            if (data) return Object.assign(route, data, {route: routeName})
-        }
-
-        return route
+            paramNames: [],
+            paramTypes: {},
+            types: {},
+        }, assign)
     }
 
-    findRoute(routeData: Route, url: HttpURL): RouteData | void {
+    validateParam(
+        params: object,
+        name: string,
+        opts: {
+            optional: boolean,
+            number: boolean,
+            type: RouteDescriptorParamTypes
+        }): boolean | void {
 
-        url.pathname = $.trimPath(url.pathname)
+        if (opts.optional && params[name] === undefined) return
 
-        const urlPathSplit = url.pathname.split('/')
+        if (opts.number && (isNaN(params[name] = +params[name]))) return false
 
-        if (typeof routeData === 'string') return this.getRouteObject(routeData, url.pathname, urlPathSplit)
+        if (opts.type instanceof Function) params[name] = (opts.type as Function)(params[name]) ?? params[name]
 
-        Array.isArray(routeData) || (routeData = [routeData])
+        if (opts.type instanceof RegExp && !params[name].toString().match(<RegExp>opts.type)) return false
 
-        for (let route of routeData) {
-
-            route instanceof Object || (route = {path: route})
-
-            const data = this.getRouteObject(route.path, url.pathname, urlPathSplit)
-
-            if (data) {
-
-                if (false === this.fetchRoutePathEntryParamTypes(route, data.params)) return
-
-                data.query = url.query
-
-                return {...route, ...data}
-            }
-        }
-    }
-
-    getRouteObject(path: string, urlPath: string, urlPathSplit: string[]): RouteData | void {
-
-        path = $.trimPath(path)
-
-        if (path === urlPath) return {path, pathname: urlPath, params: {}}
-
-        if (false === path.includes(this._routeEntryPointers.param)) return
-
-        const pathSplit = path.split('/')
-
-        const params = {}
-
-        if (urlPathSplit.length > pathSplit.length) return
-
-        for (const [index, entry] of pathSplit.entries()) {
-
-            const target = urlPathSplit[index]
-
-            if (target === entry) continue
-
-            const {param, isOptional, isNumber} = this.parseRoutePathEntry(entry)
-
-            if (param === undefined) return
-
-            if (isOptional && target === undefined) return {
-                path,
-                params,
-                pathname: urlPath
-            }
-
-            if (isNumber && (isNaN(params[param] = parseFloat(target)))) return
-
-            params[param] ??= target
-        }
-
-        return {path, params, pathname: urlPath}
-    }
-
-    parseRoutePathEntry(pathEntry: string) {
-
-        if (pathEntry[0] !== this._routeEntryPointers.param) return {}
-
-        let param = '', i = 1, end = pathEntry.length
-        let isNumber = pathEntry[1] === this._routeEntryPointers.number
-        let isOptional = pathEntry.at(-1) === this._routeEntryPointers.optional
-
-        isNumber && (i += 1)
-        isOptional && (end -= 1)
-
-        for (; i < end; i++) param += pathEntry[i]
-
-        return {param, isOptional, isNumber}
-    }
-
-    fetchRoutePathEntryParamTypes(route: RouteDescriptor, params: { [name: string]: string | number }): void | false {
-
-        if (!route.types) return
-
-        for (const [name, value] of Object.entries(params)) {
-
-            if (route.types[name] instanceof Function) params[name] = (route.types[name] as Function)(value) ?? value
-
-            if (route.types[name] instanceof RegExp && !value.toString().match(<RegExp>route.types[name])) return false
-
-            if (route.types[name] === Number && isNaN(params[name] = parseFloat(<string>value))) return false
-        }
+        return !(opts.type === Number && isNaN(params[name] = +params[name]))
     }
 
     arrangeRouteParams(data: RouteData) {
 
-        const {path, params} = data
+        data.params ||= {}
+        data.paramNames ||= []
 
         const arrange = []
-
-        path.split('/').forEach(entry => {
-
-            const data = this.parseRoutePathEntry(entry)
-
-            data.param && (data.param in params) && arrange.push(params[data.param])
-        })
+        let i = 0
+        for (; i < data.paramNames.length; i++) arrange.push(data.params[data.paramNames[i]])
 
         return arrange
     }
-
 }

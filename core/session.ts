@@ -1,5 +1,5 @@
-import {SessionConfigInterface} from "../interfaces/session";
-import {BaseHttpResponseInterface} from "../interfaces/http";
+import {SessionClientConfigInterface} from "./interfaces/session";
+import {HttpContainerInterface} from "./interfaces/http";
 
 export const DEFAULT_SESSION_NAME = 'session'
 
@@ -11,14 +11,14 @@ export class Session {
 
     protected _sessionName
 
-    constructor(readonly config: SessionConfigInterface) {
+    constructor(readonly config: SessionClientConfigInterface) {
 
         this.client = this.client(config)
 
         this._sessionName = config.cookieName || DEFAULT_SESSION_NAME
     }
 
-    load(http: BaseHttpResponseInterface) {
+    load(http: HttpContainerInterface) {
 
         this.client(http.request, http.response, () => this._session = http.request[this._sessionName])
 

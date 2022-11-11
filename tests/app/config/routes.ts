@@ -1,4 +1,4 @@
-import {RouteEntry} from "../../../interfaces/router";
+import {RouteEntry} from "../../../core/interfaces/router";
 
 export = <RouteEntry>{
     index: [

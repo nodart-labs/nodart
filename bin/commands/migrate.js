@@ -10,7 +10,7 @@ module.exports = async ({app, cmd}) => {
         process.exit(1)
     }
 
-    const orm = () => app.db.orm
+    const orm = () => app.service.db.orm
 
     const pattern = /^[a-z_\-\d\/]+$/i
 
@@ -25,7 +25,7 @@ module.exports = async ({app, cmd}) => {
             process.exit(1)
         }
         migrations = object.uniq(migrations.map(m => {
-            m = m.toString().replace('/', '')
+            m = m.toString().replace(/\//g, '')
             if (!m.match(pattern)) {
                 console.error('The migration name not match pattern: A-z_-0-9')
                 process.exit(1)

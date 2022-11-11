@@ -1,19 +1,25 @@
 import {AppLoader} from "../core/app_loader";
 import {Service} from "../core/service";
+import {ServiceScope} from "../core/interfaces/service";
 
 export class ServiceLoader extends AppLoader {
 
     protected _repository = 'services'
 
-    protected get targetType() {
+    get sourceType() {
 
         return Service
     }
 
-    protected _onCall(target: any) {
+    call(args?: [scope: ServiceScope], path?: string, rootDir?: string): any {
+
+        return this.resolve(path ? this.load(path, Service, rootDir) : this._source, args)
     }
 
-    protected _onGenerate(repository: string) {
+    onCall(target: any) {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

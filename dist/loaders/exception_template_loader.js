@@ -4,21 +4,21 @@ exports.ExceptionTemplateLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 class ExceptionTemplateLoader extends app_loader_1.AppLoader {
     getTemplate(response) {
-        const template = this._app.config.get.exception.template;
+        var _a;
+        const template = (_a = this.app.config.get.exception) === null || _a === void 0 ? void 0 : _a.template;
         return template instanceof Function ? template(response) : template;
     }
-    _onCall(target, args) {
-    }
-    _resolve(target, args) {
-        var _a;
+    call(args) {
         const template = this.getTemplate(args[0]);
-        const engineLoader = this._app.get('engine');
+        const engineLoader = this.app.get('engine');
         const engine = engineLoader.call();
-        if (!template || !(engineLoader === null || engineLoader === void 0 ? void 0 : engineLoader.isFile(engine === null || engine === void 0 ? void 0 : engine.normalize(template))))
+        if (!template || !engineLoader.isFile(engine.normalize(template)))
             return;
-        return engine.getTemplate(template, { response: (_a = args[0]) !== null && _a !== void 0 ? _a : {} });
+        return engine.getTemplate(template, { response: args[0] });
     }
-    _onGenerate(repository) {
+    onCall() {
+    }
+    onGenerate(repository) {
     }
 }
 exports.ExceptionTemplateLoader = ExceptionTemplateLoader;

@@ -10,7 +10,7 @@ import {
     OrmSeedInterface,
     OrmMigrationInterface,
     ConnectionManagerInterface
-} from "../interfaces/orm";
+} from "./interfaces/orm";
 import {fs, object} from "../utils";
 import {RuntimeException} from "./exception";
 

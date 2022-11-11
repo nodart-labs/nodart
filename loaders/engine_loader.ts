@@ -2,45 +2,48 @@ import {AppLoader} from "../core/app_loader";
 import {DEFAULT_ENGINE_VIEWS_REPOSITORY} from "../core/app_config";
 import {App} from "../core/app";
 import {Engine} from "../core/engine";
-import {EngineConfigInterface} from "../interfaces/engine";
+import {EngineClientConfigInterface} from "../core/interfaces/engine";
+import {fs} from "../utils";
 
 export class EngineLoader extends AppLoader {
 
     protected _repository = DEFAULT_ENGINE_VIEWS_REPOSITORY
 
-    protected _engine: typeof Engine
+    constructor(readonly app: App) {
+        super(app)
 
-    protected get targetType() {
-
-        return Engine
+        this.repository = this.app.config.get.http?.engine?.config?.views || DEFAULT_ENGINE_VIEWS_REPOSITORY
     }
 
-    constructor(protected _app: App) {
-        super(_app)
+    call(args?: [config: EngineClientConfigInterface]): Engine {
 
-        this._repository = _app.config.get.engineConfig?.views ?? DEFAULT_ENGINE_VIEWS_REPOSITORY
+        return this.getEngine(args?.[0])
     }
 
-    protected _onCall(target: any): void {
+    getEngineConfig(config?: EngineClientConfigInterface): EngineClientConfigInterface {
 
-        this._engine = target ?? this._app.config.get.engine ?? Engine
+        const engineConfig = {...this.app.config.get.http?.engine?.config || {}, ...config || {}}
+
+        fs.isDir(engineConfig.views) || (engineConfig.views = this.getRepo())
+
+        return engineConfig as EngineClientConfigInterface
     }
 
-    protected _resolve(target?: any, args?: [config: EngineConfigInterface]): any {
+    getEngine(config?: EngineClientConfigInterface): Engine {
 
-        return new this._engine(args?.[0] ?? this.getEngineConfig())
+        config = this.getEngineConfig(config)
+
+        return this.app.config.get.http?.engine?.client instanceof Function
+
+            ? this.app.config.get.http.engine.client(config)
+
+            : new Engine(config)
     }
 
-    getEngineConfig(): any {
-
-        const config = {...this._app.config.get.engineConfig ?? {}}
-
-        config.views = this.getRepo()
-
-        return config
+    onCall(): void {
     }
 
-    protected _onGenerate(repository: string): void {
+    onGenerate(repository: string): void {
     }
 
 }

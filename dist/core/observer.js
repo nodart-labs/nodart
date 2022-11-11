@@ -35,10 +35,7 @@ class Observer {
         return this._setter ? this._setter(prop, value, data) : value;
     }
     static isObject(data) {
-        return !Array.isArray(data)
-            && typeof data !== 'function'
-            && data instanceof Object
-            && data.constructor === Object;
+        return data instanceof Object && data.constructor === Object;
     }
 }
 exports.Observer = Observer;
@@ -71,11 +68,15 @@ class Observable {
                 if (false === isStackPointer) {
                     const newPath = setPath(p, path, pathDelim);
                     lastCall === newPath || (path = newPath);
-                    isTarget && (source[p] = observer.pull({ prop: p, source, path: getPath(path, pathDelim) }));
                     lastCall = path + pathDelim + p;
+                    if (isTarget)
+                        return observer.pull({
+                            prop: p,
+                            source,
+                            value: source[p],
+                            path: getPath(path, pathDelim)
+                        });
                 }
-                if (isTarget)
-                    return source[p];
                 if (isObject)
                     return Observable.get(source[p], observer, { path, pathDelim, lastCall });
                 return source[p];

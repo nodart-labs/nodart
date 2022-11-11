@@ -4,16 +4,16 @@ exports.CommandLineLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const cmd_1 = require("../core/cmd");
 class CommandLineLoader extends app_loader_1.AppLoader {
-    _onCall(target, args) {
+    onCall(target, args) {
     }
-    _onGenerate(repository) {
+    onGenerate(repository) {
         this._init();
     }
-    _resolve(target, args) {
-        return this._init();
+    call(args) {
+        return this._init(args === null || args === void 0 ? void 0 : args[0]);
     }
     _init(app) {
-        return new cmd_1.CommandLine(app !== null && app !== void 0 ? app : this._app).system.init();
+        return new cmd_1.CommandLine(app !== null && app !== void 0 ? app : this.app).system.init();
     }
 }
 exports.CommandLineLoader = CommandLineLoader;

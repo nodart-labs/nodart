@@ -6,7 +6,7 @@ module.exports = ({app, cmd}) => {
 
     const isJS = !!cmd.command.options.js
 
-    const source = isJS ? '../../sources/nodart-js-micro-app' : '../../sources/nodart-micro-app'
+    const source = isJS ? '../../sources/micro-app-js' : '../../sources/micro-app'
 
     if (!fs.existsSync(path.resolve(__dirname, source))) {
         console.log('Failed to retrieve app source.')
@@ -30,7 +30,7 @@ module.exports = ({app, cmd}) => {
 
         fs.existsSync(gitignore) && await decompress(gitignore, dest)
 
-        console.log(`A new application created at the path ${dest}`)
+        console.log(`A new application created by path: ${dest}`)
 
         process.exit()
     })

@@ -1,8 +1,8 @@
 import {App} from '../core/app'
-import {BaseHttpResponseHandlerInterface} from "../interfaces/http";
 import {HttpClient} from "../core/http_client";
+import {HttpContainerInterface} from "../core/interfaces/http";
 
-export = async (app: App, http: BaseHttpResponseHandlerInterface) => {
+export = async (app: App, http: HttpContainerInterface) => {
 
     if (http.responseIsSent) return
 

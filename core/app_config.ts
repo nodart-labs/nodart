@@ -1,6 +1,7 @@
 import {$, fs, object} from '../utils'
 import {App, AppExceptionResolve} from './app'
-import {AppConfigInterface} from "../interfaces/app";
+import {AppConfigInterface} from "./interfaces/app";
+import {HttpExceptionHandler, RuntimeExceptionHandler, HttpException, RuntimeException, ExceptionLog} from "./exception";
 import {ControllerLoader} from "../loaders/controller_loader";
 import {ModelLoader} from "../loaders/model_loader";
 import {StoreLoader} from "../loaders/store_loader";
@@ -11,18 +12,12 @@ import {StaticLoader} from "../loaders/static_loader";
 import {OrmLoader} from "../loaders/orm_loader";
 import {CommandLineLoader} from "../loaders/cmd_loader";
 import {HttpClientLoader} from "../loaders/http_client_loader";
-import {HttpExceptionHandler, RuntimeExceptionHandler} from "./exception";
-import {HttpException, RuntimeException} from "./exception";
 import {ExceptionHandlerLoader} from "../loaders/exception_handler_loader";
-import {ExceptionLog} from "./exception";
 import {ExceptionLogLoader} from "../loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
 import {AppBuilderLoader} from "../loaders/app_builder_loader";
 import {HttpServiceLoader} from "../loaders/http_service_loader";
-import {HttpRespondLoader} from "../loaders/http_respond_loader";
 import {HttpFormDataLoader} from "../loaders/http_form_data_loader";
-import {Engine} from "./engine";
-import {HttpResponder} from "./http_respond";
 
 const STORE = require('../store/system')
 
@@ -32,7 +27,7 @@ export const SYSTEM_STATE_NAME: string = 'system'
 export const CLIENT_STORE: string = 'store' //client store repository name
 export const CLIENT_STORE_NAME: string = 'app_store'
 export const CLIENT_STATE_NAME: string = 'app'
-export const SYSTEM_LISTENERS = {
+export const SYSTEM_EVENTS = {
     [STORE.events.HTTP_REQUEST]: require('../events/http_request'),
     [STORE.events.HTTP_RESPONSE]: require('../events/http_response'),
 }
@@ -40,6 +35,7 @@ export const SYSTEM_LISTENERS = {
 export const DEFAULT_CONTROLLER_NAME = 'index'
 export const DEFAULT_STATIC_INDEX = 'index.html'
 export const DEFAULT_STATIC_REPOSITORY = 'static'
+export const DEFAULT_STATIC_FAVICON = 'favicon.ico'
 
 export const DEFAULT_DATABASE_REPOSITORY = 'database'
 export const DEFAULT_DATABASE_MIGRATION_REPOSITORY = 'migrations'
@@ -55,25 +51,30 @@ export const DEFAULT_ENV_FILE_NAME = 'env.ts'
 
 export const APP_CONFIG: AppConfigInterface = Object.freeze({
     rootDir: '',
-    envFileName: DEFAULT_ENV_FILE_NAME,
-    buildDirName: DEFAULT_APP_BUILD_DIR,
+    envFilename: DEFAULT_ENV_FILE_NAME,
+    buildDirname: DEFAULT_APP_BUILD_DIR,
     cli: {},
     store: true,
     storeName: CLIENT_STORE_NAME,
     stateName: CLIENT_STATE_NAME,
-    httpClient: {},
-    fetchDataOnRequest: true,
     routes: {},
-    engine: Engine,
-    engineConfig: {},
-    httpResponder: HttpResponder,
-    session: {
-        secret: $.random.hex()
+    http: {
+        useCors: false,
+        fetchDataOnRequest: true,
+        session: {
+            config: {
+                secret: $.random.hex()
+            }
+        },
     },
+    modules: {},
     orm: {},
     database: DEFAULT_DATABASE_REPOSITORY,
-    static: DEFAULT_STATIC_REPOSITORY,
-    staticIndex: DEFAULT_STATIC_INDEX,
+    static: {
+        dirname: DEFAULT_STATIC_REPOSITORY,
+        index: DEFAULT_STATIC_INDEX,
+        favicon: DEFAULT_STATIC_FAVICON,
+    },
     exception: {
         resolve: AppExceptionResolve,
         types: {
@@ -91,7 +92,6 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
         http: HttpClientLoader,
         http_form: HttpFormDataLoader,
         http_service: HttpServiceLoader,
-        http_respond: HttpRespondLoader,
         controller: ControllerLoader,
         model: ModelLoader,
         store: StoreLoader,
@@ -106,10 +106,9 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
         exception_template: ExceptionTemplateLoader
     },
     reference: {
-        service: (app: App, target: string, props?: any[]) => app.get('service').require(target).call(props),
-        model: (app: App, target: string, props?: any[]) => app.get('model').require(target).call(props),
-    },
-    formData: {}
+        service: (app: App) => app.service.cashier.get('service'),
+        model: (app: App) => app.service.cashier.get('model'),
+    }
 })
 
 export class AppConfig {
@@ -136,7 +135,7 @@ export class AppConfig {
 
     private validate() {
 
-        this._config.rootDir = fs.path($.trimPath(this._config.rootDir))
+        this._config.rootDir = fs.path($.trimPathEnd(this._config.rootDir))
 
         if (!this._config.rootDir || !fs.isDir(this._config.rootDir))
 

@@ -4,22 +4,22 @@ import {CommandLine} from "../core/cmd";
 
 export class CommandLineLoader extends AppLoader {
 
-    protected _onCall(target: any, args?: any[]): void {
+    onCall(target: any, args?: any[]): void {
     }
 
-    protected _onGenerate(repository: string): void {
+    onGenerate(repository: string): void {
 
         this._init()
     }
 
-    protected _resolve(target?: any, args?: any[]): any {
+    call(args?: [app: App]): CommandLine {
 
-        return this._init()
+        return this._init(args?.[0])
     }
 
     protected _init(app?: App) {
 
-        return new CommandLine(app ?? this._app).system.init()
+        return new CommandLine(app ?? this.app).system.init()
     }
 
 }

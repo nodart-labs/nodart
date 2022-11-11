@@ -1,49 +1,40 @@
 import {AppLoader} from "../core/app_loader";
-import {BaseModelInterface} from "../interfaces/orm";
-import {Orm} from "../core/orm";
 import {Model} from "../core/model";
+import {App} from "../core/app";
 
 export class ModelLoader extends AppLoader {
 
     protected _repository = 'models'
 
-    protected _scope = {
-        queryBuilder: null,
-        orm: null,
-    }
-
-    protected get targetType() {
+    get sourceType() {
 
         return Model
     }
 
-    protected _onCall(target: any) {
-    }
+    call(args?: [app: App, type?: typeof Model], path?: string, rootDir?: string) {
 
-    protected _onGenerate(repository: string) {
-    }
+        let [app, type] = args || []
 
-    protected _resolve(target: BaseModelInterface, args?: any[]): BaseModelInterface | void {
+        type ||= this._source
 
-        const model = super._resolve(target, args) as Model
+        app ||= this.app
 
-        if (!(model instanceof Model)) return
+        const model = this.resolve(path ? this.load(path, Model, rootDir) : type, args)
 
-        Object.defineProperty(model, 'orm', {
-            get: () => this._scope.orm ||= this._app.get('orm').call() as Orm,
-            set: (value) => this._scope.orm = value,
-            enumerable: true,
-            configurable: true
-        })
+        if (model) {
 
-        Object.defineProperty(model, 'queryBuilder', {
-            get: () => this._scope.queryBuilder ||= model.orm?.queryBuilder,
-            set: (value) => this._scope.queryBuilder = value,
-            enumerable: true,
-            configurable: true
-        })
+            model.orm ||= app.get('orm').call()
+
+            model.queryBuilder ||= model.orm.queryBuilder
+        }
 
         return model
+    }
+
+    onCall(target: any) {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

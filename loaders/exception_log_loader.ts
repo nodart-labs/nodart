@@ -3,15 +3,14 @@ import {ExceptionLog} from "../core/exception";
 
 export class ExceptionLogLoader extends AppLoader {
 
-    protected _onCall(target: any, args?: any[]) {
+    call(args: [exception: any]): any {
+
+        return Reflect.construct(this.app.config.get.exception?.log || ExceptionLog, [args[0]])
     }
 
-    protected _resolve(target?: any, args?: any[]): any {
-
-        return Reflect.construct(this._app.config.get.exception.log ?? ExceptionLog, [args[0]])
+    onCall() {
     }
 
-    protected _onGenerate(repository: string) {
+    onGenerate(repository: string) {
     }
-
 }

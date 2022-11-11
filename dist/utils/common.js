@@ -4,11 +4,7 @@ module.exports = {
         return value === null || value === undefined;
     },
     isPlainObject(value) {
-        return !this.isNil(value)
-            && !Array.isArray(value)
-            && typeof value !== 'function'
-            && value instanceof Object
-            && value.constructor === Object;
+        return value instanceof Object && value.constructor === Object;
     },
     isObject(value) {
         const type = typeof value;
@@ -61,6 +57,9 @@ module.exports = {
     },
     trimPath(pathLike) {
         return (pathLike === null || pathLike === void 0 ? void 0 : pathLike.trim().replace(/^[\\|\/]*/g, '').replace(/[\\|\/]*$/g, '')) || '';
+    },
+    trimPathEnd(pathLike) {
+        return (pathLike === null || pathLike === void 0 ? void 0 : pathLike.trim().replace(/[\\|\/]*$/g, '')) || '';
     },
     prettyNumber(x) {
         return (x === null || x === void 0 ? void 0 : x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")) || 0;

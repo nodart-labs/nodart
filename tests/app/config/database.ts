@@ -1,4 +1,4 @@
-import {OrmConfig} from "../../../interfaces/orm";
+import {OrmConfig} from "../../../core/interfaces/orm";
 
 const _path = require('path')
 

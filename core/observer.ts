@@ -3,14 +3,14 @@ import {
     ObserverHandlers,
     ObserverSetter,
     ObserverGetter
-} from "../interfaces/observer";
+} from "./interfaces/observer";
 
 export class Observer {
 
     protected _setter?: ObserverSetter
     protected _getter?: ObserverGetter
 
-    constructor(readonly observable: any = {}, handlers?: ObserverHandlers) {
+    constructor(readonly observable: object = {}, handlers?: ObserverHandlers) {
         handlers && this.handlers(handlers)
     }
 
@@ -51,10 +51,7 @@ export class Observer {
     }
 
     static isObject(data: any) {
-        return !Array.isArray(data)
-            && typeof data !== 'function'
-            && data instanceof Object
-            && data.constructor === Object
+        return data instanceof Object && data.constructor === Object
     }
 
 }
@@ -102,9 +99,7 @@ class Observable {
             get: (t: any, p: string): any => {
 
                 const isStackPointer = Observable.isStackPointer(source, p)
-
                 const isObject = Observer.isObject(source[p])
-
                 const isTarget = !isStackPointer && (!isObject || Object.keys(source[p]).length === 0)
 
                 if (false === isStackPointer) {
@@ -112,14 +107,15 @@ class Observable {
                     const newPath = setPath(p, path, pathDelim)
 
                     lastCall === newPath || (path = newPath)
-
-                    isTarget && (source[p] = observer.pull({prop: p, source, path: getPath(path, pathDelim)}))
-
                     lastCall = path + pathDelim + p
 
+                    if (isTarget) return observer.pull({
+                        prop: p,
+                        source,
+                        value: source[p],
+                        path: getPath(path, pathDelim)
+                    })
                 }
-
-                if (isTarget) return source[p]
 
                 if (isObject) return Observable.get(source[p], observer, {path, pathDelim, lastCall})
 

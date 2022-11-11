@@ -7,17 +7,18 @@ const app_config_1 = require("../core/app_config");
 class StoreLoader extends app_loader_1.AppLoader {
     constructor(app) {
         super(app);
-        const repository = app.factory.storeRepo;
-        repository && (this._repository = repository);
+        const repository = app.service.store.repo;
+        repository && (this.repository = repository);
     }
-    _onCall(target) {
+    onCall(target) {
     }
-    _onGenerate(repository) {
+    onGenerate(repository) {
         if (!repository)
             return;
-        const state = utils_1.$.trimPath(this._app.config.get.stateName) || app_config_1.CLIENT_STATE_NAME;
-        const dest = repository + '/' + state + '.ts';
-        utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)('store/app.ts'), dest);
+        const ext = this.app.env.isCommonJS ? '.js' : '.ts';
+        const state = utils_1.$.trimPath(this.app.config.get.stateName) || app_config_1.CLIENT_STATE_NAME;
+        const dest = repository + '/' + state + ext;
+        utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)('store/app' + ext), dest);
     }
 }
 exports.StoreLoader = StoreLoader;

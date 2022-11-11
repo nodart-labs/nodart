@@ -1,7 +1,11 @@
+import {App} from "../core/app";
 import {AppLoader} from "../core/app_loader";
-import {Controller} from "../core/controller"
-import {HttpClient} from "../core/http_client";
-import {RouteData} from "../interfaces/router";
+import {BaseController} from "../core/controller"
+import {RouteData} from "../core/interfaces/router";
+import {HttpContainer} from "../core/http_client";
+import {DEFAULT_CONTROLLER_NAME} from "../core/app_config";
+import {loaders} from "../core/app";
+import {Model} from "../core/model";
 import {Service} from "../core/service";
 
 export class ControllerLoader extends AppLoader {
@@ -10,51 +14,76 @@ export class ControllerLoader extends AppLoader {
 
     protected _pathSuffix = '_controller'
 
-    protected _http: HttpClient
+    get sourceType() {
 
-    protected _route: RouteData
-
-    protected get targetType() {
-
-        return Controller
+        return BaseController
     }
 
-    protected _onCall(target?: typeof Controller, args?: [http: HttpClient, route: RouteData]) {
+    call(args: [app: App, http: HttpContainer, route: RouteData, controller?: typeof BaseController]): any {
 
-        if (!target) return
+        const app = args[0] || this.app
 
-        const [http, route] = args ?? []
+        const controller = this.resolve(args[3] || this._source, [app, args[1], args[2]])
 
-        this._route = route
+        controller && this.intercept(controller, app)
 
-        this._http = http
+        return controller
     }
 
-    protected _resolve(target?: typeof Controller): any {
+    getDependency(controller: BaseController, property: string, dependency: typeof Model | typeof Service): any {
 
-        if (target) return Reflect.construct(target, [this._app, this._http, this._route])
+        switch (property) {
+            case 'service':
+                return this.resolve(dependency, [{
+                    app: controller.app,
+                    controller: () => controller,
+                    model: () => controller.model,
+                    service: () => controller.service,
+                    http: controller.http,
+                    route: controller.route
+                }])
+            case 'model':
+                return loaders().model.call([controller.app, dependency as typeof Model])
+        }
     }
 
-    onGetDependency(target: any): void {
+    getControllerByRoute(app: App, route: RouteData, http: HttpContainer): BaseController | void {
 
-        if (target instanceof Service && this._pushDependency(target) && this._target instanceof Controller) {
+        const data = {path: '', action: ''}
+        const rootDir = app.rootDir
 
-            const controller = this._target
+        if (route.route) {
 
-            this.serviceScope = {
-                controller,
-                model: controller.model,
-                service: controller.service,
-                http: controller.http,
-                route: controller.route,
-                session: controller.session
+            data.path = route.route
+            data.action = route.action || ''
+
+        } else {
+
+            data.path = route.pathname || DEFAULT_CONTROLLER_NAME
+
+            if (false === this.isSource(data.path, rootDir)) {
+
+                const path = data.path.split('/')
+                const skipAction = path.slice(0, -1).join('/')
+
+                if (this.isSource(skipAction, rootDir)) {
+
+                    data.path = skipAction
+                    data.action = path.at(-1)
+
+                } else return
             }
         }
 
-        super.onGetDependency(target)
+        const controller = this.load(data.path, BaseController, rootDir)
+
+        if (controller) return this.call([app, http, {...route, action: data.action}, controller])
     }
 
-    protected _onGenerate(repository: string): void {
+    onCall() {
+    }
+
+    onGenerate(repository: string): void {
     }
 
 }

@@ -1,27 +1,41 @@
-import {AppListener, AppStore} from "./app_store";
-import {AppFactory} from "./app_factory";
-import {AppLoader} from "./app_loader";
+import {
+    AppEmitterEvents,
+    AppLoaders,
+    AppServerProtocols,
+    AppConfigInterface,
+    AppModuleFacadeInterface, AppModuleConfigInterface, AppStateLoaders
+} from "./interfaces/app";
+import {State, Store} from "./store";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
-import {HttpServiceRouteObject} from "../interfaces/service";
+import {HttpServiceRouteObject} from "./interfaces/service";
 import {HttpServiceAcceptor, HttpService} from "../services/http";
-import {HttpHandler} from "./http_handler";
-import {DIManager} from "./di";
+import {DIContainer} from "./di";
 import {Router} from "./router";
-import {Orm} from "./orm";
-import {StoreState, StoreListenerArguments, StoreListeners} from "../interfaces/store";
+import {StoreState, StoreListenerArguments, StoreListeners} from "./interfaces/store";
 import {ExceptionHandler, ExceptionLog, RuntimeException} from "./exception";
-import {SYSTEM_STORE_NAME, SYSTEM_STATE_NAME, AppConfig, DEFAULT_APP_BUILD_DIR} from "./app_config";
-import {AppConfigInterface, AppLoaders} from "../interfaces/app";
-import {HttpHost, HttpResponseDataInterface} from "../interfaces/http";
+import {
+    AppConfig,
+    SYSTEM_STORE_NAME,
+    SYSTEM_STATE_NAME,
+    DEFAULT_APP_BUILD_DIR,
+    DEFAULT_ENV_FILE_NAME,
+    CLIENT_STORE, SYSTEM_STORE, SYSTEM_EVENTS
+} from "./app_config";
+import {Server} from "http";
+import {HttpHost, HttpMethod, HttpResponseDataInterface} from "./interfaces/http";
 import {HttpClient} from "./http_client";
 import {fs, $} from "../utils";
+import {ModuleService} from "../services/module";
+import {CashierService} from "../services/cashier";
+import {OrmService} from "../services/orm";
+import {RouteData} from "./interfaces/router";
 
 const events = require('../store/system').events
 
 export const DEFAULT_PORT = 3000
 export const DEFAULT_HOST = 'localhost'
 
-type Protocols = 'http' | 'https' | string
+export const loaders = () => App.system.state.loaders as AppStateLoaders
 
 export class App {
 
@@ -29,35 +43,36 @@ export class App {
 
     readonly factory: AppFactory
 
-    readonly di: DIManager
+    readonly di: DIContainer
 
     readonly router: Router
 
     readonly builder: AppBuilder
 
-    readonly httpServiceRoutes: Array<HttpServiceRouteObject> = []
+    readonly emitter: AppEmitter
 
-    protected _httpHandlerPayload: (httpHandler: HttpHandler) => Promise<any>
+    readonly service: AppServiceManager
 
-    protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
+    readonly env: AppEnv
 
-    protected _exceptionPayload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface
+    protected _isStart: boolean = false
+
+    protected _isInit: boolean = false
+
+    protected _isServe: boolean = false
 
     private _host: HttpHost = {port: null, protocol: null, host: null, hostname: null}
-
-    private _isStart: boolean = false
 
     constructor(config: AppConfigInterface) {
 
         this.config = new AppConfig().set(config)
-
         this.factory = new AppFactory(this)
-
-        this.di = new DIManager(this.config.getStrict('reference'), this)
-
+        this.service = new AppServiceManager(this)
         this.router = new Router(this.config.get.routes)
-
         this.builder = new AppBuilder(this)
+        this.emitter = new AppEmitter(this)
+        this.env = new AppEnv(this)
+        this.di = new DIContainer({mediator: this, references: this.config.getStrict('reference')})
     }
 
     get rootDir() {
@@ -65,31 +80,9 @@ export class App {
         return this.config.get.rootDir
     }
 
-    get(loader: AppLoaders): AppLoader {
+    get<K extends keyof AppLoaders>(loader: K): AppLoaders[K] {
 
         return this.factory.createLoader(loader)
-    }
-
-    get db() {
-
-        const orm = this.get('orm').call() as Orm
-        return {
-            query: orm.queryBuilder,
-            orm
-        }
-    }
-
-    async init() {
-
-        this.factory.createStore()
-
-        this.factory.createState()
-
-        this.factory.createEventListener()
-
-        await this.factory.createApp()
-
-        return this
     }
 
     get isStart() {
@@ -97,46 +90,14 @@ export class App {
         return this._isStart
     }
 
-    start(port: number = DEFAULT_PORT, protocol: Protocols | {[K in Protocols]: any} = 'http', host: string = DEFAULT_HOST) {
+    get isInit() {
 
-        this._isStart = true
-
-        this.factory.createState()
-
-        this.factory.createEventListener()
-
-        const server = this.serve(port, protocol, host)
-
-        const http = this.service.http()
-
-        return {app: this, http, server}
+        return this._isInit
     }
 
-    serve(port: number = DEFAULT_PORT, protocol: Protocols | {[K in Protocols]: any} = 'http', host: string = DEFAULT_HOST) {
+    get isServe() {
 
-        const type = typeof protocol === 'string' ? protocol : Object.keys(protocol)[0] as string
-
-        const http = typeof protocol === 'string' ? require(protocol) : protocol[type]
-
-        this._host = Object.freeze(HttpClient.fetchHostData({port, protocol: type, host}))
-
-        return http.createServer((req: Http2ServerRequest, res: Http2ServerResponse) => {
-
-            (async () => {
-
-                this.requestPayload && await this.requestPayload(req, res)
-
-                await App.system.listen({event: {[events.HTTP_REQUEST]: [this, req, res]}}).catch(exception => {
-
-                    this.resolveExceptionOnHttp(exception, req, res)
-                })
-
-            })()
-
-        }).listen(port, host, () => {
-
-            console.log(`server start at port ${port}.`, this.uri)
-        })
+        return this._isServe
     }
 
     get host(): HttpHost {
@@ -149,70 +110,100 @@ export class App {
         return HttpClient.getURI(this.host)
     }
 
-    get service() {
+    async init(): Promise<this> {
 
-        return {
+        this.service.check().throwIsInit
 
-            http: (): HttpServiceAcceptor => {
+        this.factory.createStore()
 
-                const httpService = this.get('http_service').call() as HttpService
+        this.factory.createState()
 
-                httpService.subscribe((data: HttpServiceRouteObject) => {
+        this.factory.createEventListener()
 
-                    this.httpServiceRoutes.push(data)
-                })
+        await this.factory.createApp()
 
-                return httpService.httpAcceptor
-            }
-        }
+        this.service.cashier.cacheAppFolder()
+
+        this._isInit = true
+
+        return this
     }
 
-    async resolveExceptionOnHttp(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
+    async start(
+        port: number = DEFAULT_PORT,
+        protocol: AppServerProtocols = 'http',
+        host: string = DEFAULT_HOST,
+        serve?: () => Server
+    ): Promise<{ app: App, http: HttpServiceAcceptor, server: Server }> {
+
+        this.service.check().throwIsStart
+
+        this.factory.createState()
+
+        this.factory.createEventListener()
+
+        this.service.cashier.cacheAppFolder()
+
+        const server = await this.serve(port, protocol, host, serve)
+
+        const http = this.service.http
+
+        this._isStart = true
+
+        return {app: this, http, server}
+    }
+
+    async serve(
+        port: number = DEFAULT_PORT,
+        protocol: AppServerProtocols = 'http',
+        host: string = DEFAULT_HOST,
+        serve?: () => Server
+    ): Promise<Server> {
+
+        this.service.check().throwIsServe
+
+        let server
+
+        if (serve) {
+            server = serve()
+        } else {
+            server = require(protocol).createServer((req: Http2ServerRequest, res: Http2ServerResponse) => {
+                (async () => await this.httpHandle(req, res))()
+            }).listen(port, host, () => {
+                console.log(`server start at port ${port}.`, this.uri)
+            })
+        }
+
+        this._host = Object.freeze(HttpClient.fetchHostData({port, protocol, host}))
+        this._isServe = true
+
+        await this.emitter.emit('ON_START_SERVER', {server})
+
+        this.service.cashier.cacheAppFolder()
+
+        return server
+    }
+
+    async httpHandle(req: Http2ServerRequest, res: Http2ServerResponse) {
+
+        this.service.requestPayload && await this.service.requestPayload(req, res)
+
+        await App.system.listen({event: {[events.HTTP_REQUEST]: [this, req, res]}}).catch(exception => {
+
+            this.resolveException(exception, req, res)
+        })
+    }
+
+    async resolveException(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
 
         const resolve = this.config.get.exception.resolve || AppExceptionResolve
 
         await new resolve(this, exception).resolveOnHttp(req, res)
     }
 
-    setHttpRequestPayload(payload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>) {
+    static store(storeName: string): State {
 
-        this._requestPayload = payload
-
-        return this
-    }
-
-    setHttpHandlerPayload(payload: (httpHandler: HttpHandler) => Promise<any>) {
-
-        this._httpHandlerPayload = payload
-
-        return this
-    }
-
-    setHttpExceptionPayload(payload: (data: HttpResponseDataInterface) => HttpResponseDataInterface) {
-
-        this._exceptionPayload = payload
-
-        return this
-    }
-
-    get requestPayload() {
-
-        return this._requestPayload
-    }
-
-    get httpHandlerPayload() {
-
-        return this._httpHandlerPayload
-    }
-
-    get exceptionPayload() {
-
-        return this._exceptionPayload
-    }
-
-    static store(storeName: string): AppListener {
-
-        return AppStore.get(storeName)
+        return Store.get(storeName)
     }
 
     static state(storeName: string, storeStateName: string) {
@@ -222,8 +213,8 @@ export class App {
 
     static get system() {
 
-        const store = AppStore.get(SYSTEM_STORE_NAME)
-        const state = AppStore.get(SYSTEM_STORE_NAME)?.get(SYSTEM_STATE_NAME) ?? {}
+        const store = Store.get(SYSTEM_STORE_NAME)
+        const state = Store.get(SYSTEM_STORE_NAME)?.get(SYSTEM_STATE_NAME) ?? {}
 
         return {
             events,
@@ -235,7 +226,255 @@ export class App {
             on: (data: StoreListeners) => store.on(SYSTEM_STATE_NAME, data),
         }
     }
+}
 
+export class AppFactory {
+
+    constructor(readonly app: App) {
+    }
+
+    async createApp() {
+        for (const loader of Object.keys(this.app.config.getStrict('loaders'))) {
+            await this.createLoader(loader as keyof AppLoaders).generate()
+        }
+    }
+
+    createStore() {
+        const {store, repo} = this.app.service.store.data
+        repo && store && Store.add(store, fs.path(this.app.rootDir, repo))
+    }
+
+    createState() {
+        App.system.store || Store.add(SYSTEM_STORE_NAME, fs.path(__dirname, '../' + SYSTEM_STORE))
+        App.system.state.app || App.system.setup({
+            app: this.app,
+            loaders: {
+                static: this.createLoader('static'),
+                http: this.createLoader('http'),
+                httpService: this.createLoader('http_service'),
+                controller: this.createLoader('controller'),
+                service: this.createLoader('service'),
+                model: this.createLoader('model'),
+            } as AppStateLoaders
+        })
+    }
+
+    createEventListener() {
+        App.system.on({
+            event: {
+                [events.HTTP_REQUEST]: SYSTEM_EVENTS[events.HTTP_REQUEST],
+                [events.HTTP_RESPONSE]: SYSTEM_EVENTS[events.HTTP_RESPONSE]
+            }
+        })
+    }
+
+    createLoader<K extends keyof AppLoaders>(name: K): AppLoaders[K] {
+        return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app])
+    }
+}
+
+export abstract class AppModule {
+
+    protected constructor(readonly app: App, readonly config: AppModuleConfigInterface = {options: {}}) {
+    }
+
+    abstract init<K extends keyof AppEmitterEvents>(event: K, scope: AppEmitterEvents[K]): void | AppModuleFacade
+}
+
+export abstract class AppModuleFacade implements AppModuleFacadeInterface {
+
+    protected constructor(readonly module: AppModule) {
+    }
+}
+
+export class AppServiceManager {
+
+    protected _http: HttpService
+
+    protected _orm: OrmService
+
+    protected _module: ModuleService
+
+    protected _cashier: CashierService
+
+    protected _requestPayload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>
+
+    protected _exceptionPayload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface
+
+    constructor(readonly app: App) {
+    }
+
+    get store() {
+
+        const config = this.app.config.get
+
+        return {
+            get data() {
+                return {
+                    store: config.storeName,
+                    state: config.stateName,
+                    repo: this.repo
+                }
+            },
+            get repo() {
+                const repo = config.store
+                return typeof repo === 'boolean' ? (repo ? CLIENT_STORE : '') : repo
+            }
+        }
+    }
+
+    check(app?: App) {
+
+        app ||= this.app
+
+        return {
+            get throwIsServe() {
+                if (app.isServe) throw 'The App already is being served.'
+                return
+            },
+            get throwIsStart() {
+                if (app.isStart) throw 'The App already has been started.'
+                return
+            },
+            get throwIsInit() {
+                if (app.isInit) throw 'The App already has been initialised.'
+                return
+            },
+        }
+    }
+
+    get http(): HttpServiceAcceptor {
+
+        this.httpService.subscribers.length || this.httpService.subscribe((data: HttpServiceRouteObject & {route: RouteData}) => {
+
+            data.route.callback = data.callback
+
+            this.app.router.addRoute(data.route, data.action as HttpMethod)
+        })
+
+        return this.httpService.httpAcceptor
+    }
+
+    get httpService() {
+
+        return this._http ||= new HttpService()
+    }
+
+    get requestPayload() {
+
+        return this._requestPayload
+    }
+
+    setRequestPayload(payload: (request: Http2ServerRequest, response: Http2ServerResponse) => Promise<any>) {
+
+        if (this._requestPayload) throw 'The request payload already has been set.'
+
+        this._requestPayload = payload
+
+    }
+
+    get exceptionPayload() {
+
+        return this._exceptionPayload
+    }
+
+    setExceptionPayload(payload: (data: HttpResponseDataInterface, resolve: AppExceptionResolve) => HttpResponseDataInterface) {
+
+        if (this._exceptionPayload) throw 'The exception payload already has been set.'
+
+        this._exceptionPayload = payload
+    }
+
+    get db() {
+
+        return this._orm ||= new OrmService(this.app)
+    }
+
+    get module() {
+
+        return this._module ||= new ModuleService(this.app, this.app.config.get.modules)
+    }
+
+    get cashier() {
+
+        return this._cashier ||= new CashierService(this.app)
+    }
+}
+
+export class AppEnv {
+
+    private envFilenamePattern: RegExp = /^[A-z\d.-_]+(\.ts|\.js)$/
+
+    private tsConfigFileName: string = 'tsconfig.json'
+
+    private env: AppConfigInterface
+
+    constructor(readonly app: App) {
+    }
+
+    get baseDir() {
+        return fs.isFile(fs.path(this.app.rootDir, this.tsConfigFileName)) ? this.app.rootDir : process.cwd()
+    }
+
+    get data(): AppConfigInterface {
+        return this.env ||= fs.include(this.envFile, {
+            log: false,
+            skipExt: true,
+            success: (data) => $.isPlainObject(data) ? data : {}
+        })
+    }
+
+    get envFilename() {
+        const name = this.app.config.get.envFilename || DEFAULT_ENV_FILE_NAME
+        if (!name.match(this.envFilenamePattern))
+            throw `The environment file name "${name}" does not have a permitted name or extension (.js or .ts).`
+        return name
+    }
+
+    get envFile() {
+        return fs.path(this.app.rootDir, this.envFilename)
+    }
+
+    get tsConfig() {
+        return fs.json(fs.path(this.baseDir, this.tsConfigFileName)) ?? {}
+    }
+
+    get tsConfigExists(): boolean {
+        return fs.isFile(fs.path(this.baseDir, this.tsConfigFileName))
+    }
+
+    get isCommonJS(): boolean {
+
+        return !this.tsConfigExists
+    }
+
+    get isBuild(): boolean {
+
+        if (this.isCommonJS) return true
+
+        const buildDir = this.app.builder.buildDir
+
+        return !!(buildDir && this.app.rootDir.startsWith(buildDir))
+    }
+
+}
+
+export class AppEmitter {
+
+    constructor(readonly app: App) {
+    }
+
+    async emit<K extends keyof AppEmitterEvents>(event: K, scope?: AppEmitterEvents[K]) {
+
+        for (const module of this.app.service.module.getModules()) {
+
+            const facade = await module.init(event, scope)
+
+            if (!facade) continue
+
+            await facade[<keyof AppModuleFacadeInterface>event]?.(scope)
+        }
+    }
 }
 
 export class AppExceptionResolve {
@@ -281,15 +520,17 @@ export class AppExceptionResolve {
 
     protected _sendHttpException(request: Http2ServerRequest, response: Http2ServerResponse) {
 
-        if (response.headersSent || response.writableEnded || response.writableFinished) return
+        if (HttpClient.getResponseIsSent(response)) return
 
         const data = this._httpResponseData ?? {} as HttpResponseDataInterface
 
         const contentType = data.contentType
 
+        const payload = this.app.service.exceptionPayload
+
         Object.assign(data, {request, response})
 
-        this.app.exceptionPayload && Object.assign(data, this.app.exceptionPayload(data, this))
+        payload && Object.assign(data, payload(data, this) || {})
 
         const exceptionTemplate = this.getExceptionTemplate(data)
 
@@ -311,38 +552,24 @@ export class AppBuilder {
 
     get buildDir(): string | null {
 
-        const buildDirName = this.app.config.get.buildDirName || DEFAULT_APP_BUILD_DIR
+        const buildDirname = this.app.config.get.buildDirname || DEFAULT_APP_BUILD_DIR
 
-        const buildDir = fs.path(this.app.factory.baseDir, buildDirName)
+        const buildDir = fs.path(this.app.env.baseDir, buildDirname)
 
-        const tsConfig = this.app.factory.tsConfig
+        const tsConfig = this.app.env.tsConfig
 
-        return tsConfig?.compilerOptions?.outDir === buildDirName ? buildDir : null
-    }
-
-    get envIsCommonJS(): boolean {
-
-        return !this.app.factory.tsConfigExists
-    }
-
-    get envIsBuild(): boolean {
-
-        if (this.envIsCommonJS) return true
-
-        const buildDir = this.buildDir
-
-        return !!(buildDir && this.app.rootDir.startsWith(buildDir))
+        return tsConfig?.compilerOptions?.outDir === buildDirname ? buildDir : null
     }
 
     build(onError?: Function) {
 
-        if (this.envIsCommonJS) return
+        if (this.app.env.isCommonJS) return
 
         const buildDir = this.buildDir
 
         if (buildDir === null) throw new RuntimeException(
             'App Build failed. Cannot retrieve a build directory name.'
-            + ' Check that configuration parameter "buildDirName" and the option "outDir"'
+            + ' Check that configuration parameter "buildDirname" and the option "outDir"'
             + ' in tsconfig.json file are both the same values.'
         )
 
@@ -354,7 +581,7 @@ export class AppBuilder {
 
     substractRootDir(buildDir: string, rootDir: string) {
 
-        const substract = $.trimPath(rootDir.replace(this.app.factory.baseDir, ''))
+        const substract = $.trimPath(rootDir.replace(this.app.env.baseDir, ''))
 
         return substract ? fs.path(buildDir, substract) : buildDir
     }

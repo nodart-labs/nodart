@@ -10,7 +10,7 @@ module.exports = async ({app, cmd}) => {
         process.exit(1)
     }
 
-    const orm = () => app.db.orm
+    const orm = () => app.service.db.orm
 
     const pattern = /^[a-z_\-\d\/]+$/i
 

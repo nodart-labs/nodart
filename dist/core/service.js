@@ -12,8 +12,8 @@ class Service {
     mergeScope(scope) {
         this._scope = utils_1.object.merge(this._scope, scope);
     }
-    fetchScope(pathDot, def) {
-        return utils_1.object.get(this._scope, pathDot, def);
+    fetchScope(pathDotted, def) {
+        return utils_1.object.get(this._scope, pathDotted, def);
     }
     get scope() {
         return this._scope;

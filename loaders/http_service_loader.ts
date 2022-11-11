@@ -1,88 +1,76 @@
 import {AppLoader} from "../core/app_loader";
-import {HttpServiceScope} from "../interfaces/service";
+import {ServiceScope} from "../core/interfaces/service";
 import {HttpService} from "../services/http";
-import {fs, object} from "../utils";
-import {HttpRespond} from "../core/http_respond";
-import {HttpClient} from "../core/http_client";
+import {BaseController} from "../core/controller";
 import {RuntimeException} from "../core/exception";
-import {Session} from "../core/session";
+import {object} from "../utils";
+import {ControllerLoader} from "./controller_loader";
+import {loaders} from "../core/app";
+import {Model} from "../core/model";
 import {Service} from "../core/service";
-import {HttpHandler} from "../core/http_handler";
 
 export class HttpServiceLoader extends AppLoader {
 
-    protected _onCall(target: any) {
+    call(args: [scope: ServiceScope]): HttpService {
 
-        this._target = HttpService
+        const scope = args[0] || {}
 
-        this._target.prototype.model || this.constructProperty('model')
+        if (!scope.app || !scope.http || !scope.route)
 
-        this._target.prototype.service || this.constructProperty('service')
-    }
+            throw new RuntimeException('HttpServiceLoader: Missing required scope properties: app | http | route')
 
-    protected _resolve(target?: any, args?: [scope: HttpServiceScope]): any {
+        const http = new HttpService(scope)
 
-        const scope = args?.[0] ?? {}
+        this.intercept(http, scope.app)
 
-        if (scope.http && !(scope.http instanceof HttpClient))
-            throw new RuntimeException('HttpServiceLoader: missing required scope argument "HttpClient".')
-
-        if (scope.route && !(("path" in scope.route) && ("pathname" in scope.route)))
-            throw new RuntimeException('HttpServiceLoader: invalid scope argument "route".')
-
-        scope.app ??= this._app
-
-        if (scope.http) {
-            scope.respond ??= this._app.get('http_respond').call([scope.http]) as HttpRespond
-            scope.session ??= this._app.get('session').call([scope.http]) as Session
-        }
-
-        if (scope.http && scope.route) {
-            const controller = HttpHandler.getControllerByRouteDescriptor(this._app, scope.route, scope.http)
-            controller && (scope.controller = controller)
-        }
-
-        return this._target = new this._target(scope)
-    }
-
-    onGetDependency(target: any): void {
-
-        if (target instanceof Service && this._pushDependency(target) && this._target instanceof HttpService) {
-
-            const scope = this._target.scope as HttpServiceScope
-
-            this.serviceScope = <HttpServiceScope>{
-                model: scope.model,
-                service: scope.service,
-                http: scope.http,
-                route: scope.route,
-                session: scope.session,
-                respond: scope.respond,
-                controller: scope.controller
-            }
-        }
-
-        super.onGetDependency(target)
-    }
-
-    constructProperty(name: 'model' | 'service') {
-
-        this._target.prototype[name] = {}
-
-        const repo = this._app.get(name).getRepo()
-
-        fs.dir(repo, ({file}) => {
-
-            if (!file) return
-
-            const path = fs.skipExtension(fs.formatPath(file.replace(repo, ''))).replace('/', '.')
-
-            path && object.set(this._target.prototype[name], path, {})
-
+        http.setScope({
+            model: scope.model ||= (() => http.model),
+            service: scope.service ||= (() => http.service),
+            controller: scope.controller ||= (() => this.getController(scope)),
+            scope
         })
+
+        return http
     }
 
-    protected _onGenerate(repository: string) {
+    getDependency(service: HttpService, property: string, dependency: typeof Model | typeof Service): any {
+
+        switch (property) {
+            case 'service':
+                return this.resolve(dependency, [{
+                    app: service.scope.app,
+                    controller: () => service.scope.controller(),
+                    model: () => service.scope.model(),
+                    service: () => service.scope.service(),
+                    http: service.scope.http,
+                    route: service.scope.route,
+                    scope: service.scope
+                }])
+            case 'model':
+                return loaders().model.call([service.scope.app, dependency as typeof Model])
+        }
+    }
+
+    getController(scope: ServiceScope, loader?: ControllerLoader): BaseController | void {
+
+        const controller = scope.route.controller?.(scope.route)
+
+        if (controller) {
+
+            if (false === object.isProtoConstructor(controller, BaseController))
+
+                throw `The provided type "${object.getProtoConstructor(controller)?.name}" is not a "Controller".`
+
+            loader ||= scope.app.get('controller')
+
+            return loader.call([scope.app, scope.http, scope.route, controller])
+        }
+    }
+
+    onCall() {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

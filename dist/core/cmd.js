@@ -109,9 +109,9 @@ class SystemCommandLine {
         return this._commandsDir;
     }
     init() {
-        const repo = utils_1.fs.path(this.cmd.app.factory.baseDir, app_config_1.DEFAULT_CMD_DIR);
+        const repo = utils_1.fs.path(this.cmd.app.env.baseDir, app_config_1.DEFAULT_CMD_DIR);
         const cmdDir = utils_1.fs.path(repo, this.cmd.app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR);
-        const dest = repo + '/index.js';
+        const dest = utils_1.fs.path(repo, 'index.js');
         utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)(app_config_1.DEFAULT_CMD_DIR + '/index.js'), dest);
         utils_1.fs.isDir(cmdDir) || utils_1.fs.mkDeepDir(cmdDir);
         return this.cmd;

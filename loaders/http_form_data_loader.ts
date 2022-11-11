@@ -1,32 +1,20 @@
 import {AppLoader} from "../core/app_loader";
-import {HttpFormData} from "../core/http_client";
-import {BaseHttpResponseHandlerInterface, HttpFormDataConfigExtended} from "../interfaces/http";
+import {HttpContainer, HttpFormData} from "../core/http_client";
+import {HttpFormDataClientConfigInterface} from "../core/interfaces/http";
 
 export class HttpFormDataLoader extends AppLoader {
 
-    protected _config: HttpFormDataConfigExtended
+    call(args: [http: HttpContainer, config?: HttpFormDataClientConfigInterface]): HttpFormData {
 
-    protected _http: BaseHttpResponseHandlerInterface
+        const config = (args?.[1] || this.app.config.get.http?.form || {}) as HttpFormDataClientConfigInterface
 
-    protected get targetType() {
-
-        return HttpFormData
+        return new HttpFormData(args[0], config)
     }
 
-    protected _onCall(target?: any, args?: [
-        http: BaseHttpResponseHandlerInterface,
-        config: HttpFormDataConfigExtended
-    ]) {
-        this._http = args?.[0]
-        this._config = (args?.[1] ?? this._app.config.get.formData ?? {}) as HttpFormDataConfigExtended
+    onCall() {
     }
 
-    protected _resolve(): any {
-
-        return new HttpFormData(this._http, this._config)
-    }
-
-    protected _onGenerate(repository: string) {
+    onGenerate(repository: string) {
     }
 
 }

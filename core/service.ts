@@ -1,9 +1,9 @@
 import {object} from "../utils";
-import {ServiceScope} from "../interfaces/service";
+import {ServiceScope} from "./interfaces/service";
 
 export abstract class Service {
 
-    protected constructor(protected _scope: ServiceScope = {}) {
+    constructor(protected _scope: ServiceScope = {}) {
     }
 
     setScope(scope: ServiceScope) {
@@ -14,8 +14,8 @@ export abstract class Service {
         this._scope = object.merge(this._scope, scope)
     }
 
-    fetchScope(pathDot: string, def?: any) {
-        return object.get(this._scope, pathDot, def)
+    fetchScope(pathDotted: string, def?: any) {
+        return object.get(this._scope, pathDotted, def)
     }
 
     get scope(): ServiceScope {

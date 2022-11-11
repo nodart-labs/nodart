@@ -1,19 +1,39 @@
 import {AppLoader} from "../core/app_loader";
 import {Session} from "../core/session";
-import {SessionConfigInterface} from "../interfaces/session";
-import {BaseHttpResponseInterface} from "../interfaces/http";
+import {SessionClientConfigInterface} from "../core/interfaces/session";
+import {HttpContainerInterface} from "../core/interfaces/http";
 
 export class SessionLoader extends AppLoader {
 
-    protected _onCall(target: any) {
+    call(args: [http: HttpContainerInterface, config?: SessionClientConfigInterface]): Session {
+
+        return this.getSession(args[0], args[1])
     }
 
-    protected _onGenerate(repository: string) {
+    getSessionConfig(config?: SessionClientConfigInterface): SessionClientConfigInterface {
+
+        return config
+
+            ? {...this.app.config.get.http?.session?.config || {}, ...config} as SessionClientConfigInterface
+
+            : this.app.config.get.http?.session?.config || {} as SessionClientConfigInterface
     }
 
-    protected _resolve(target?: any, args?: [http: BaseHttpResponseInterface, config: SessionConfigInterface]): Session {
+    getSession(http: HttpContainerInterface, config?: SessionClientConfigInterface): Session {
 
-        return new Session(args?.[1] ?? this._app.config.get.session).load(args[0])
+        config = this.getSessionConfig(config)
+
+        return this.app.config.get.http?.session?.client instanceof Function
+
+            ? this.app.config.get.http.session.client(config, http)
+
+            : new Session(config).load(http)
+    }
+
+    onCall() {
+    }
+
+    onGenerate(repository: string) {
     }
 
 }

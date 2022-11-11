@@ -1,155 +1,115 @@
 import {$, fs} from '../utils'
 import {App} from './app'
-import {DependencyInterceptorInterface} from "../interfaces/di";
-import {Service} from "./service";
-import {ServiceScope} from "../interfaces/service";
+import {DependencyInterceptor} from "./di";
 
-export abstract class AppLoader implements DependencyInterceptorInterface {
+export abstract class AppLoader extends DependencyInterceptor {
 
     protected _repository: string = ''
 
+    protected _repositoryPath: string = ''
+
     protected _pathSuffix: string = ''
 
-    protected _target: any
+    protected _source: any
 
-    protected _targetPath: string = ''
-
-    protected _serviceScope: ServiceScope = {}
-
-    protected _dependencies: any[] = []
-
-    get serviceScope() {
-
-        return {...this._serviceScope, ...{app: this._app}}
+    protected constructor(readonly app: App) {
+        super()
     }
 
-    set serviceScope(scope: ServiceScope) {
+    abstract onCall(target: any, args?: any[]): void
 
-        Object.assign(this._serviceScope, scope)
+    abstract onGenerate(repository: string): void
+
+    getDependency(acceptor: any, property: string, dependency: any): any {
     }
 
-    protected constructor(protected _app: App) {
-    }
+    get rootDir() {
 
-    protected abstract _onCall(target: any, args?: any[]): void
-
-    protected abstract _onGenerate(repository: string): void
-
-    protected _resolve(target?: any, args?: any[]): any {
-
-        if (target?.prototype?.constructor) return Reflect.construct(target, args ?? [])
-
-        return target
+        return this.app.rootDir
     }
 
     get repository() {
 
-        return $.trimPath(this._repository)
+        return this._repository
     }
 
-    getTarget(): any {
+    set repository(name: string) {
 
-        return this._target
+        this._repository = $.trimPathEnd(name)
     }
 
-    setTarget(type: any): void {
-
-        this._target = type
-    }
-
-    onGetDependency(target: any): void {
-
-        target instanceof Service && target.setScope(this.serviceScope)
-
-        this._pushDependency(target)
-    }
-
-    protected _hasDependency(target: any): boolean {
-
-        return !!(target?.constructor && this._dependencies.includes(target.constructor))
-    }
-
-    protected _pushDependency(target: any): boolean {
-
-        if (!target?.constructor || this._hasDependency(target)) return false
-
-        this._dependencies.push(target.constructor)
-
-        return true
-    }
-
-    onGetProperty(property: string, value: any, reference?: string): any {
-    }
-
-    getUnderScorePath(targetPath?: string) {
-
-        targetPath ||= this._targetPath
-
-        return targetPath.replace('/', '_')
-    }
-
-    getReferenceTarget(referencePathLike: string, targetPath?: string): string | void {
-
-        targetPath ||= this._targetPath
-
-        if (!targetPath || !referencePathLike) return
-
-        const path = this.getUnderScorePath(targetPath)
-
-        if (this.isTarget(referencePathLike + '/' + path)) return path
-
-        if (this.isTarget(referencePathLike + '/' + this._targetPath)) return targetPath
-    }
-
-    getReferenceProps(reference:string): any[] | void {
-    }
-
-    intercept() {
-
-        this._app.di.interceptor(this).intercept()
-    }
-
-    require(path: string, targetObjectType?: any) {
-
-        this._target = undefined
-
-        this.isSource(path) && (this._target = fs.getSource(this.absPath(path), targetObjectType || this.targetType))
-
-        return this
-    }
-
-    protected get targetType() {
+    get sourceType() {
 
         return undefined
     }
 
-    call(args: any[] = []) {
+    setSource(object: any): void {
 
-        this._onCall(this._target, args)
+        this._source = object
+    }
+
+    load(path: string, sourceType?: any, rootDir?: string) {
+
+        return fs.getSource(this.absPath(path, rootDir), sourceType || this.sourceType)
+    }
+
+    require(path: string, sourceType?: any, rootDir?: string) {
+
+        this._source = this.load(path, sourceType, rootDir)
+
+        return this
+    }
+
+    call(args: any[] = [], path?: string, sourceType?: any, rootDir?: string) {
+
+        path && this.require(path, sourceType, rootDir)
+
+        this.onCall(this._source, args)
+
+        this._source = this.resolve(this._source, args)
 
         this.intercept()
 
-        return this._target = this._resolve(this._target, args)
+        return this._source
+    }
+
+    resolve(source?: any, args?: any[]): any {
+
+        if (source?.prototype?.constructor) return Reflect.construct(source, args || [])
+
+        return source
+    }
+
+    intercept(source?: any, app?: App) {
+
+        app ||= this.app
+
+        app.di.intercept(source || this._source, this)
     }
 
     async generate() {
 
-        await this._onGenerate(this.getRepo())
+        const repo = this.getRepo()
+
+        this.app.isStart || fs.isDir(repo) || fs.mkDeepDir(repo)
+
+        await this.onGenerate(repo)
     }
 
     getRepo(rootDir?: string, repoName?: string): string {
 
-        rootDir ||= this._app.rootDir
+        if (rootDir || repoName) {
 
-        repoName ||= this.repository
+            rootDir ||= this.rootDir
 
-        if (!repoName) return ''
+            repoName ||= this.repository
 
-        const path = fs.path(rootDir, repoName)
+            return fs.join(rootDir, repoName)
+        }
 
-        this._app.isStart || fs.isDir(path) || fs.mkDeepDir(path)
+        if (!this.repository) return ''
 
-        return path
+        return this._repositoryPath ||= fs.join(this.rootDir, this.repository)
     }
 
     absPath(path: string, rootDir?: string): string {
@@ -158,27 +118,24 @@ export abstract class AppLoader implements DependencyInterceptorInterface {
 
         path = this.securePath(path)
 
-        return repo ? fs.path(repo, $.trimPath(path) + this._pathSuffix) : ''
+        return repo ? fs.join(repo, path) + this._pathSuffix : ''
     }
 
-    isTarget(path: string) {
+    isSource(path: string, rootDir?: string) {
 
-        return fs.isFile(fs.path(this._app.rootDir, $.trimPath(path)), ['ts', 'js'])
+        return fs.isFile(this.absPath(path, rootDir), ['ts', 'js'])
     }
 
-    isSource(path: string) {
+    isFile(path: string, rootDir?: string) {
 
-        return fs.isFile(this.absPath(path), ['ts', 'js'])
-    }
-
-    isFile(path: string) {
-
-        return fs.isFile(this.absPath(path))
+        return fs.isFile(this.absPath(path, rootDir))
     }
 
     securePath(path: string) {
 
-        return path?.replace(/(\.\.\\|\.\.\/)/g, '') ?? ''
+        path ||= ''
+
+        return path.includes('.') ? path.replace(/(\.\.\\|\.\.\/)/g, '') : path
     }
 
 }

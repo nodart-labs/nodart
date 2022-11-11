@@ -4,13 +4,13 @@ exports.ExceptionLogLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const exception_1 = require("../core/exception");
 class ExceptionLogLoader extends app_loader_1.AppLoader {
-    _onCall(target, args) {
-    }
-    _resolve(target, args) {
+    call(args) {
         var _a;
-        return Reflect.construct((_a = this._app.config.get.exception.log) !== null && _a !== void 0 ? _a : exception_1.ExceptionLog, [args[0]]);
+        return Reflect.construct(((_a = this.app.config.get.exception) === null || _a === void 0 ? void 0 : _a.log) || exception_1.ExceptionLog, [args[0]]);
     }
-    _onGenerate(repository) {
+    onCall() {
+    }
+    onGenerate(repository) {
     }
 }
 exports.ExceptionLogLoader = ExceptionLogLoader;

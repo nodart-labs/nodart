@@ -4,32 +4,34 @@ exports.EngineLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const app_config_1 = require("../core/app_config");
 const engine_1 = require("../core/engine");
+const utils_1 = require("../utils");
 class EngineLoader extends app_loader_1.AppLoader {
-    constructor(_app) {
-        var _a, _b;
-        super(_app);
-        this._app = _app;
+    constructor(app) {
+        var _a, _b, _c;
+        super(app);
+        this.app = app;
         this._repository = app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
-        this._repository = (_b = (_a = _app.config.get.engineConfig) === null || _a === void 0 ? void 0 : _a.views) !== null && _b !== void 0 ? _b : app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
+        this.repository = ((_c = (_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.config) === null || _c === void 0 ? void 0 : _c.views) || app_config_1.DEFAULT_ENGINE_VIEWS_REPOSITORY;
     }
-    get targetType() {
-        return engine_1.Engine;
+    call(args) {
+        return this.getEngine(args === null || args === void 0 ? void 0 : args[0]);
     }
-    _onCall(target) {
-        var _a;
-        this._engine = (_a = target !== null && target !== void 0 ? target : this._app.config.get.engine) !== null && _a !== void 0 ? _a : engine_1.Engine;
+    getEngineConfig(config) {
+        var _a, _b;
+        const engineConfig = Object.assign(Object.assign({}, ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.config) || {}), config || {});
+        utils_1.fs.isDir(engineConfig.views) || (engineConfig.views = this.getRepo());
+        return engineConfig;
     }
-    _resolve(target, args) {
-        var _a;
-        return new this._engine((_a = args === null || args === void 0 ? void 0 : args[0]) !== null && _a !== void 0 ? _a : this.getEngineConfig());
+    getEngine(config) {
+        var _a, _b;
+        config = this.getEngineConfig(config);
+        return ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.client) instanceof Function
+            ? this.app.config.get.http.engine.client(config)
+            : new engine_1.Engine(config);
     }
-    getEngineConfig() {
-        var _a;
-        const config = Object.assign({}, (_a = this._app.config.get.engineConfig) !== null && _a !== void 0 ? _a : {});
-        config.views = this.getRepo();
-        return config;
+    onCall() {
     }
-    _onGenerate(repository) {
+    onGenerate(repository) {
     }
 }
 exports.EngineLoader = EngineLoader;
