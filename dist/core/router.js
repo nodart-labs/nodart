@@ -13,10 +13,11 @@ class Router {
             number: '+',
             optional: '?',
         };
-        this.paramEntries['any'] = [];
         this.addEntries(_routes);
     }
     addEntries(routes) {
+        var _a;
+        (_a = this.paramEntries)['any'] || (_a['any'] = []);
         Object.entries(routes).forEach(([name, data]) => {
             Array.isArray(data) || (data = [data]);
             for (let route of data) {
@@ -27,7 +28,7 @@ class Router {
     }
     addRoute(desc, method, route) {
         var _a, _b;
-        const data = this.getRouteData(typeof desc === 'string' ? { path: desc } : desc);
+        const data = this.getRouteData(typeof desc === 'string' ? { path: desc } : Object.assign({}, desc));
         data.path = utils_1.$.trimPath(data.path);
         data.path || (data.path = '/');
         data.route = route || '';
@@ -97,11 +98,15 @@ class Router {
                         continue OUTER;
                 }
             }
-            return Object.assign(Object.assign({}, data.route), { query: url.query, params, pathname });
+            return this.getRouteData(Object.assign(Object.assign({}, data.route), { query: url.query, params, pathname }));
         }
         return this.getRouteData({ query: url.query, pathname });
     }
     getRouteData(assign = {}) {
+        const extend = {};
+        assign.paramNames && (extend.paramNames = assign.paramNames.slice());
+        assign.paramTypes && delete assign.paramTypes;
+        assign.types && (extend.types = Object.freeze(assign.types));
         return Object.assign({
             name: '',
             path: '',
@@ -112,10 +117,10 @@ class Router {
             callback: null,
             controller: null,
             params: {},
-            paramNames: [],
-            paramTypes: {},
             types: {},
-        }, assign);
+            paramNames: [],
+            paramTypes: {}
+        }, assign, extend);
     }
     validateParam(params, name, opts) {
         var _a;

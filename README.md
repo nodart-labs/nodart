@@ -240,6 +240,7 @@ The framework is built on the premise that performance
 and application architecture should be perfectly balanced.
 The performance of some well-known **server-side** frameworks is compared here.
 
+>
 > Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
 > and in some aspects surpasses it and all other frameworks.
 
@@ -249,10 +250,10 @@ Environment:
 * Benchmarking tool: <a href="https://www.npmjs.com/package/autocannon">AutoCannon</a>
 * Benchmarking command:
 
-```shell
-autocannon -R 10000 http://localhost:3000
-(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)
-```
+```autocannon -R 10000 http://localhost:3000```
+
+*(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)*
+
 
 ### 1. Testing simple JSON response:
 

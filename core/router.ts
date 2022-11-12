@@ -5,7 +5,7 @@ import {
     RouterEntries,
     RouterParamEntries,
     RouterParamEntryRoutes,
-    RouteDescriptorParamTypes
+    RouteDescriptorParamTypes, RouteDescriptor
 } from "./interfaces/router";
 import {HTTP_METHODS, HttpMethod, HttpURL} from "./interfaces/http";
 
@@ -23,12 +23,12 @@ export class Router {
 
     constructor(protected _routes: RouteEntry) {
 
-        this.paramEntries['any'] = []
-
         this.addEntries(_routes)
     }
 
     addEntries(routes: RouteEntry) {
+
+        this.paramEntries['any'] ||= []
 
         Object.entries(routes).forEach(([name, data]) => {
 
@@ -47,9 +47,9 @@ export class Router {
         })
     }
 
-    addRoute(desc: string | RouteData, method: HttpMethod | 'any', route?: string) {
+    addRoute(desc: string | RouteDescriptor, method: HttpMethod | 'any', route?: string) {
 
-        const data = this.getRouteData(typeof desc === 'string' ? {path: desc} : desc)
+        const data = this.getRouteData(typeof desc === 'string' ? {path: desc} : {...desc})
 
         data.path = $.trimPath(data.path)
         data.path ||= '/'
@@ -148,13 +148,19 @@ export class Router {
                 }
             }
 
-            return {...data.route, query: url.query, params, pathname}
+            return this.getRouteData({...data.route, query: url.query, params, pathname})
         }
 
         return this.getRouteData({query: url.query, pathname})
     }
 
-    getRouteData(assign: object = {}): RouteData {
+    getRouteData(assign: Omit<RouteData, 'path'> = {}): RouteData {
+
+        const extend = {} as RouteData
+
+        assign.paramNames && (extend.paramNames = assign.paramNames.slice())
+        assign.paramTypes && delete assign.paramTypes
+        assign.types && (extend.types = Object.freeze(assign.types))
 
         return Object.assign({
             name: '',
@@ -166,10 +172,10 @@ export class Router {
             callback: null,
             controller: null,
             params: {},
-            paramNames: [],
-            paramTypes: {},
             types: {},
-        }, assign)
+            paramNames: [],
+            paramTypes: {}
+        }, assign, extend)
     }
 
     validateParam(
