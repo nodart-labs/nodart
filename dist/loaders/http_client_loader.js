@@ -10,10 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpClientLoader = void 0;
-const app_1 = require("../core/app");
 const app_loader_1 = require("../core/app_loader");
 const http_client_1 = require("../core/http_client");
 const exception_1 = require("../core/exception");
+const app_config_1 = require("../core/app_config");
 class HttpClientLoader extends app_loader_1.AppLoader {
     call(args) {
         const app = args[0];
@@ -24,16 +24,12 @@ class HttpClientLoader extends app_loader_1.AppLoader {
         container.assignData({
             onSetResponseData: config.onSetResponseData || (function (data) {
                 return __awaiter(this, void 0, void 0, function* () {
-                    yield app_1.App.system.listen({
-                        event: {
-                            [app_1.App.system.events.HTTP_RESPONSE]: [app, container.getHttpResponse(data)]
-                        }
-                    });
+                    yield app_config_1.SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data));
                 });
             }),
             onError: config.onError || (function () {
                 return __awaiter(this, void 0, void 0, function* () {
-                    yield app.resolveException(new exception_1.RuntimeException(container), this.request, this.response);
+                    yield app.resolveException(new exception_1.RuntimeException(container), container.request, container.response);
                 });
             }),
             session: {

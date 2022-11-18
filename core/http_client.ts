@@ -2,7 +2,6 @@ import {fs, $} from "../utils";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {
     HttpResponseData,
-    HttpURL,
     HttpHost,
     HttpMethod,
     HttpContentExtensions,
@@ -36,6 +35,8 @@ export const TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8'
 export const HTML_CONTENT_TYPE = 'text/html'
 export const FORM_CONTENT_TYPE = 'multipart/form-data'
 
+const querystring = require('node:querystring')
+
 export class HttpContainer implements HttpContainerInterface {
 
     private isDataFetched: boolean = false
@@ -48,8 +49,6 @@ export class HttpContainer implements HttpContainerInterface {
 
     protected _responder: HttpResponder
 
-    protected _method: HttpMethod
-
     exceptionData: any
 
     exceptionMessage: string = ""
@@ -57,28 +56,31 @@ export class HttpContainer implements HttpContainerInterface {
     responseData: HttpResponseData
 
     constructor(readonly config: HttpContainerConfigInterface & HttpDataInterface) {
-
-        this._method = config.request.method.toLowerCase() as HttpMethod
-    }
-
-    get url(): HttpURL {
-
-        return this.config.url
-    }
-
-    get uri(): string {
-
-        return HttpClient.getURI(this.config.host)
-    }
-
-    get method(): HttpMethod {
-
-        return this._method
     }
 
     get host(): HttpHost {
 
         return this.config.host
+    }
+
+    get uri(): string {
+
+        return this.config.uri
+    }
+
+    get method(): HttpMethod {
+
+        return this.config.method ||= this.request.method.toLowerCase() as HttpMethod
+    }
+
+    get query(): JSONLikeInterface {
+
+        return this.config.query
+    }
+
+    get queryString(): string {
+
+        return this.config.queryString || ''
     }
 
     get request(): Http2ServerRequest {
@@ -121,7 +123,7 @@ export class HttpContainer implements HttpContainerInterface {
         return !!(this.exceptionMessage || this.exceptionData || this.form.hasError)
     }
 
-    get responseIsSent(): boolean {
+    get responseSent(): boolean {
 
         return HttpClient.getResponseIsSent(this.response)
     }
@@ -132,7 +134,7 @@ export class HttpContainer implements HttpContainerInterface {
 
         const responder = this.config.responder || HttpResponder
         const engineConfig = this.config.engine?.config || {} as EngineClientConfigInterface
-        const engine = this.config.engine?.client instanceof Function
+        const engine = typeof this.config.engine?.client === 'function'
             ? this.config.engine.client(engineConfig)
             : new Engine(engineConfig)
 
@@ -145,7 +147,7 @@ export class HttpContainer implements HttpContainerInterface {
 
         const sessionConfig = this.config.session?.config || {} as SessionClientConfigInterface
 
-        return this._session = this.config.session?.client instanceof Function
+        return this._session = typeof this.config.session?.client === 'function'
             ? this.config.session.client(sessionConfig, this)
             : new Session(sessionConfig).load(this)
     }
@@ -156,12 +158,22 @@ export class HttpContainer implements HttpContainerInterface {
     }
 
     getHttpResponse(assignResponseData?: HttpResponseData): BaseHttpResponseInterface {
+
+        const form = this.isFormData ? this.form : {fields: {}, files: {}}
+
         return {
-            response: this.response,
+            uri: this.uri,
+            host: this.host,
+            query: this.query,
+            queryString: this.queryString,
+            method: this.method,
+            data: this.data,
+            form,
             request: this.request,
-            responseData: HttpClient.getHttpResponseData(this, assignResponseData),
+            response: this.response,
             exceptionData: this.exceptionData,
             exceptionMessage: this.exceptionMessage,
+            responseData: HttpClient.getHttpResponseData(this, assignResponseData),
         }
     }
 
@@ -196,7 +208,7 @@ export class HttpContainer implements HttpContainerInterface {
 
     sendFile(filePath: string, contentType?: string) {
 
-        if (this.responseIsSent) return
+        if (this.responseSent) return
 
         this.response.writeHead(HTTP_STATUS.OK, {
             'Content-Type': contentType || HttpClient.getDefaultContentType(
@@ -281,20 +293,13 @@ export class HttpContainer implements HttpContainerInterface {
     }
 
     onFetchData(buffer: Buffer, callback: (err?: Error) => void) {
+
         const data = buffer.toString().trim()
-        const readQuery = () => {
-            for (const [key, value] of new URLSearchParams(data).entries()) {
-                if (key in this._data) {
-                    Array.isArray(this._data[key]) || (this._data[key] = [this._data[key]])
-                    this._data[key].push(value)
-                    continue
-                }
-                this._data[key] = value
-            }
-        }
 
         try {
-            data.startsWith('{') || data.startsWith('[') ? this._data = JSON.parse(data) : readQuery()
+            this._data = data.startsWith('{') || data.startsWith('[')
+                ? JSON.parse(data)
+                : HttpClient.parseURLQuery(data)
             callback()
         } catch (e) {
             callback(e)
@@ -306,9 +311,9 @@ export class HttpFormData implements HttpFormDataInterface {
 
     readonly client = require('busboy')
 
-    protected _fields: { [field: string]: any } = {}
+    readonly fields: { [field: string]: any } = {}
 
-    protected _files: { [field: string]: string[] } = {}
+    readonly files: { [field: string]: string[] } = {}
 
     protected _stat: {
         fields: { [field: string]: HttpFormDataClientsField | Array<HttpFormDataClientsField> },
@@ -345,16 +350,6 @@ export class HttpFormData implements HttpFormDataInterface {
     get ready(): boolean {
 
         return !!this.isDataFetched
-    }
-
-    get fields() {
-
-        return {...this._fields}
-    }
-
-    get files() {
-
-        return {...this._files}
     }
 
     get hasError(): boolean {
@@ -421,15 +416,15 @@ export class HttpFormData implements HttpFormDataInterface {
 
         if (false === filter?.(field, value, info)) return
 
-        if (field in this._fields) {
-            Array.isArray(this._fields[field]) || (this._fields[field] = [this._fields[field]])
+        if (field in this.fields) {
+            Array.isArray(this.fields[field]) || (this.fields[field] = [this.fields[field]])
             Array.isArray(this._stat[field]) || (this._stat[field] = [this._stat[field]])
-            this._fields[field].push(value)
+            this.fields[field].push(value)
             this._stat[field].push(info)
             return
         }
 
-        this._fields[field] = value
+        this.fields[field] = value
         this._stat.fields[field] = info
     }
 
@@ -441,7 +436,7 @@ export class HttpFormData implements HttpFormDataInterface {
 
         if (info.filename === undefined) return
 
-        this._files[field] ||= []
+        this.files[field] ||= []
         this._stat.files[field] ||= []
 
         if (false === filter?.(field, info)) return
@@ -462,7 +457,7 @@ export class HttpFormData implements HttpFormDataInterface {
             }
 
             info.path = path
-            this._files[field].push(path)
+            this.files[field].push(path)
             this._stat.files[field].push(info)
             resolver()
         })
@@ -528,7 +523,8 @@ export class HttpClient {
         const contentEntry = Object.keys(data.content)[0]
 
         contentEntry === 'json'
-        && data.content[contentEntry] instanceof Object
+        && data.content[contentEntry]
+        && typeof data.content[contentEntry] === 'object'
         && (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]))
 
         data.contentType ||= HttpClient.getDefaultContentType(contentEntry)
@@ -551,31 +547,44 @@ export class HttpClient {
         return ''
     }
 
-    static getDataFromStatusCode(http: BaseHttpResponseInterface, setStatusIfNone?: number): HttpResponseDataInterface {
+    static getDataFromStatusCode(http: BaseHttpResponseInterface, statusOnNone?: number): HttpResponseDataInterface {
 
         http.responseData ||= {}
 
-        const status = http.responseData.status ?? setStatusIfNone ?? http.response.statusCode
+        const status = http.responseData.status ?? statusOnNone ?? http.response.statusCode
         const contentType = http.responseData.contentType ?? http.response.getHeader('content-type') ?? JSON_CONTENT_TYPE
         const content = HttpClient.getStatusCodeMessage(status)
 
         return {status, contentType, content}
     }
 
-    static getParsedURL(url: string): HttpURL {
+    static parseURL(url: string) {
 
-        const data = require('url').parse(url, true)
+        const entries = url.split('?')
 
-        data.pathname = $.trimPath(data.pathname)
+        url = entries[0]
 
-        return data
+        entries.shift()
+
+        const queryString = entries.length ? entries.join('?') : ''
+
+        return {
+            url,
+            queryString,
+            query: queryString ? HttpClient.parseURLQuery(queryString) : {},
+        }
     }
 
-    static fetchHostData(data: HttpHost): HttpHost {
+    static parseURLQuery(query: string): JSONLikeInterface {
 
-        const {port, protocol, host, hostname} = HttpClient.getParsedURL(HttpClient.getURI(data))
+        return querystring.parse(query)
+    }
 
-        return {port, protocol, host, hostname}
+    static fetchHostData(httpHost: HttpHost): HttpHost {
+
+        const {port, protocol, host, hostname} = require('url').parse(HttpClient.getURI(httpHost))
+
+        return {...httpHost, port, protocol, host, hostname}
     }
 
     static getURI(data: HttpHost) {
@@ -587,20 +596,20 @@ export class HttpClient {
 
         response.writeHead(status, {'Content-Type': JSON_CONTENT_TYPE})
 
-        response.end(body instanceof Object ? JSON.stringify(body) : body)
+        response.end(JSON.stringify(body))
     }
 
-    static throwBadRequest() {
+    static throwBadRequest(message: string = '') {
 
-        throw new HttpException('The current HTTP method receives no response from the request method.', {
+        throw new HttpException(message || 'The current HTTP method receives no response from the request method.', {
 
             status: HTTP_STATUS.BAD_REQUEST
         })
     }
 
-    static throwNoContent() {
+    static throwNoContent(message: string = '') {
 
-        throw new HttpException('The current HTTP method receives no content from the request method.', {
+        throw new HttpException(message || 'The current HTTP request receives no content from the response.', {
 
             status: HTTP_STATUS.NO_CONTENT
         })

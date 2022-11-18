@@ -1,10 +1,11 @@
 import {App} from '../core/app'
 import {HttpClient} from "../core/http_client";
-import {HttpContainerInterface} from "../core/interfaces/http";
+import {BaseHttpResponseInterface} from "../core/interfaces/http";
+import {AppEventHttpResponseInterface} from "../core/interfaces/app";
 
-export = async (app: App, http: HttpContainerInterface) => {
+export = <AppEventHttpResponseInterface>(async (app: App, http: BaseHttpResponseInterface) => {
 
-    if (http.responseIsSent) return
+    if (HttpClient.getResponseIsSent(http.response)) return
 
     const response = http.responseData
 
@@ -14,4 +15,4 @@ export = async (app: App, http: HttpContainerInterface) => {
 
     http.response.end(content)
 
-}
+})

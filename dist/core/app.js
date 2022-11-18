@@ -16,12 +16,14 @@ const di_1 = require("./di");
 const router_1 = require("./router");
 const exception_1 = require("./exception");
 const app_config_1 = require("./app_config");
+const http_2 = require("http");
+const https_1 = require("https");
 const http_client_1 = require("./http_client");
 const utils_1 = require("../utils");
 const module_1 = require("../services/module");
 const cashier_1 = require("../services/cashier");
 const orm_1 = require("../services/orm");
-const events = require('../store/system').events;
+const service_1 = require("./service");
 exports.DEFAULT_PORT = 3000;
 exports.DEFAULT_HOST = 'localhost';
 const loaders = () => App.system.state.loaders;
@@ -31,7 +33,8 @@ class App {
         this._isStart = false;
         this._isInit = false;
         this._isServe = false;
-        this._host = { port: null, protocol: null, host: null, hostname: null };
+        this._host = { port: null, protocol: null, host: null, hostname: null, family: '' };
+        this._uri = '';
         this.config = new app_config_1.AppConfig().set(config);
         this.factory = new AppFactory(this);
         this.service = new AppServiceManager(this);
@@ -57,17 +60,16 @@ class App {
         return this._isServe;
     }
     get host() {
-        return Object.assign({}, this._host);
+        return this._host;
     }
     get uri() {
-        return http_client_1.HttpClient.getURI(this.host);
+        return this._uri;
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             this.service.check().throwIsInit;
             this.factory.createStore();
             this.factory.createState();
-            this.factory.createEventListener();
             yield this.factory.createApp();
             this.service.cashier.cacheAppFolder();
             this._isInit = true;
@@ -78,7 +80,6 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             this.service.check().throwIsStart;
             this.factory.createState();
-            this.factory.createEventListener();
             this.service.cashier.cacheAppFolder();
             const server = yield this.serve(port, protocol, host, serve);
             const http = this.service.http;
@@ -89,31 +90,49 @@ class App {
     serve(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST, serve) {
         return __awaiter(this, void 0, void 0, function* () {
             this.service.check().throwIsServe;
-            let server;
-            if (serve) {
-                server = serve();
-            }
-            else {
-                server = require(protocol).createServer((req, res) => {
-                    (() => __awaiter(this, void 0, void 0, function* () { return yield this.httpHandle(req, res); }))();
-                }).listen(port, host, () => {
-                    console.log(`server start at port ${port}.`, this.uri);
-                });
-            }
-            this._host = Object.freeze(http_client_1.HttpClient.fetchHostData({ port, protocol, host }));
-            this._isServe = true;
-            yield this.emitter.emit('ON_START_SERVER', { server });
-            this.service.cashier.cacheAppFolder();
-            return server;
-        });
-    }
-    httpHandle(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.service.requestPayload && (yield this.service.requestPayload(req, res));
-            yield App.system.listen({ event: { [events.HTTP_REQUEST]: [this, req, res] } }).catch(exception => {
-                this.resolveException(exception, req, res);
+            const server = serve ? yield serve(this) : require(protocol).createServer();
+            this.service.check().throwIsServer(server);
+            return new Promise((resolve) => {
+                setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+                    const connection = server.address();
+                    if (connection) {
+                        port = connection.port;
+                        host = connection.address;
+                        this.setHost(connection, protocol);
+                    }
+                    server.eventNames().includes('request') || server.on('request', (req, res) => {
+                        this.resolveHttpRequest(req, res);
+                    });
+                    server.listening || server.listen(port, host, () => {
+                        const connection = server.address();
+                        this.setHost(connection, protocol);
+                        console.log(`server start at port ${port}.`, this.uri);
+                    });
+                    setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+                        this._isServe = true;
+                        this.service.cashier.cacheAppFolder();
+                        yield this.emitter.emit('ON_START_SERVER', { server });
+                        resolve(server);
+                    }), 100);
+                }), 500);
             });
         });
+    }
+    setHost(connection, protocol) {
+        this._host = Object.freeze(http_client_1.HttpClient.fetchHostData({
+            port: connection.port,
+            protocol,
+            host: connection.address,
+            family: connection.family
+        }));
+        this._uri = http_client_1.HttpClient.getURI(this._host);
+    }
+    resolveHttpRequest(req, res) {
+        this.service.requestPayload
+            ? this.service.requestPayload(req, res).then(() => {
+                app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res));
+            })
+            : app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res));
     }
     resolveException(exception, req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -132,7 +151,7 @@ class App {
         const store = store_1.Store.get(app_config_1.SYSTEM_STORE_NAME);
         const state = (_b = (_a = store_1.Store.get(app_config_1.SYSTEM_STORE_NAME)) === null || _a === void 0 ? void 0 : _a.get(app_config_1.SYSTEM_STATE_NAME)) !== null && _b !== void 0 ? _b : {};
         return {
-            events,
+            events: app_config_1.SYSTEM_STORE.events,
             store,
             state,
             setup: (data) => store.setup(app_config_1.SYSTEM_STATE_NAME, data),
@@ -146,6 +165,7 @@ exports.App = App;
 class AppFactory {
     constructor(app) {
         this.app = app;
+        this.service = new service_1.ServiceFactory(app);
     }
     createApp() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -159,29 +179,25 @@ class AppFactory {
         repo && store && store_1.Store.add(store, utils_1.fs.path(this.app.rootDir, repo));
     }
     createState() {
-        App.system.store || store_1.Store.add(app_config_1.SYSTEM_STORE_NAME, utils_1.fs.path(__dirname, '../' + app_config_1.SYSTEM_STORE));
+        App.system.store || store_1.Store.add(app_config_1.SYSTEM_STORE_NAME, utils_1.fs.path(__dirname, '../' + app_config_1.SYSTEM_STORE_REPOSITORY));
         App.system.state.app || App.system.setup({
             app: this.app,
             loaders: {
                 static: this.createLoader('static'),
                 http: this.createLoader('http'),
-                httpService: this.createLoader('http_service'),
                 controller: this.createLoader('controller'),
                 service: this.createLoader('service'),
                 model: this.createLoader('model'),
             }
         });
     }
-    createEventListener() {
-        App.system.on({
-            event: {
-                [events.HTTP_REQUEST]: app_config_1.SYSTEM_EVENTS[events.HTTP_REQUEST],
-                [events.HTTP_RESPONSE]: app_config_1.SYSTEM_EVENTS[events.HTTP_RESPONSE]
-            }
-        });
-    }
     createLoader(name) {
         return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app]);
+    }
+    createDependencyInterceptor(source) {
+        const interceptor = new di_1.BaseDependencyInterceptor;
+        interceptor.getDependency = source.getDependency;
+        return interceptor;
     }
 }
 exports.AppFactory = AppFactory;
@@ -214,7 +230,7 @@ class AppServiceManager {
             },
             get repo() {
                 const repo = config.store;
-                return typeof repo === 'boolean' ? (repo ? app_config_1.CLIENT_STORE : '') : repo;
+                return typeof repo === 'boolean' ? (repo ? app_config_1.CLIENT_STORE_REPOSITORY : '') : repo;
             }
         };
     }
@@ -236,6 +252,13 @@ class AppServiceManager {
                     throw 'The App already has been initialised.';
                 return;
             },
+            throwIsServer(server) {
+                if (server instanceof http_2.Server)
+                    return;
+                if (server instanceof https_1.Server)
+                    return;
+                throw 'The provided server is not an instance of node "Server".';
+            }
         };
     }
     get http() {

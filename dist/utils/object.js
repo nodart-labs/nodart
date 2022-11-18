@@ -3,7 +3,7 @@ const $ = require('./common');
 module.exports = {
     getProtoConstructor(target) {
         var _a;
-        return target instanceof Object ? (_a = target.prototype) === null || _a === void 0 ? void 0 : _a.constructor : null;
+        return (_a = target === null || target === void 0 ? void 0 : target.prototype) === null || _a === void 0 ? void 0 : _a.constructor;
     },
     isProtoConstructor(target, protoObject) {
         if (protoObject) {
@@ -17,7 +17,9 @@ module.exports = {
     },
     get(obj, dottedPath, def) {
         return dottedPath.split('.').reduce((acc, part) => {
-            return (acc instanceof Object && acc[part] !== undefined) ? acc[part] : (def !== undefined ? def : undefined);
+            return (acc && typeof acc === 'object' && acc[part] !== undefined)
+                ? acc[part]
+                : (def !== undefined ? def : undefined);
         }, obj);
     },
     has(obj, dottedPath) {

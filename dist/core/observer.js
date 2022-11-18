@@ -35,7 +35,7 @@ class Observer {
         return this._setter ? this._setter(prop, value, data) : undefined;
     }
     static isObject(data) {
-        return data instanceof Object && data.constructor === Object;
+        return data && typeof data === 'object' && data.constructor === Object;
     }
 }
 exports.Observer = Observer;
@@ -87,7 +87,7 @@ class Observable {
     }
     static isStackPointer(source, prop) {
         return ((Array.isArray(source) && isNaN(+prop))
-            || (source instanceof Object && !source.hasOwnProperty(prop)))
+            || (source && typeof source === 'object' && !source.hasOwnProperty(prop)))
             || Observable._stackPointer === prop && !(prop in source);
     }
 }

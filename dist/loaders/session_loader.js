@@ -16,7 +16,7 @@ class SessionLoader extends app_loader_1.AppLoader {
     getSession(http, config) {
         var _a, _b;
         config = this.getSessionConfig(config);
-        return ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.session) === null || _b === void 0 ? void 0 : _b.client) instanceof Function
+        return typeof ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.session) === null || _b === void 0 ? void 0 : _b.client) === 'function'
             ? this.app.config.get.http.session.client(config, http)
             : new session_1.Session(config).load(http);
     }

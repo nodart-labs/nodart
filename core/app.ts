@@ -1,41 +1,45 @@
 import {
     AppEmitterEvents,
     AppLoaders,
-    AppServerProtocols,
     AppConfigInterface,
-    AppModuleFacadeInterface, AppModuleConfigInterface, AppStateLoaders
+    AppModuleFacadeInterface,
+    AppModuleConfigInterface,
+    AppStateLoadersInterface
 } from "./interfaces/app";
 import {State, Store} from "./store";
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {HttpServiceRouteObject} from "./interfaces/service";
 import {HttpServiceAcceptor, HttpService} from "../services/http";
-import {DIContainer} from "./di";
+import {BaseDependencyInterceptor, DIContainer} from "./di";
 import {Router} from "./router";
 import {StoreState, StoreListenerArguments, StoreListeners} from "./interfaces/store";
 import {ExceptionHandler, ExceptionLog, RuntimeException} from "./exception";
 import {
     AppConfig,
+    SYSTEM_STORE,
+    SYSTEM_STORE_REPOSITORY,
     SYSTEM_STORE_NAME,
     SYSTEM_STATE_NAME,
     DEFAULT_APP_BUILD_DIR,
     DEFAULT_ENV_FILE_NAME,
-    CLIENT_STORE, SYSTEM_STORE, SYSTEM_EVENTS
+    CLIENT_STORE_REPOSITORY
 } from "./app_config";
 import {Server} from "http";
-import {HttpHost, HttpMethod, HttpResponseDataInterface} from "./interfaces/http";
+import {Server as SecureServer} from "https";
+import {HttpHost, HttpMethod, HttpProtocols, HttpResponseDataInterface} from "./interfaces/http";
 import {HttpClient} from "./http_client";
 import {fs, $} from "../utils";
 import {ModuleService} from "../services/module";
 import {CashierService} from "../services/cashier";
 import {OrmService} from "../services/orm";
 import {RouteData} from "./interfaces/router";
-
-const events = require('../store/system').events
+import {DependencyInterceptorInterface} from "./interfaces/di";
+import {ServiceFactory} from "./service";
 
 export const DEFAULT_PORT = 3000
 export const DEFAULT_HOST = 'localhost'
 
-export const loaders = () => App.system.state.loaders as AppStateLoaders
+export const loaders = () => App.system.state.loaders as AppStateLoadersInterface
 
 export class App {
 
@@ -61,7 +65,9 @@ export class App {
 
     protected _isServe: boolean = false
 
-    private _host: HttpHost = {port: null, protocol: null, host: null, hostname: null}
+    private _host: HttpHost = {port: null, protocol: null, host: null, hostname: null, family: ''}
+
+    private _uri: string = ''
 
     constructor(config: AppConfigInterface) {
 
@@ -100,14 +106,14 @@ export class App {
         return this._isServe
     }
 
-    get host(): HttpHost {
+    get host(): Readonly<HttpHost> {
 
-        return {...this._host}
+        return this._host
     }
 
     get uri(): string {
 
-        return HttpClient.getURI(this.host)
+        return this._uri
     }
 
     async init(): Promise<this> {
@@ -117,8 +123,6 @@ export class App {
         this.factory.createStore()
 
         this.factory.createState()
-
-        this.factory.createEventListener()
 
         await this.factory.createApp()
 
@@ -131,16 +135,14 @@ export class App {
 
     async start(
         port: number = DEFAULT_PORT,
-        protocol: AppServerProtocols = 'http',
+        protocol: HttpProtocols = 'http',
         host: string = DEFAULT_HOST,
-        serve?: () => Server
-    ): Promise<{ app: App, http: HttpServiceAcceptor, server: Server }> {
+        serve?: (app: App) => Server | SecureServer | Promise<Server | SecureServer>
+    ): Promise<{ app: App, http: HttpServiceAcceptor, server: Server | SecureServer }> {
 
         this.service.check().throwIsStart
 
         this.factory.createState()
-
-        this.factory.createEventListener()
 
         this.service.cashier.cacheAppFolder()
 
@@ -155,43 +157,72 @@ export class App {
 
     async serve(
         port: number = DEFAULT_PORT,
-        protocol: AppServerProtocols = 'http',
+        protocol: HttpProtocols = 'http',
         host: string = DEFAULT_HOST,
-        serve?: () => Server
-    ): Promise<Server> {
+        serve?: (app: App) => Server | SecureServer | Promise<Server | SecureServer>
+    ): Promise<Server | SecureServer> {
 
         this.service.check().throwIsServe
 
-        let server
+        const server = serve ? await serve(this) : require(protocol).createServer()
 
-        if (serve) {
-            server = serve()
-        } else {
-            server = require(protocol).createServer((req: Http2ServerRequest, res: Http2ServerResponse) => {
-                (async () => await this.httpHandle(req, res))()
-            }).listen(port, host, () => {
-                console.log(`server start at port ${port}.`, this.uri)
-            })
-        }
+        this.service.check().throwIsServer(server)
 
-        this._host = Object.freeze(HttpClient.fetchHostData({port, protocol, host}))
-        this._isServe = true
+        return new Promise((resolve) => {
 
-        await this.emitter.emit('ON_START_SERVER', {server})
+            setTimeout(async () => {
 
-        this.service.cashier.cacheAppFolder()
+                const connection = server.address()
 
-        return server
+                if (connection) {
+                    port = connection.port
+                    host = connection.address
+                    this.setHost(connection, protocol)
+                }
+
+                server.eventNames().includes('request') || server.on('request', (req, res) => {
+                    this.resolveHttpRequest(req, res)
+                })
+
+                server.listening || server.listen(port, host, () => {
+                    const connection = server.address()
+                    this.setHost(connection, protocol)
+                    console.log(`server start at port ${port}.`, this.uri)
+                })
+
+                setTimeout(async () => {
+                    this._isServe = true
+                    this.service.cashier.cacheAppFolder()
+                    await this.emitter.emit('ON_START_SERVER', {server})
+                    resolve(server)
+                }, 100)
+
+            }, 500)
+        })
     }
 
-    async httpHandle(req: Http2ServerRequest, res: Http2ServerResponse) {
+    private setHost(connection: { address: string, family: string, port: number }, protocol: HttpProtocols) {
 
-        this.service.requestPayload && await this.service.requestPayload(req, res)
+        this._host = Object.freeze(HttpClient.fetchHostData({
+            port: connection.port,
+            protocol,
+            host: connection.address,
+            family: connection.family
+        }))
 
-        await App.system.listen({event: {[events.HTTP_REQUEST]: [this, req, res]}}).catch(exception => {
+        this._uri = HttpClient.getURI(this._host)
+    }
 
-            this.resolveException(exception, req, res)
-        })
+    resolveHttpRequest(req: Http2ServerRequest, res: Http2ServerResponse) {
+
+        this.service.requestPayload
+
+            ? this.service.requestPayload(req, res).then(() => {
+
+                SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res))
+            })
+
+            : SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res))
     }
 
     async resolveException(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
@@ -217,7 +248,7 @@ export class App {
         const state = Store.get(SYSTEM_STORE_NAME)?.get(SYSTEM_STATE_NAME) ?? {}
 
         return {
-            events,
+            events: SYSTEM_STORE.events,
             store,
             state,
             setup: (data: StoreState) => store.setup(SYSTEM_STATE_NAME, data),
@@ -230,7 +261,11 @@ export class App {
 
 export class AppFactory {
 
+    readonly service: ServiceFactory
+
     constructor(readonly app: App) {
+
+        this.service = new ServiceFactory(app)
     }
 
     async createApp() {
@@ -245,31 +280,27 @@ export class AppFactory {
     }
 
     createState() {
-        App.system.store || Store.add(SYSTEM_STORE_NAME, fs.path(__dirname, '../' + SYSTEM_STORE))
+        App.system.store || Store.add(SYSTEM_STORE_NAME, fs.path(__dirname, '../' + SYSTEM_STORE_REPOSITORY))
         App.system.state.app || App.system.setup({
             app: this.app,
             loaders: {
                 static: this.createLoader('static'),
                 http: this.createLoader('http'),
-                httpService: this.createLoader('http_service'),
                 controller: this.createLoader('controller'),
                 service: this.createLoader('service'),
                 model: this.createLoader('model'),
-            } as AppStateLoaders
-        })
-    }
-
-    createEventListener() {
-        App.system.on({
-            event: {
-                [events.HTTP_REQUEST]: SYSTEM_EVENTS[events.HTTP_REQUEST],
-                [events.HTTP_RESPONSE]: SYSTEM_EVENTS[events.HTTP_RESPONSE]
-            }
+            } as AppStateLoadersInterface
         })
     }
 
     createLoader<K extends keyof AppLoaders>(name: K): AppLoaders[K] {
         return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app])
+    }
+
+    createDependencyInterceptor(source: DependencyInterceptorInterface) {
+        const interceptor = new BaseDependencyInterceptor
+        interceptor.getDependency = source.getDependency
+        return interceptor
     }
 }
 
@@ -318,7 +349,7 @@ export class AppServiceManager {
             },
             get repo() {
                 const repo = config.store
-                return typeof repo === 'boolean' ? (repo ? CLIENT_STORE : '') : repo
+                return typeof repo === 'boolean' ? (repo ? CLIENT_STORE_REPOSITORY : '') : repo
             }
         }
     }
@@ -340,12 +371,17 @@ export class AppServiceManager {
                 if (app.isInit) throw 'The App already has been initialised.'
                 return
             },
+            throwIsServer(server: any) {
+                if (server instanceof Server) return
+                if (server instanceof SecureServer) return
+                throw 'The provided server is not an instance of node "Server".'
+            }
         }
     }
 
     get http(): HttpServiceAcceptor {
 
-        this.httpService.subscribers.length || this.httpService.subscribe((data: HttpServiceRouteObject & {route: RouteData}) => {
+        this.httpService.subscribers.length || this.httpService.subscribe((data: HttpServiceRouteObject & { route: RouteData }) => {
 
             data.route.callback = data.callback
 

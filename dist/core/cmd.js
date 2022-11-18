@@ -87,8 +87,8 @@ class CommandLine {
     }
     execute(executor) {
         return __awaiter(this, void 0, void 0, function* () {
-            const data = executor instanceof Function ? yield executor({ app: this.app, cmd: this }) : executor;
-            if (!(data instanceof Object))
+            const data = typeof executor === 'function' ? yield executor({ app: this.app, cmd: this }) : executor;
+            if (!(typeof data === 'object'))
                 return;
             const { func, values } = yield this.parser.validate(this.command, data).catch(errors => {
                 console.log(errors.join("\r\n"));
@@ -183,7 +183,7 @@ class CommandLineParser {
     }
     parseAction(command, executorData) {
         const action = utils_1.$.hyphen2Camel(command.action);
-        const actionFunc = action && (executorData === null || executorData === void 0 ? void 0 : executorData[action]) instanceof Function ? executorData[action] : null;
+        const actionFunc = action && typeof (executorData === null || executorData === void 0 ? void 0 : executorData[action]) === 'function' ? executorData[action] : null;
         if (!actionFunc)
             return;
         const options = command.options;
@@ -208,7 +208,7 @@ class CommandLineParser {
                 actions.length && errors.push(`No action supplied for command "${command.command} ${command.action}". (${actions.join('|')})`);
                 return actions.length ? reject(errors) : resolve(actionData);
             }
-            if (executorData[actionData.action] instanceof Function) {
+            if (typeof executorData[actionData.action] === 'function') {
                 const { missing } = this.actionArgumentsValidate(actionData);
                 missing.length && errors.push(`Missing required arguments: ${missing.map(v => exports.OPTION_POINTER + v).join(', ')}.`);
             }

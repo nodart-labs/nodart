@@ -27,12 +27,19 @@ export class Session {
 
     get get() {
 
-        return this._session ?? {}
+        return this._session || {}
     }
 
     set(data: {[key: string]: any}) {
 
         Object.assign(this.get, data)
+    }
+
+    unset(key: string | string[]) {
+
+        Array.isArray(key) || (key = [key])
+
+        key.forEach(k => k in this.get && delete this.get[k])
     }
 
 }

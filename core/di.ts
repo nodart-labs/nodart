@@ -1,10 +1,21 @@
 import {Observer} from "./observer";
-import {DependencyScope, DIScope, InjectionContainer, InjectionProperty} from "./interfaces/di";
+import {
+    DependencyInterceptorInterface,
+    DependencyScope,
+    DIScope,
+    InjectionContainer,
+    InjectionProperty
+} from "./interfaces/di";
 
-export abstract class DependencyInterceptor {
+export abstract class DependencyInterceptor implements DependencyInterceptorInterface {
 
     abstract getDependency(acceptor: any, property: string, dependency: any): any
+}
 
+export class BaseDependencyInterceptor extends DependencyInterceptor {
+
+    getDependency(acceptor: any, property: string, dependency: any): any {
+    }
 }
 
 const CONTAINER_ID = require('crypto').randomBytes(20).toString('hex')
@@ -26,7 +37,7 @@ export class DIContainer {
 
         scope.mediator && (this.scope.mediator = scope.mediator)
 
-        scope.references instanceof Object && scope.references.constructor === Object && Object.assign(
+        scope.references && typeof scope.references === 'object' && scope.references.constructor === Object && Object.assign(
 
             this.scope.references,
 
@@ -52,7 +63,7 @@ export class DIContainer {
 
             dependency = this.getDependencyByReference(scope)
 
-            if (dependency instanceof Object && dependency.constructor === Object)
+            if (dependency && typeof dependency === 'object' && dependency.constructor === Object)
 
                 return this.watchDependency(scope, dependency)
         }
@@ -113,12 +124,22 @@ export class DIContainer {
         }
     }
 
-    static injectable(target: any): boolean {
+    inject(target: object, property: string, reference: string) {
 
-        return target instanceof Object && !target.prototype?.constructor
+        DIContainer.defineProperty(target, property, reference)
     }
 
-    static inject(target: object, property: string, reference: string) {
+    intercepted(target: object): boolean {
+
+        return DIContainer.injectable(target) && target[DIContainer.id]?.intercept !== undefined
+    }
+
+    static injectable(target: any): boolean {
+
+        return !!(target && typeof target === 'object' && !target.prototype?.constructor)
+    }
+
+    static defineProperty(target: object, property: string, reference: string) {
 
         DIContainer.injectable(target) && Object.defineProperty(target, property, {
             get: function () {
@@ -135,6 +156,6 @@ export class DIContainer {
 
 export function injects(reference: string) {
     return function (target: any, property: string) {
-        DIContainer.inject(target, property, reference)
+        DIContainer.defineProperty(target, property, reference)
     }
 }

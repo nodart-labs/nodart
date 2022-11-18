@@ -25,7 +25,7 @@ class EngineLoader extends app_loader_1.AppLoader {
     getEngine(config) {
         var _a, _b;
         config = this.getEngineConfig(config);
-        return ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.client) instanceof Function
+        return typeof ((_b = (_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.engine) === null || _b === void 0 ? void 0 : _b.client) === 'function'
             ? this.app.config.get.http.engine.client(config)
             : new engine_1.Engine(config);
     }

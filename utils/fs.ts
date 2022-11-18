@@ -157,11 +157,15 @@ const getSource = function (path: string, sourceProtoObject?: any): any {
     try {
         const data = cashier.isFile(path) ? cashier.files[path].data : require(path)
 
-        if (!(data instanceof Object)) return null
+        if (!(data && typeof data === 'object')) return
 
-        for (const key of Object.keys(data)) {
+        const keys = Object.keys(data)
 
-            if (object.isProtoConstructor(data[key], sourceProtoObject)) return data[key]
+        let i = 0
+
+        for (; i < keys.length; i++) {
+
+            if (object.isProtoConstructor(data[keys[i]], sourceProtoObject)) return data[keys[i]]
         }
     } catch {
     }

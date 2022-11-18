@@ -20,6 +20,8 @@ export type HttpResponseData = {
     content?: HttpResponseDataContent
 }
 
+export type HttpProtocols = 'http' | 'https'
+
 export type HttpURL = {
     pathname: string
     protocol?: string
@@ -41,13 +43,22 @@ export type HttpHost = {
     host: string
     port: number
     hostname?: string
+    family?: string
 }
 
 export type HttpMimeTypes = { [K in HttpContentExtensions]?: string }
 
 export interface HttpDataInterface {
-    host?: HttpHost
-    url?: HttpURL
+    host: HttpHost
+    uri: string
+    method: HttpMethod
+    query: JSONLikeInterface
+    queryString: string
+    data: JSONLikeInterface
+    form: {
+        fields: JSONLikeInterface
+        files: JSONLikeInterface
+    }
     request: Http2ServerRequest
     response: Http2ServerResponse
 }
@@ -75,20 +86,15 @@ export interface HttpContainerConfigInterface {
 }
 
 export interface HttpContainerInterface extends BaseHttpResponseInterface {
-    url: HttpURL
-    uri: string
-    method: HttpMethod
-    host: HttpHost
-    data: JSONLikeInterface
     ready: boolean
     form: HttpFormData
     isFormData: boolean
-    responseIsSent: boolean
+    responseSent: boolean
     hasError: boolean
     respond: HttpResponder
     session: Session
 
-    assignData(data: HttpContainerConfigInterface)
+    assignData(data: HttpContainerConfigInterface & HttpDataInterface)
 
     send(content: JSONObjectInterface | string, status?: number, contentType?: string)
 
@@ -123,8 +129,8 @@ export interface HttpResponseDataInterface {
 
 export interface HttpFormDataInterface {
     config: HttpFormDataClientConfigInterface
-    fields: { [field: string]: any }
-    files: { [field: string]: any }
+    readonly fields: { [field: string]: any }
+    readonly files: { [field: string]: any }
     ready: boolean
     form: any
     uploadDir?: string
@@ -200,9 +206,44 @@ export type HttpFormDataClientsFileFilter = (
     field: string,
     info: HttpFormDataClientsFile) => boolean
 
-export const HTTP_METHODS = ['get', 'post', 'patch', 'put', 'delete', 'head', 'connect', 'trace']
+export const HTTP_METHODS = [
+    'get',
+    'head',
+    'patch',
+    'post',
+    'put',
+    'delete',
+    'options',
+    'propfind',
+    'proppatch',
+    'mkcol',
+    'copy',
+    'move',
+    'lock',
+    'unlock',
+    'trace',
+    'search',
+    'connect'
+]
 
-export type HttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete' | 'head' | 'connect' | 'trace'
+export type HttpMethod =
+    | 'get'
+    | 'head'
+    | 'patch'
+    | 'post'
+    | 'put'
+    | 'delete'
+    | 'options'
+    | 'propfind'
+    | 'proppatch'
+    | 'mkcol'
+    | 'copy'
+    | 'move'
+    | 'lock'
+    | 'unlock'
+    | 'trace'
+    | 'search'
+    | 'connect'
 
 export interface HttpAcceptorInterface {
 
@@ -218,9 +259,27 @@ export interface HttpAcceptorInterface {
 
     head?: (...args) => any
 
-    connect?: (...args) => any
+    options?: (...args) => any
+
+    propfind?: (...args) => any
+
+    proppatch?: (...args) => any
+
+    mkcol?: (...args) => any
+
+    copy?: (...args) => any
+
+    move?: (...args) => any
+
+    lock?: (...args) => any
+
+    unlock?: (...args) => any
 
     trace?: (...args) => any
+
+    search?: (...args) => any
+
+    connect?: (...args) => any
 }
 
 export interface HttpResponderInterface {

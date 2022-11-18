@@ -24,5 +24,8 @@ export = <AppConfigInterface>Object.freeze({
     routes,
     exception: {
         template: 'exception'
+    },
+    static: {
+        // serve: false
     }
 })

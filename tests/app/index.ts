@@ -2,6 +2,7 @@ import {App} from "../../core/app"
 import {SampleService} from "./services/sample";
 import {Sample2Controller} from "./controllers/sample2_controller";
 import {measure, fs} from "../../utils";
+import {Service} from "../../core/service";
 
 const config = require('./config')
 
@@ -118,39 +119,12 @@ new App({...config}).init().then(async app => {
     //     return { foo, id }
     // })
 
-    http.get('/', ({service, model, scope}) => {
-
-        // measure.init()
-
-        // measure.start('A')
-
-        // app.get('service').require('sample').call([scope])
-
-        // measure.end('A', 'B')
-
-        // new SampleService(scope)
-
-        // measure.start('C')
+    http.get('/', ({service, model}) => {
 
         // service().sample
 
-        // measure.end('C', 'D')
-
-        // console.log(scope.service().sample)
-        // console.log(scope.model().sub.sample)
-
-        // console.log(scope.service())
-        // console.log(scope.model())
-
-        // measure.start('A')
-
-        /*scope.http.respond.view('index', {
-            title: 'Sample2',
-            message: 'This arguments has been passed into controller action by parsing HTTP route',~
-            args: {foo: 1, id: 1}
-        })*/
-
-        // measure.end('A', 'B')
+        // console.log(service().sample)
+        // console.log(model().sub.sample)
 
         return {ok: true}
 
@@ -183,7 +157,7 @@ new App({...config}).init().then(async app => {
 
         console.log('----------------------------')
 
-        console.log('current URL data:', http.url)
+        console.log('current HOST data:', http.host)
 
         http.respond.view('index', {
             title: 'Sample Http Service',

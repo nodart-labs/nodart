@@ -1,6 +1,6 @@
 import {$, fs, object} from '../utils'
 import {App, AppExceptionResolve} from './app'
-import {AppConfigInterface} from "./interfaces/app";
+import {AppConfigInterface, AppStoreInterface} from "./interfaces/app";
 import {HttpExceptionHandler, RuntimeExceptionHandler, HttpException, RuntimeException, ExceptionLog} from "./exception";
 import {ControllerLoader} from "../loaders/controller_loader";
 import {ModelLoader} from "../loaders/model_loader";
@@ -16,26 +16,20 @@ import {ExceptionHandlerLoader} from "../loaders/exception_handler_loader";
 import {ExceptionLogLoader} from "../loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "../loaders/exception_template_loader";
 import {AppBuilderLoader} from "../loaders/app_builder_loader";
-import {HttpServiceLoader} from "../loaders/http_service_loader";
 import {HttpFormDataLoader} from "../loaders/http_form_data_loader";
 
-const STORE = require('../store/system')
+export const SYSTEM_STORE: AppStoreInterface = require('../store/system')
 
-export const SYSTEM_STORE: string = 'store' //system store repository name
+export const SYSTEM_STORE_REPOSITORY: string = 'store' //system store repository name
 export const SYSTEM_STORE_NAME: string = 'system_store'
 export const SYSTEM_STATE_NAME: string = 'system'
-export const CLIENT_STORE: string = 'store' //client store repository name
+export const CLIENT_STORE_REPOSITORY: string = 'store' //client store repository name
 export const CLIENT_STORE_NAME: string = 'app_store'
 export const CLIENT_STATE_NAME: string = 'app'
-export const SYSTEM_EVENTS = {
-    [STORE.events.HTTP_REQUEST]: require('../events/http_request'),
-    [STORE.events.HTTP_RESPONSE]: require('../events/http_response'),
-}
 
 export const DEFAULT_CONTROLLER_NAME = 'index'
 export const DEFAULT_STATIC_INDEX = 'index.html'
 export const DEFAULT_STATIC_REPOSITORY = 'static'
-export const DEFAULT_STATIC_FAVICON = 'favicon.ico'
 
 export const DEFAULT_DATABASE_REPOSITORY = 'database'
 export const DEFAULT_DATABASE_MIGRATION_REPOSITORY = 'migrations'
@@ -71,9 +65,9 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     orm: {},
     database: DEFAULT_DATABASE_REPOSITORY,
     static: {
+        serve: true,
         dirname: DEFAULT_STATIC_REPOSITORY,
         index: DEFAULT_STATIC_INDEX,
-        favicon: DEFAULT_STATIC_FAVICON,
     },
     exception: {
         resolve: AppExceptionResolve,
@@ -91,7 +85,6 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
         app_builder: AppBuilderLoader,
         http: HttpClientLoader,
         http_form: HttpFormDataLoader,
-        http_service: HttpServiceLoader,
         controller: ControllerLoader,
         model: ModelLoader,
         store: StoreLoader,
@@ -120,7 +113,7 @@ export class AppConfig {
     }
 
     get get (): AppConfigInterface {
-        return {...this._config}
+        return this._config
     }
 
     getStrict(keyPathDotted: string) {

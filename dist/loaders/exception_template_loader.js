@@ -6,7 +6,7 @@ class ExceptionTemplateLoader extends app_loader_1.AppLoader {
     getTemplate(response) {
         var _a;
         const template = (_a = this.app.config.get.exception) === null || _a === void 0 ? void 0 : _a.template;
-        return template instanceof Function ? template(response) : template;
+        return typeof template === 'function' ? template(response) : template;
     }
     call(args) {
         const template = this.getTemplate(args[0]);

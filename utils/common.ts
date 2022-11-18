@@ -5,7 +5,7 @@ export = {
     },
 
     isPlainObject(value: any) {
-        return value instanceof Object && value.constructor === Object
+        return value && typeof value === 'object' && value.constructor === Object
     },
 
     isObject(value: any) {

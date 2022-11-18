@@ -1,19 +1,23 @@
 import {$} from '../utils'
 import {
     RouteEntry,
+    RouteDescriptor,
     RouteData,
     RouterEntries,
     RouterParamEntries,
     RouterParamEntryRoutes,
-    RouteDescriptorParamTypes, RouteDescriptor
+    RouteDescriptorParamTypes,
+    RouterParamsData,
 } from "./interfaces/router";
-import {HTTP_METHODS, HttpMethod, HttpURL} from "./interfaces/http";
+import {HTTP_METHODS, HttpMethod} from "./interfaces/http";
 
 export class Router {
 
     readonly entries: RouterEntries = {}
 
     readonly paramEntries: RouterParamEntries = {}
+
+    protected _paramsData: RouterParamsData = {}
 
     protected _paramEntryPointers = {
         param: ':',
@@ -34,12 +38,12 @@ export class Router {
 
             Array.isArray(data) || (data = [data])
 
-            for (let route of data as RouteData[]) {
+            for (let route of data as RouteDescriptor[]) {
 
                 const routeData = typeof route === 'string' ? {path: route} : route
 
                 this.addRoute(
-                    routeData as RouteData,
+                    routeData as RouteDescriptor,
                     (HTTP_METHODS.includes(route.action) ? route.action : 'any') as HttpMethod,
                     name
                 )
@@ -54,6 +58,7 @@ export class Router {
         data.path = $.trimPath(data.path)
         data.path ||= '/'
         data.route = route || ''
+        data.types && typeof data.types === 'object' && (data.types = Object.freeze(data.types))
 
         if (false === data.path.includes(this._paramEntryPointers.param)) {
             this.entries[data.path] ||= {}
@@ -66,7 +71,12 @@ export class Router {
 
     protected _addParamEntry(data: RouteData, method: HttpMethod | 'any') {
 
-        const paramNames = {}
+        this._paramsData[data.path] = {
+            index: {},
+            types: {},
+            names: [],
+            path: data.path === '/' ? [] : data.path.split('/')
+        }
 
         for (const [index, entry] of data.path.split('/').entries()) {
 
@@ -82,37 +92,36 @@ export class Router {
 
             const param = entry.slice(start, end)
 
-            paramNames[index] = param
-
-            data.paramNames.push(param)
-            data.paramTypes[param] = {optional, number}
+            this._paramsData[data.path].index[index] = param
+            this._paramsData[data.path].names[index] = param
+            this._paramsData[data.path].types[param] = {optional, number}
         }
 
-        this.paramEntries[method] ||= []
-
-        const routeData = {
-            route: Object.freeze(data),
-            path: data.path === '/' ? [] : data.path.split('/'),
-            paramNames
-        }
-
-        this.paramEntries[method] = [...[routeData], ...this.paramEntries[method]]
+        this.paramEntries[method] = [...[Object.freeze(data)], ...this.paramEntries[method] || []]
     }
 
-    getRouteByURL(url: HttpURL, method: HttpMethod | 'any'): RouteData {
+    getRouteByURLPathname(pathname: string, method: HttpMethod | 'any'): Readonly<RouteData> {
 
-        const pathname = url.pathname
-        const route = url.pathname || '/'
-        const routeData = this.entries[route]?.[method] || this.entries[route]?.['any']
+        pathname = $.trimPath(pathname)
+        pathname ||= '/'
 
-        if (routeData) return this.getRouteData({...routeData, query: url.query, pathname})
+        const route = this.entries[pathname]?.[method] || this.entries[pathname]?.['any']
+
+        if (route) return this.getRouteData({...route, pathname})
 
         const routes = [...this.paramEntries[method] || [], ...this.paramEntries['any']] as RouterParamEntryRoutes
         const path = pathname.split('/')
 
-        OUTER: for (const data of routes) {
+        OUTER: for (const route of routes) {
 
-            if (path.length > data.path.length) continue
+            const paramData = this._paramsData[route.path] || {
+                names: [],
+                types: {},
+                index: {},
+                path: []
+            }
+
+            if (path.length > paramData.path.length) continue
 
             const params = {}
 
@@ -120,47 +129,41 @@ export class Router {
 
             for (const [index, entry] of path.entries()) {
 
-                const param = data.paramNames[index]
+                const param = paramData.index[index]
 
                 if (param) {
 
                     params[param] = entry
 
-                    const {number} = data.route.paramTypes[param] || {}
-                    const type = data.route.types?.[param]
+                    const number = paramData.types[param]?.number
+                    const type = route.types?.[param]
 
                     if (false === this.validateParam(params, param, {number, type})) continue OUTER
 
                     paramLength += 1
 
-                } else if (entry !== data.path[index]) continue OUTER
+                } else if (entry !== paramData.path[index]) continue OUTER
             }
 
-            if (paramLength < data.route.paramNames.length) {
+            if (paramLength < paramData.names.length) {
 
-                const types = Object.keys(data.route.paramTypes)
+                const types = Object.keys(paramData.types)
 
                 for (let i = 0; i < types.length; i++) {
 
-                    const optional = data.route.paramTypes[types[i]]?.optional
+                    const optional = paramData.types[types[i]]?.optional
 
                     if (params[types[i]] === undefined && !optional) continue OUTER
                 }
             }
 
-            return this.getRouteData({...data.route, query: url.query, params, pathname})
+            return this.getRouteData({...route, params, pathname})
         }
 
-        return this.getRouteData({query: url.query, pathname})
+        return this.getRouteData({pathname})
     }
 
-    getRouteData(assign: Omit<RouteData, 'path'> = {}): RouteData {
-
-        const extend = {} as RouteData
-
-        assign.paramNames && (extend.paramNames = assign.paramNames.slice())
-        assign.paramTypes && delete assign.paramTypes
-        assign.types && (extend.types = Object.freeze(assign.types))
+    getRouteData(assign: Partial<RouteData> = {}): RouteData {
 
         return Object.assign({
             name: '',
@@ -168,14 +171,11 @@ export class Router {
             pathname: '',
             route: '',
             action: '',
-            query: {},
             callback: null,
             controller: null,
             params: {},
             types: {},
-            paramNames: [],
-            paramTypes: {}
-        }, assign, extend)
+        }, assign)
     }
 
     validateParam(
@@ -188,7 +188,7 @@ export class Router {
 
         if (opts.number && (isNaN(params[name] = +params[name]))) return false
 
-        if (opts.type instanceof Function) params[name] = (opts.type as Function)(params[name]) ?? params[name]
+        if (typeof opts.type === 'function') params[name] = (opts.type as Function)(params[name]) ?? params[name]
 
         if (opts.type instanceof RegExp && !params[name].toString().match(<RegExp>opts.type)) return false
 
@@ -198,11 +198,12 @@ export class Router {
     arrangeRouteParams(data: RouteData) {
 
         data.params ||= {}
-        data.paramNames ||= []
+
+        const paramData = this._paramsData[data.path] || {names: []}
 
         const arrange = []
         let i = 0
-        for (; i < data.paramNames.length; i++) arrange.push(data.params[data.paramNames[i]])
+        for (; i < paramData.names.length; i++) arrange.push(data.params[paramData.names[i]])
 
         return arrange
     }

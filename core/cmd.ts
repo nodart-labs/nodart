@@ -123,8 +123,8 @@ export class CommandLine {
 
     async execute(executor: CommandExecutor) {
 
-        const data = executor instanceof Function ? await executor({app: this.app, cmd: this}) : executor
-        if (!(data instanceof Object)) return
+        const data = typeof executor === 'function' ? await executor({app: this.app, cmd: this}) : executor
+        if (!(typeof data === 'object')) return
 
         const {func, values} = await this.parser.validate(this.command, data).catch(errors => {
             console.log(errors.join("\r\n"))
@@ -261,7 +261,7 @@ export class CommandLineParser {
     parseAction(command: Command, executorData?: { [key: string]: any }): void | ActionParseData {
 
         const action = $.hyphen2Camel(command.action)
-        const actionFunc = action && executorData?.[action] instanceof Function ? executorData[action] : null
+        const actionFunc = action && typeof executorData?.[action] === 'function' ? executorData[action] : null
 
         if (!actionFunc) return
 
@@ -295,7 +295,7 @@ export class CommandLineParser {
                 return actions.length ? reject(errors) : resolve(actionData)
             }
 
-            if (executorData[actionData.action] instanceof Function) {
+            if (typeof executorData[actionData.action] === 'function') {
                 const {missing} = this.actionArgumentsValidate(actionData)
                 missing.length && errors.push(
                     `Missing required arguments: ${missing.map(v => OPTION_POINTER + v).join(', ')}.`)

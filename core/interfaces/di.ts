@@ -29,3 +29,8 @@ export type InjectionProperty = {
     value: any
     reference: string
 }
+
+export interface DependencyInterceptorInterface {
+
+    getDependency(acceptor: any, property: string, dependency: any): any
+}

@@ -7,6 +7,8 @@ import {DEFAULT_CONTROLLER_NAME} from "../core/app_config";
 import {loaders} from "../core/app";
 import {Model} from "../core/model";
 import {Service} from "../core/service";
+import {ServiceScope} from "../core/interfaces/service";
+import {object} from "../utils";
 
 export class ControllerLoader extends AppLoader {
 
@@ -78,6 +80,20 @@ export class ControllerLoader extends AppLoader {
         const controller = this.load(data.path, BaseController, rootDir)
 
         if (controller) return this.call([app, http, {...route, action: data.action}, controller])
+    }
+
+    getControllerByServiceScope(scope: ServiceScope): BaseController | void {
+
+        const controller = scope.route.controller?.(scope.route)
+
+        if (controller) {
+
+            if (false === object.isProtoConstructor(controller, BaseController))
+
+                throw `Controller loader: The provided type "${object.getProtoConstructor(controller)?.name}" is not a "Controller".`
+
+            return this.call([scope.app, scope.http, scope.route, controller])
+        }
     }
 
     onCall() {

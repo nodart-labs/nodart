@@ -1,17 +1,18 @@
-export = Object.freeze({
+import {AppStoreInterface} from "../core/interfaces/app";
+
+export = <AppStoreInterface>Object.freeze({
     states: {
         app: null,
         loaders: {
             static: null,
             http: null,
-            httpService: null,
             controller: null,
             service: null,
             model: null,
         }
     },
-    events: {
-        HTTP_REQUEST: 'HTTP_REQUEST',
-        HTTP_RESPONSE: 'HTTP_RESPONSE',
-    }
+    events: Object.freeze({
+        HTTP_REQUEST: require('../events/http_request'),
+        HTTP_RESPONSE: require('../events/http_response'),
+    })
 })

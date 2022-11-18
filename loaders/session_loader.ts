@@ -23,7 +23,7 @@ export class SessionLoader extends AppLoader {
 
         config = this.getSessionConfig(config)
 
-        return this.app.config.get.http?.session?.client instanceof Function
+        return typeof this.app.config.get.http?.session?.client === 'function'
 
             ? this.app.config.get.http.session.client(config, http)
 

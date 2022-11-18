@@ -1,10 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.injects = exports.DIContainer = exports.DependencyInterceptor = void 0;
+exports.injects = exports.DIContainer = exports.BaseDependencyInterceptor = exports.DependencyInterceptor = void 0;
 const observer_1 = require("./observer");
 class DependencyInterceptor {
 }
 exports.DependencyInterceptor = DependencyInterceptor;
+class BaseDependencyInterceptor extends DependencyInterceptor {
+    getDependency(acceptor, property, dependency) {
+    }
+}
+exports.BaseDependencyInterceptor = BaseDependencyInterceptor;
 const CONTAINER_ID = require('crypto').randomBytes(20).toString('hex');
 class DIContainer {
     constructor(scope = {}) {
@@ -15,7 +20,7 @@ class DIContainer {
         var _a;
         (_a = this.scope).references || (_a.references = {});
         scope.mediator && (this.scope.mediator = scope.mediator);
-        scope.references instanceof Object && scope.references.constructor === Object && Object.assign(this.scope.references, scope.references);
+        scope.references && typeof scope.references === 'object' && scope.references.constructor === Object && Object.assign(this.scope.references, scope.references);
     }
     getDependencyByReference(scope) {
         var _a, _b;
@@ -27,7 +32,7 @@ class DIContainer {
             if ((_b = (_a = scope.value) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.constructor)
                 return DIContainer.resolve(dependency, scope);
             dependency = this.getDependencyByReference(scope);
-            if (dependency instanceof Object && dependency.constructor === Object)
+            if (dependency && typeof dependency === 'object' && dependency.constructor === Object)
                 return this.watchDependency(scope, dependency);
         }
         return ((_c = dependency === null || dependency === void 0 ? void 0 : dependency.prototype) === null || _c === void 0 ? void 0 : _c.constructor) ? DIContainer.resolve(dependency, scope) : null;
@@ -71,11 +76,18 @@ class DIContainer {
             });
         };
     }
+    inject(target, property, reference) {
+        DIContainer.defineProperty(target, property, reference);
+    }
+    intercepted(target) {
+        var _a;
+        return DIContainer.injectable(target) && ((_a = target[DIContainer.id]) === null || _a === void 0 ? void 0 : _a.intercept) !== undefined;
+    }
     static injectable(target) {
         var _a;
-        return target instanceof Object && !((_a = target.prototype) === null || _a === void 0 ? void 0 : _a.constructor);
+        return !!(target && typeof target === 'object' && !((_a = target.prototype) === null || _a === void 0 ? void 0 : _a.constructor));
     }
-    static inject(target, property, reference) {
+    static defineProperty(target, property, reference) {
         DIContainer.injectable(target) && Object.defineProperty(target, property, {
             get: function () {
                 return DIContainer.container(this).intercept(property, reference);
@@ -92,7 +104,7 @@ exports.DIContainer = DIContainer;
 DIContainer.id = CONTAINER_ID;
 function injects(reference) {
     return function (target, property) {
-        DIContainer.inject(target, property, reference);
+        DIContainer.defineProperty(target, property, reference);
     };
 }
 exports.injects = injects;

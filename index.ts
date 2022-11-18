@@ -2,10 +2,10 @@ import {App, AppFactory, AppModule, AppModuleFacade, AppExceptionResolve, AppBui
 import {AppConfig} from "./core/app_config";
 import {AppLoader} from "./core/app_loader";
 import {Store, State} from "./core/store";
-import {DIContainer, DependencyInterceptor, injects} from "./core/di";
+import {DIContainer, DependencyInterceptor, BaseDependencyInterceptor, injects} from "./core/di";
 import {BaseController, Controller} from "./core/controller";
 import {Engine} from "./core/engine";
-import {Service} from "./core/service";
+import {Service, ServiceFactory} from "./core/service";
 import {Model} from "./core/model";
 import {Orm, OrmMigrationSource, OrmMigrator, OrmSeedSource, OrmSeeder} from "./core/orm";
 import {HttpClient, HttpFormData} from "./core/http_client";
@@ -36,7 +36,6 @@ import {HttpClientLoader} from "./loaders/http_client_loader";
 import {HttpFormDataLoader} from "./loaders/http_form_data_loader";
 import {ExceptionLogLoader} from "./loaders/exception_log_loader";
 import {ExceptionTemplateLoader} from "./loaders/exception_template_loader";
-import {HttpServiceLoader} from "./loaders/http_service_loader";
 
 import * as nodart from "./core/interfaces"
 import * as cli from "./core/cmd"
@@ -66,6 +65,7 @@ export {
     State,
     DIContainer,
     DependencyInterceptor,
+    BaseDependencyInterceptor,
     HttpClient,
     HttpFormData,
     HttpResponder,
@@ -86,6 +86,7 @@ export {
     OrmSeedSource,
     OrmSeeder,
     Service,
+    ServiceFactory,
     Observer,
     Exception,
     ExceptionHandler,
@@ -110,5 +111,4 @@ export {
     CommandLineLoader,
     HttpClientLoader,
     HttpFormDataLoader,
-    HttpServiceLoader,
 }

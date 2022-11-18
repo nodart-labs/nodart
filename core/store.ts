@@ -38,7 +38,7 @@ export class State {
         if (this._states[storeName]) return this._states[storeName]
 
         const storeObject = fs.include(fs.join(this.repo, storeName))
-        const store = storeObject instanceof Object ? object.copy(storeObject) : {}
+        const store = storeObject && typeof storeObject === 'object' ? object.copy(storeObject) : {}
 
         store.states ||= {}
         store.events ||= {}

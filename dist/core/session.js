@@ -14,11 +14,14 @@ class Session {
         return this;
     }
     get get() {
-        var _a;
-        return (_a = this._session) !== null && _a !== void 0 ? _a : {};
+        return this._session || {};
     }
     set(data) {
         Object.assign(this.get, data);
+    }
+    unset(key) {
+        Array.isArray(key) || (key = [key]);
+        key.forEach(k => k in this.get && delete this.get[k]);
     }
 }
 exports.Session = Session;

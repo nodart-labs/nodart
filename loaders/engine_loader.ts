@@ -33,7 +33,7 @@ export class EngineLoader extends AppLoader {
 
         config = this.getEngineConfig(config)
 
-        return this.app.config.get.http?.engine?.client instanceof Function
+        return typeof this.app.config.get.http?.engine?.client === 'function'
 
             ? this.app.config.get.http.engine.client(config)
 

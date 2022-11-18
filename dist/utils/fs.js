@@ -129,11 +129,13 @@ const include = function (path, params = { log: true }) {
 const getSource = function (path, sourceProtoObject) {
     try {
         const data = cashier.isFile(path) ? cashier.files[path].data : require(path);
-        if (!(data instanceof Object))
-            return null;
-        for (const key of Object.keys(data)) {
-            if (index_1.object.isProtoConstructor(data[key], sourceProtoObject))
-                return data[key];
+        if (!(data && typeof data === 'object'))
+            return;
+        const keys = Object.keys(data);
+        let i = 0;
+        for (; i < keys.length; i++) {
+            if (index_1.object.isProtoConstructor(data[keys[i]], sourceProtoObject))
+                return data[keys[i]];
         }
     }
     catch (_a) {

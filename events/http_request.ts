@@ -1,16 +1,19 @@
 import {Http2ServerRequest, Http2ServerResponse} from "http2";
 import {App, loaders} from "../core/app";
 import {JSON_CONTENT_TYPE, HttpClient} from "../core/http_client";
-import {HTTP_METHODS, HTTP_STATUS} from "../core/interfaces/http";
+import {HTTP_CONTENT_MIME_TYPES, HTTP_METHODS, HTTP_STATUS} from "../core/interfaces/http";
 import {HttpException} from "../core/exception";
 import {CONTROLLER_INITIAL_ACTION} from "../core/controller";
+import {AppEventHttpRequestInterface} from "../core/interfaces/app";
+import {measure} from "../utils";
 
 const warnings = {
     useCors: false,
+    serveStatic: false,
     fetchDataOnRequest: false
 }
 
-export = async (app: App, request: Http2ServerRequest, response: Http2ServerResponse) => {
+export = <AppEventHttpRequestInterface>(async (app: App, request: Http2ServerRequest, response: Http2ServerResponse) => {
 
     if (HttpClient.getResponseIsSent(response)) return
 
@@ -35,34 +38,46 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
         warnings.useCors = true
 
-        console.log('The CORS headers are disabled in configuration. Set "useCors" to enable if needed.')
+        console.log('The CORS headers are disabled in configuration.')
     }
 
     /**************************************
      SERVE STATIC
      ***************************************/
 
-    const path = loaders().static.call([app, config, response], request.url)
+    if (config.static?.serve) {
 
-    if (false === path) return
+        const pathname = request.url.includes('?') ? request.url.split('?')[0] : request.url
+        const path = loaders().static.call([config], pathname)
+        const sent = path && (await loaders().static.serve(path, {
+            app,
+            mimeTypes: HttpClient.mimeTypes(configHttp.mimeTypes),
+            request,
+            response
+        }))
 
-    const sent = path && (await loaders().static.send(path as string, {
-        app,
-        mimeTypes: HttpClient.mimeTypes(configHttp.mimeTypes),
-        request,
-        response
-    }))
+        if (false === sent) {
+            response.writeHead(HTTP_STATUS.NO_CONTENT, {'Content-Type': HTTP_CONTENT_MIME_TYPES.icon})
+            response.end()
+            return
+        }
 
-    if (sent) return
+        if (sent) return
 
+    } else if (!warnings.serveStatic) {
+
+        warnings.serveStatic = true
+
+        console.log('Static files serve is disabled in configuration.')
+    }
 
     /**************************************
      FETCHING REQUEST DATA
      ***************************************/
 
-    const url = HttpClient.getParsedURL(HttpClient.getURI(app.host) + request.url)
+    const {url, query, queryString} = HttpClient.parseURL(request.url)
 
-    const http = loaders().http.call([app, {request, response, url, host: app.host}])
+    const http = loaders().http.call([app, {host: app.host, uri: app.uri, query, queryString, request, response}])
 
     if (configHttp.fetchDataOnRequest) {
 
@@ -79,13 +94,13 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
      HTTP HANDLER
      ***************************************/
 
-    const route = app.router.getRouteByURL(url, http.method)
+    const route = app.router.getRouteByURLPathname(url, http.method)
 
-    if (route.callback instanceof Function) {
+    if (route.callback) {
 
-        const service = loaders().httpService.call([{http, route, app}])
+        const scope = app.factory.service.createServiceScope(http, route)
 
-        const data = await route.callback(service.scope)
+        const data = await route.callback(scope)
 
         if (HttpClient.getResponseIsSent(response)) return
 
@@ -94,7 +109,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
         return
     }
 
-    const controller = loaders().httpService.getController({app, route, http}, loaders().controller)
+    const controller = loaders().controller.getControllerByServiceScope({app, route, http})
 
         || loaders().controller.getControllerByRoute(app, route, http)
 
@@ -110,7 +125,7 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
 
     if (HTTP_METHODS.includes(action) && action !== http.method) HttpClient.throwBadRequest()
 
-    if (controller[action] instanceof Function) {
+    if (typeof controller[action] === 'function') {
 
         const args = app.router.arrangeRouteParams(route)
 
@@ -124,4 +139,4 @@ export = async (app: App, request: Http2ServerRequest, response: Http2ServerResp
     }
 
     HttpClient.throwNoContent()
-}
+})

@@ -7,7 +7,7 @@ export class ExceptionTemplateLoader extends AppLoader {
 
         const template = this.app.config.get.exception?.template
 
-        return template instanceof Function ? template(response) : template
+        return typeof template === 'function' ? template(response) : template
     }
 
     call(args: [response: HttpResponseDataInterface]): string | void {

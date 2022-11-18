@@ -4,7 +4,7 @@ module.exports = {
         return value === null || value === undefined;
     },
     isPlainObject(value) {
-        return value instanceof Object && value.constructor === Object;
+        return value && typeof value === 'object' && value.constructor === Object;
     },
     isObject(value) {
         const type = typeof value;

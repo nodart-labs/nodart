@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_FAVICON = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.SYSTEM_EVENTS = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE = void 0;
+exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE_REPOSITORY = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE_REPOSITORY = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const app_1 = require("./app");
 const exception_1 = require("./exception");
@@ -18,23 +18,17 @@ const exception_handler_loader_1 = require("../loaders/exception_handler_loader"
 const exception_log_loader_1 = require("../loaders/exception_log_loader");
 const exception_template_loader_1 = require("../loaders/exception_template_loader");
 const app_builder_loader_1 = require("../loaders/app_builder_loader");
-const http_service_loader_1 = require("../loaders/http_service_loader");
 const http_form_data_loader_1 = require("../loaders/http_form_data_loader");
-const STORE = require('../store/system');
-exports.SYSTEM_STORE = 'store'; //system store repository name
+exports.SYSTEM_STORE = require('../store/system');
+exports.SYSTEM_STORE_REPOSITORY = 'store'; //system store repository name
 exports.SYSTEM_STORE_NAME = 'system_store';
 exports.SYSTEM_STATE_NAME = 'system';
-exports.CLIENT_STORE = 'store'; //client store repository name
+exports.CLIENT_STORE_REPOSITORY = 'store'; //client store repository name
 exports.CLIENT_STORE_NAME = 'app_store';
 exports.CLIENT_STATE_NAME = 'app';
-exports.SYSTEM_EVENTS = {
-    [STORE.events.HTTP_REQUEST]: require('../events/http_request'),
-    [STORE.events.HTTP_RESPONSE]: require('../events/http_response'),
-};
 exports.DEFAULT_CONTROLLER_NAME = 'index';
 exports.DEFAULT_STATIC_INDEX = 'index.html';
 exports.DEFAULT_STATIC_REPOSITORY = 'static';
-exports.DEFAULT_STATIC_FAVICON = 'favicon.ico';
 exports.DEFAULT_DATABASE_REPOSITORY = 'database';
 exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = 'migrations';
 exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = 'migration_sources';
@@ -67,9 +61,9 @@ exports.APP_CONFIG = Object.freeze({
     orm: {},
     database: exports.DEFAULT_DATABASE_REPOSITORY,
     static: {
+        serve: true,
         dirname: exports.DEFAULT_STATIC_REPOSITORY,
         index: exports.DEFAULT_STATIC_INDEX,
-        favicon: exports.DEFAULT_STATIC_FAVICON,
     },
     exception: {
         resolve: app_1.AppExceptionResolve,
@@ -87,7 +81,6 @@ exports.APP_CONFIG = Object.freeze({
         app_builder: app_builder_loader_1.AppBuilderLoader,
         http: http_client_loader_1.HttpClientLoader,
         http_form: http_form_data_loader_1.HttpFormDataLoader,
-        http_service: http_service_loader_1.HttpServiceLoader,
         controller: controller_loader_1.ControllerLoader,
         model: model_loader_1.ModelLoader,
         store: store_loader_1.StoreLoader,
@@ -111,7 +104,7 @@ class AppConfig {
         this._config = Object.assign({}, exports.APP_CONFIG);
     }
     get get() {
-        return Object.assign({}, this._config);
+        return this._config;
     }
     getStrict(keyPathDotted) {
         var _a;

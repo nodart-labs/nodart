@@ -7,10 +7,11 @@ import {
     HttpDataInterface
 } from "../core/interfaces/http";
 import {RuntimeException} from "../core/exception";
+import {SYSTEM_STORE} from "../core/app_config";
 
 export class HttpClientLoader extends AppLoader {
 
-    call(args: [app: App, config: HttpContainerConfigInterface & HttpDataInterface]): HttpContainer {
+    call(args: [app: App, config: Omit<HttpContainerConfigInterface & HttpDataInterface, 'method' | 'data' | 'form'>]): HttpContainer {
 
         const app = args[0]
         const config = {...app.config.get.http, ...args[1] || {}} as HttpContainerConfigInterface & HttpDataInterface
@@ -20,14 +21,10 @@ export class HttpClientLoader extends AppLoader {
 
         container.assignData({
             onSetResponseData: config.onSetResponseData || (async function (data: HttpResponseData) {
-                await App.system.listen({
-                    event: {
-                        [App.system.events.HTTP_RESPONSE]: [app, container.getHttpResponse(data)]
-                    }
-                })
+                await SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data))
             }),
             onError: config.onError || (async function () {
-                await app.resolveException(new RuntimeException(container), this.request, this.response)
+                await app.resolveException(new RuntimeException(container), container.request, container.response)
             }),
             session: {
                 config: session.config,

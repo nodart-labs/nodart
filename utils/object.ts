@@ -5,7 +5,8 @@ const $ = require('./common')
 export = {
 
     getProtoConstructor(target) {
-        return target instanceof Object ? target.prototype?.constructor : null
+
+        return target?.prototype?.constructor
     },
 
     isProtoConstructor(target, protoObject?: any) {
@@ -21,7 +22,9 @@ export = {
 
     get(obj: object, dottedPath: string, def?: any) {
         return dottedPath.split('.').reduce((acc, part) => {
-            return (acc instanceof Object && acc[part] !== undefined) ? acc[part] : (def !== undefined ? def : undefined)
+            return (acc && typeof acc === 'object' && acc[part] !== undefined)
+                ? acc[part]
+                : (def !== undefined ? def : undefined)
         }, obj)
     },
 

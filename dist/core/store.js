@@ -36,7 +36,7 @@ class State {
         if (this._states[storeName])
             return this._states[storeName];
         const storeObject = utils_1.fs.include(utils_1.fs.join(this.repo, storeName));
-        const store = storeObject instanceof Object ? utils_1.object.copy(storeObject) : {};
+        const store = storeObject && typeof storeObject === 'object' ? utils_1.object.copy(storeObject) : {};
         store.states || (store.states = {});
         store.events || (store.events = {});
         store.listeners || (store.listeners = []);

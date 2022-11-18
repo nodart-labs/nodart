@@ -1,6 +1,6 @@
 import {App} from "../core/app";
 import {fs, object, $, measure} from "../utils";
-import {DEFAULT_CMD_DIR, DEFAULT_STATIC_FAVICON} from "../core/app_config";
+import {DEFAULT_CMD_DIR} from "../core/app_config";
 import {FSCashier} from "../utils/fs_cashier";
 import {Model} from "../core/model";
 import {Service} from "../core/service";
@@ -36,20 +36,6 @@ export class CashierService {
     cacheAppFolder() {
 
         this.fs.cacheFolder(this.app.rootDir)
-
-        const staticLoader = this.app.get('static')
-
-        const staticIndex = fs.join(staticLoader.getRepo(), this.app.config.get.static?.index)
-
-        const favicon = fs.join(staticLoader.getRepo(), this.app.config.get.static?.favicon || DEFAULT_STATIC_FAVICON)
-
-        this.fs.addFile(staticIndex)
-
-        this.fs.watchFile(staticIndex)
-
-        this.fs.addFile(favicon)
-
-        this.fs.watchFile(favicon)
 
         this._fetchSources('model')
 

@@ -27,15 +27,7 @@ class CashierService {
         this.fs = new fs_cashier_1.FSCashier({ excludeFolders, extensions: ['ts', 'js'] });
     }
     cacheAppFolder() {
-        var _a, _b;
         this.fs.cacheFolder(this.app.rootDir);
-        const staticLoader = this.app.get('static');
-        const staticIndex = utils_1.fs.join(staticLoader.getRepo(), (_a = this.app.config.get.static) === null || _a === void 0 ? void 0 : _a.index);
-        const favicon = utils_1.fs.join(staticLoader.getRepo(), ((_b = this.app.config.get.static) === null || _b === void 0 ? void 0 : _b.favicon) || app_config_1.DEFAULT_STATIC_FAVICON);
-        this.fs.addFile(staticIndex);
-        this.fs.watchFile(staticIndex);
-        this.fs.addFile(favicon);
-        this.fs.watchFile(favicon);
         this._fetchSources('model');
         this._fetchSources('service');
     }

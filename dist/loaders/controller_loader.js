@@ -5,6 +5,7 @@ const app_loader_1 = require("../core/app_loader");
 const controller_1 = require("../core/controller");
 const app_config_1 = require("../core/app_config");
 const app_1 = require("../core/app");
+const utils_1 = require("../utils");
 class ControllerLoader extends app_loader_1.AppLoader {
     constructor() {
         super(...arguments);
@@ -58,6 +59,15 @@ class ControllerLoader extends app_loader_1.AppLoader {
         const controller = this.load(data.path, controller_1.BaseController, rootDir);
         if (controller)
             return this.call([app, http, Object.assign(Object.assign({}, route), { action: data.action }), controller]);
+    }
+    getControllerByServiceScope(scope) {
+        var _a, _b, _c;
+        const controller = (_b = (_a = scope.route).controller) === null || _b === void 0 ? void 0 : _b.call(_a, scope.route);
+        if (controller) {
+            if (false === utils_1.object.isProtoConstructor(controller, controller_1.BaseController))
+                throw `Controller loader: The provided type "${(_c = utils_1.object.getProtoConstructor(controller)) === null || _c === void 0 ? void 0 : _c.name}" is not a "Controller".`;
+            return this.call([scope.app, scope.http, scope.route, controller]);
+        }
     }
     onCall() {
     }

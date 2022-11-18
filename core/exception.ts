@@ -14,7 +14,7 @@ export abstract class Exception {
 
     constructor(exception: string | JSONLikeInterface | BaseExceptionInterface, protected _assign?: any) {
 
-        if (exception instanceof Object && !exception.hasOwnProperty('exceptionMessage'))
+        if (typeof exception === 'object' && !exception.hasOwnProperty('exceptionMessage'))
 
             exception = JSON.stringify(exception)
 
@@ -123,7 +123,7 @@ export class ExceptionLog {
         const exception = isException ? (this.source.exceptionData ?? this.source.exception) : {} as BaseExceptionInterface
         const exceptionMessage = typeof this.source === 'string'
             ? this.source
-            : this.source instanceof Object ? exception.exceptionMessage ?? '' : ''
+            : typeof this.source === 'object' ? exception.exceptionMessage ?? '' : ''
         const exceptionData = isException ? exception.exceptionData : this.source
 
         return {...exception, ...{exceptionMessage, exceptionData}}
@@ -180,7 +180,7 @@ export class ExceptionLog {
 
         this.http = (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException
             ? exception
-            : new HttpContainer({request, response}))
+            : {request, response} as BaseHttpResponseInterface)
 
         this.http.exceptionMessage = exception.exceptionMessage
         this.http.exceptionData = exception.exceptionData || exception.exceptionMessage

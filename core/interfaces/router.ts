@@ -6,7 +6,16 @@ export type RouterEntries = { [path: string]: { [K in HttpMethod]?: RouteData } 
 
 export type RouterParamEntries = { [K in HttpMethod]?: RouterParamEntryRoutes }
 
-export type RouterParamEntryRoutes = Array<{ route: RouteData, path: string[], paramNames: { [index: string]: string } }>
+export type RouterParamEntryRoutes = Array<RouteData>
+
+export type RouterParamsData = {
+    [routePath: string]: {
+        index: {[index: string]: string},
+        names: string[],
+        types: { [name: string]: { optional?: boolean, number?: boolean } },
+        path: string[],
+    }
+}
 
 export type RouteEntry = { [name: string]: Route }
 
@@ -19,7 +28,7 @@ export type RouteDescriptor = {
     name?: string,
     action?: string,
     controller?: (route: RouteData) => typeof BaseController
-    types?: { [paramName: string]: RouteDescriptorParamTypes },
+    types?: { [param: string]: RouteDescriptorParamTypes },
     [addon: string]: any
 }
 
@@ -27,8 +36,5 @@ export type RouteData = RouteDescriptor & {
     pathname: string,
     route?: string,
     params?: { [name: string]: string | number },
-    paramNames?: string[],
-    paramTypes?: { [name: string]: { optional?: boolean, number?: boolean } },
-    query?: { [name: string]: any },
     callback?: HttpServiceCallback
 }

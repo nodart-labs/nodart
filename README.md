@@ -145,7 +145,7 @@ new App({...config}).start(3000).then(({app, http, server}) => {
 
         const {first, second, optional_id} = route.params
 
-        const {queryParam} = route.query
+        const {httpQueryStringParam} = http.query
 
         // sending template from views folder:
         http.respond.view('path/to/template/from/views/folder', {queryParam})
@@ -220,7 +220,42 @@ export class SampleService extends Service {
 
 ---
 
-### START UNDER DEVELOPMENT SERVER
+### CREATION OF CUSTOM SERVER
+
+```typescript
+new App({...config}).init().then(async app => {
+
+    const server = await app.serve(3000, 'https', '127.0.0.1', () => {
+
+        const fs = require('fs')
+
+        const ssl = {
+            cert: fs.readFileSync('./localhost.crt'),
+            key: fs.readFileSync('./localhost.key')
+        }
+
+        return require('https').createServer(ssl)
+    })
+})
+```
+
+```typescript
+new App({...config}).start(3000, 'http', '127.0.0.1', (app) => {
+    
+    return require('http').createServer((req, res) => {
+
+        app.resolveHttpRequest(req, res)
+        
+    })
+
+}).then(({app, http, server}) => {
+    //...
+})
+```
+
+---
+
+### START UNDER DEVELOPMENT
 
 ```shell
 npm run dev
@@ -237,7 +272,7 @@ npm run start
 ### BENCHMARKS
 
 The framework is built on the premise that performance
-and application architecture should be perfectly balanced.
+and functionality should be perfectly balanced.
 The performance of some well-known **server-side** frameworks is compared here.
 
 >
@@ -265,7 +300,7 @@ http.get('/', () => {
 
 | Framework         | Bytes/sec   | Requests/sec |
 |-------------------|-------------|--------------|
-| Fastify v4.0.0    | 1.93 MB     | 10247        |
+| Fastify v4.0.0    | 1.91 MB     | 10183        |
 | **NodArt v4.0.0** | **2.08 MB** | **10119**    |
 | Express v4.18.2   | 1.94 MB     | 7683         |
 | Nest.js v9.0.0    | 1.61 MB     | 6395         |
@@ -306,8 +341,8 @@ http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
 | Framework           | Bytes/sec   | Requests/sec |
 |---------------------|-------------|--------------|
 | **NodArt v4.0.0**   | **1.84 MB** | **6399**     |
+| Fastify v4.0.0      | 2.32 MB     | 5295         |
 | Express v4.18.2     | 2 MB        | 4343         |
-| Fastify v4.0.0      | 1.83 MB     | 4187         |
 | Nest.js v9.0.0      | 1.87 MB     | 4057         |
 
 
@@ -318,13 +353,13 @@ http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
 ### System Commands:
 
 ```shell
-npx nodart [command name] [command action (optional)] --[argument name (optional)] [argument value]
+npx nodart [command name] [command action optional] --[argument name optional] [argument value]
 ```
 
 ### App Commands:
 
 ```shell
-node cmd [command name] [command action (optional)] --[argument name (optional)] [argument value]
+node cmd [command name] [command action optional] --[argument name optional] [argument value]
 ```
 
 ---

@@ -7,11 +7,10 @@ import {JSONObjectInterface} from "./object";
 export type ServiceScope = {
     app?: App
     http?: HttpContainer
-    route?: RouteData
+    route?: Readonly<RouteData>
     controller?: () => BaseController | void
     model?: () => any
     service?: () => any
-    scope?: ServiceScope
     [addon: string]: any
 }
 

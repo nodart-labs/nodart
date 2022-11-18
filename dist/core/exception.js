@@ -20,7 +20,7 @@ class Exception {
             exceptionMessage: '',
             exceptionData: undefined
         };
-        if (exception instanceof Object && !exception.hasOwnProperty('exceptionMessage'))
+        if (typeof exception === 'object' && !exception.hasOwnProperty('exceptionMessage'))
             exception = JSON.stringify(exception);
         this.exception = typeof exception === 'string'
             ? { exceptionMessage: exception, exceptionData: undefined }
@@ -101,7 +101,7 @@ class ExceptionLog {
         const exception = isException ? ((_a = this.source.exceptionData) !== null && _a !== void 0 ? _a : this.source.exception) : {};
         const exceptionMessage = typeof this.source === 'string'
             ? this.source
-            : this.source instanceof Object ? (_b = exception.exceptionMessage) !== null && _b !== void 0 ? _b : '' : '';
+            : typeof this.source === 'object' ? (_b = exception.exceptionMessage) !== null && _b !== void 0 ? _b : '' : '';
         const exceptionData = isException ? exception.exceptionData : this.source;
         return Object.assign(Object.assign({}, exception), { exceptionMessage, exceptionData });
     }
@@ -143,7 +143,7 @@ class ExceptionLog {
         exception.response || (exception.response = response);
         this.http = (this.source instanceof HttpExceptionHandler || this.source instanceof HttpException
             ? exception
-            : new http_client_1.HttpContainer({ request, response }));
+            : { request, response });
         this.http.exceptionMessage = exception.exceptionMessage;
         this.http.exceptionData = exception.exceptionData || exception.exceptionMessage;
         (_a = this.http).responseData || (_a.responseData = {});

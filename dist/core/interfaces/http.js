@@ -1,7 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HTTP_STATUS = exports.HTTP_CONTENT_MIME_TYPES = exports.HTTP_METHODS = void 0;
-exports.HTTP_METHODS = ['get', 'post', 'patch', 'put', 'delete', 'head', 'connect', 'trace'];
+exports.HTTP_METHODS = [
+    'get',
+    'head',
+    'patch',
+    'post',
+    'put',
+    'delete',
+    'options',
+    'propfind',
+    'proppatch',
+    'mkcol',
+    'copy',
+    'move',
+    'lock',
+    'unlock',
+    'trace',
+    'search',
+    'connect'
+];
 exports.HTTP_CONTENT_MIME_TYPES = Object.freeze({
     html: 'text/html',
     htm: 'text/html',

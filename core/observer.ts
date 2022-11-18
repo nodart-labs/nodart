@@ -51,7 +51,7 @@ export class Observer {
     }
 
     static isObject(data: any) {
-        return data instanceof Object && data.constructor === Object
+        return data && typeof data === 'object' && data.constructor === Object
     }
 
 }
@@ -128,7 +128,7 @@ class Observable {
 
     private static isStackPointer(source: any, prop: string): boolean {
         return ((Array.isArray(source) && isNaN(+prop))
-                || (source instanceof Object && !source.hasOwnProperty(prop)))
+                || (source && typeof source === 'object' && !source.hasOwnProperty(prop)))
             || Observable._stackPointer === prop && !(prop in source)
     }
 
