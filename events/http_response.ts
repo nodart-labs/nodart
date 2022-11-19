@@ -3,7 +3,7 @@ import {HttpClient} from "../core/http_client";
 import {BaseHttpResponseInterface} from "../core/interfaces/http";
 import {AppEventHttpResponseInterface} from "../core/interfaces/app";
 
-export = <AppEventHttpResponseInterface>(async (app: App, http: BaseHttpResponseInterface) => {
+export = <AppEventHttpResponseInterface>((app: App, http: BaseHttpResponseInterface) => {
 
     if (HttpClient.getResponseIsSent(http.response)) return
 

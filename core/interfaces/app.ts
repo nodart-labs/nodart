@@ -45,11 +45,11 @@ export interface AppStateLoadersInterface {
 }
 
 export interface AppEventHttpRequestInterface {
-    (app: App, request: Http2ServerRequest, response: Http2ServerResponse): Promise<void>
+    (app: App, request: Http2ServerRequest, response: Http2ServerResponse): void
 }
 
 export interface AppEventHttpResponseInterface {
-    (app: App, http: BaseHttpResponseInterface): Promise<void>
+    (app: App, http: BaseHttpResponseInterface): void
 }
 
 export type AppLoaders = {

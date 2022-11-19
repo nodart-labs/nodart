@@ -40,33 +40,31 @@ class StaticLoader extends app_loader_1.AppLoader {
         return this.absPath(utils_1.$.trimPath(path), config.rootDir);
     }
     serve(path, scope) {
-        return new Promise((resolve) => {
-            var _a;
-            var _b, _c;
-            scope.app || (scope.app = this.app);
-            scope.mimeTypes || (scope.mimeTypes = http_client_1.HttpClient.mimeTypes((_a = scope.app.config.get.http) === null || _a === void 0 ? void 0 : _a.mimeTypes));
-            const extension = utils_1.fs.getExtension(path);
-            const readStream = utils_1.fs.system.createReadStream(path);
-            const file = { error: null, exists: true };
-            (_b = StaticLoader.cache)[_c = scope.app.rootDir] || (_b[_c] = {});
-            readStream.on('error', (err) => __awaiter(this, void 0, void 0, function* () {
-                file.exists = err.code !== 'ENOENT' && err.code !== 'EISDIR';
-                file.error = err;
-                if (file.exists)
-                    return yield scope.app.resolveException(new exception_1.HttpException({
-                        exceptionMessage: `Could not read data from file "${path.replace(this.getRepo(scope.app.rootDir), '')}".`,
-                        exceptionData: err
-                    }), scope.request, scope.response);
-                StaticLoader.cache[scope.app.rootDir][scope.request.url] = path.endsWith('favicon.ico') ? false : '';
-            }));
-            readStream.on('close', () => {
-                file.error || http_client_1.HttpClient.getResponseIsSent(scope.response) || scope.response.writeHead(http_1.HTTP_STATUS.OK, {
-                    'Content-Type': http_client_1.HttpClient.getDefaultContentType(extension, scope.mimeTypes, http_client_1.FILE_CONTENT_TYPE)
-                });
-                resolve(file.exists || StaticLoader.cache[scope.app.rootDir][scope.request.url]);
+        var _a;
+        var _b, _c;
+        scope.app || (scope.app = this.app);
+        scope.mimeTypes || (scope.mimeTypes = http_client_1.HttpClient.mimeTypes((_a = scope.app.config.get.http) === null || _a === void 0 ? void 0 : _a.mimeTypes));
+        const extension = utils_1.fs.getExtension(path);
+        const readStream = utils_1.fs.system.createReadStream(path);
+        const file = { error: null, exists: true };
+        (_b = StaticLoader.cache)[_c = scope.app.rootDir] || (_b[_c] = {});
+        readStream.on('error', (err) => __awaiter(this, void 0, void 0, function* () {
+            file.exists = err.code !== 'ENOENT' && err.code !== 'EISDIR';
+            file.error = err;
+            if (file.exists)
+                return scope.app.resolveException(new exception_1.HttpException({
+                    exceptionMessage: `Could not read data from file "${path.replace(this.getRepo(scope.app.rootDir), '')}".`,
+                    exceptionData: err
+                }), scope.request, scope.response);
+            StaticLoader.cache[scope.app.rootDir][scope.request.url] = path.endsWith('favicon.ico') ? false : '';
+        }));
+        readStream.on('close', () => {
+            file.error || http_client_1.HttpClient.getResponseIsSent(scope.response) || scope.response.writeHead(http_1.HTTP_STATUS.OK, {
+                'Content-Type': http_client_1.HttpClient.getDefaultContentType(extension, scope.mimeTypes, http_client_1.FILE_CONTENT_TYPE)
             });
-            readStream.pipe(scope.response);
+            scope.callback(file.exists || StaticLoader.cache[scope.app.rootDir][scope.request.url]);
         });
+        readStream.pipe(scope.response);
     }
     onCall() {
     }

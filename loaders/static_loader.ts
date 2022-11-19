@@ -45,47 +45,45 @@ export class StaticLoader extends AppLoader {
         app?: App,
         mimeTypes?: HttpMimeTypes,
         request: Http2ServerRequest,
-        response: Http2ServerResponse
-    }): Promise<boolean | string | undefined> {
+        response: Http2ServerResponse,
+        callback: (result: string | boolean | undefined) => any
+    }) {
 
-        return new Promise((resolve) => {
+        scope.app ||= this.app
+        scope.mimeTypes ||= HttpClient.mimeTypes(scope.app.config.get.http?.mimeTypes)
 
-            scope.app ||= this.app
-            scope.mimeTypes ||= HttpClient.mimeTypes(scope.app.config.get.http?.mimeTypes)
+        const extension = fs.getExtension(path)
+        const readStream = fs.system.createReadStream(path)
+        const file = {error: null, exists: true}
 
-            const extension = fs.getExtension(path)
-            const readStream = fs.system.createReadStream(path)
-            const file = {error: null, exists: true}
+        StaticLoader.cache[scope.app.rootDir] ||= {}
 
-            StaticLoader.cache[scope.app.rootDir] ||= {}
+        readStream.on('error', async (err) => {
 
-            readStream.on('error', async (err) => {
+            file.exists = err.code !== 'ENOENT' && err.code !== 'EISDIR'
+            file.error = err
 
-                file.exists = err.code !== 'ENOENT' && err.code !== 'EISDIR'
-                file.error = err
+            if (file.exists) return scope.app.resolveException(
+                new HttpException({
+                    exceptionMessage:
+                        `Could not read data from file "${path.replace(this.getRepo(scope.app.rootDir), '')}".`,
+                    exceptionData: err
+                }),
+                scope.request,
+                scope.response
+            )
 
-                if (file.exists) return await scope.app.resolveException(
-                    new HttpException({
-                        exceptionMessage:
-                            `Could not read data from file "${path.replace(this.getRepo(scope.app.rootDir), '')}".`,
-                        exceptionData: err
-                    }),
-                    scope.request,
-                    scope.response
-                )
-
-                StaticLoader.cache[scope.app.rootDir][scope.request.url] = path.endsWith('favicon.ico') ? false : ''
-            })
-
-            readStream.on('close', () => {
-                file.error || HttpClient.getResponseIsSent(scope.response) || scope.response.writeHead(HTTP_STATUS.OK, {
-                    'Content-Type': HttpClient.getDefaultContentType(extension, scope.mimeTypes, FILE_CONTENT_TYPE)
-                })
-                resolve(file.exists || StaticLoader.cache[scope.app.rootDir][scope.request.url])
-            })
-
-            readStream.pipe(scope.response)
+            StaticLoader.cache[scope.app.rootDir][scope.request.url] = path.endsWith('favicon.ico') ? false : ''
         })
+
+        readStream.on('close', () => {
+            file.error || HttpClient.getResponseIsSent(scope.response) || scope.response.writeHead(HTTP_STATUS.OK, {
+                'Content-Type': HttpClient.getDefaultContentType(extension, scope.mimeTypes, FILE_CONTENT_TYPE)
+            })
+            scope.callback(file.exists || StaticLoader.cache[scope.app.rootDir][scope.request.url])
+        })
+
+        readStream.pipe(scope.response)
     }
 
     onCall(): void {

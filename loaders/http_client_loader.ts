@@ -20,11 +20,11 @@ export class HttpClientLoader extends AppLoader {
         const container = new HttpContainer(config)
 
         container.assignData({
-            onSetResponseData: config.onSetResponseData || (async function (data: HttpResponseData) {
-                await SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data))
+            onSetResponseData: config.onSetResponseData || (function (data: HttpResponseData) {
+                SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data))
             }),
-            onError: config.onError || (async function () {
-                await app.resolveException(new RuntimeException(container), container.request, container.response)
+            onError: config.onError || (function () {
+                app.resolveException(new RuntimeException(container), container.request, container.response)
             }),
             session: {
                 config: session.config,

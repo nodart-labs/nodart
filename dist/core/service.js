@@ -38,28 +38,28 @@ class ServiceFactory {
             app: this.app,
             route,
             http,
-            service: () => intercept('service'),
-            model: () => intercept('model'),
-            controller: () => (0, app_1.loaders)().controller.getControllerByServiceScope(scope),
-        };
-        const intercept = (property) => {
-            if (status[property] === false) {
-                status[property] = true;
-                this.app.di.inject(dependencies, property, property);
-                this.app.di.intercepted(dependencies) || this.app.di.intercept(dependencies, this.app.factory.createDependencyInterceptor({
-                    getDependency(dependencies, property, dependency) {
-                        switch (property) {
-                            case 'service':
-                                return Reflect.construct(dependency, [scope]);
-                            case 'model':
-                                return (0, app_1.loaders)().model.call([scope.app, dependency]);
-                        }
-                    }
-                }));
-            }
-            return dependencies[property];
+            service: () => this.intercept('service', dependencies, scope, status),
+            model: () => this.intercept('model', dependencies, scope, status),
+            controller: () => (0, app_1.loaders)().controller.getControllerByRouteDescriptor(this.app, route, http),
         };
         return scope;
+    }
+    intercept(property, dependencies, scope, status) {
+        if (status[property] === false) {
+            status[property] = true;
+            this.app.di.inject(dependencies, property, property);
+            this.app.di.intercepted(dependencies) || this.app.di.intercept(dependencies, this.app.factory.createDependencyInterceptor({
+                getDependency(dependencies, property, dependency) {
+                    switch (property) {
+                        case 'service':
+                            return Reflect.construct(dependency, [scope]);
+                        case 'model':
+                            return (0, app_1.loaders)().model.call([scope.app, dependency]);
+                    }
+                }
+            }));
+        }
+        return dependencies[property];
     }
 }
 exports.ServiceFactory = ServiceFactory;

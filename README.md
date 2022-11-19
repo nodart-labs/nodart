@@ -301,7 +301,7 @@ http.get('/', () => {
 | Framework         | Bytes/sec   | Requests/sec |
 |-------------------|-------------|--------------|
 | Fastify v4.0.0    | 1.91 MB     | 10183        |
-| **NodArt v4.0.0** | **2.08 MB** | **10119**    |
+| **NodArt v4.2.0** | **2.02 MB** | **10143**    |
 | Express v4.18.2   | 1.94 MB     | 7683         |
 | Nest.js v9.0.0    | 1.61 MB     | 6395         |
 
@@ -318,7 +318,7 @@ http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
 | Framework         | Bytes/sec   | Requests/sec |
 |-------------------|-------------|--------------|
 | Fastify v4.0.0    | 2.27 MB     | 10143        |
-| **NodArt v4.0.0** | **2.45 MB** | **10111**    |
+| **NodArt v4.2.0** | **2.45 MB** | **10127**    |
 | Express v4.18.2   | 2.17 MB     | 7531         |
 | Nest.js v9.0.0    | 1.8 MB      | 6239         |
 
@@ -338,12 +338,12 @@ http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
 </html>
 ```
 
-| Framework           | Bytes/sec   | Requests/sec |
-|---------------------|-------------|--------------|
-| **NodArt v4.0.0**   | **1.84 MB** | **6399**     |
-| Fastify v4.0.0      | 2.32 MB     | 5295         |
-| Express v4.18.2     | 2 MB        | 4343         |
-| Nest.js v9.0.0      | 1.87 MB     | 4057         |
+| Framework         | Bytes/sec    | Requests/sec |
+|-------------------|--------------|--------------|
+| **NodArt v4.2.0** | **4.4 MB**   | **7955**     |
+| Fastify v4.0.0    | 2.32 MB      | 5295         |
+| Express v4.18.2   | 2 MB         | 4343         |
+| Nest.js v9.0.0    | 1.87 MB      | 4057         |
 
 
 ---

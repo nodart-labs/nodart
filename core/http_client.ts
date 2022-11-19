@@ -255,40 +255,38 @@ export class HttpContainer implements HttpContainerInterface {
         throw new RuntimeException(this)
     }
 
-    fetchData(): Promise<JSONLikeInterface> {
+    fetchData(callback: (data: JSONLikeInterface) => any, onError?: (err: Error) => any): void {
 
-        return new Promise((resolve, reject) => {
-            if (this.isDataFetched || this.isFormData) {
-                resolve(this._data)
-                return
-            }
+        if (this.isDataFetched || this.isFormData) {
+            callback(this._data)
+            return
+        }
 
-            const chunks = []
+        const chunks = []
 
-            this.request.on('data', chunk => chunks.push(chunk))
-            this.request.on('end', () => {
-                this._data = {}
-                this.onFetchData(Buffer.concat(chunks), (err) => {
-                    if (err) {
-                        reject(err)
-                        this.handleError(err, 'Failed to fetch data from request')
-                        return
-                    }
-                    this.isDataFetched = true
-                    resolve(this._data)
-                })
+        this.request.on('data', chunk => chunks.push(chunk))
+        this.request.on('end', () => {
+            this._data = {}
+            this.onFetchData(Buffer.concat(chunks), (err) => {
+                if (err) {
+                    onError?.(err)
+                    this.handleError(err, 'Failed to fetch data from request')
+                    return
+                }
+                this.isDataFetched = true
+                callback(this._data)
             })
+        })
 
-            this.request.on('error', (err) => {
-                reject(err)
-                this.handleError(err, 'Failed to fetch data from request')
-                this.config.onError?.(err)
-            })
+        this.request.on('error', (err) => {
+            onError?.(err)
+            this.handleError(err, 'Failed to fetch data from request')
+            this.config.onError?.(err)
+        })
 
-            this.request.on('aborted', () => {
-                reject({message: 'request aborted'})
-                this.handleError()
-            })
+        this.request.on('aborted', () => {
+            onError?.(new Error('request aborted'))
+            this.handleError()
         })
     }
 
@@ -596,7 +594,7 @@ export class HttpClient {
 
         response.writeHead(status, {'Content-Type': JSON_CONTENT_TYPE})
 
-        response.end(JSON.stringify(body))
+        response.end(typeof body === 'string' ? body : JSON.stringify(body))
     }
 
     static throwBadRequest(message: string = '') {

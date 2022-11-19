@@ -110,7 +110,7 @@ export interface HttpContainerInterface extends BaseHttpResponseInterface {
 
     handleError(err?: Error, message?: string)
 
-    fetchData(): Promise<any>
+    fetchData(onSuccess: (data: JSONLikeInterface) => any, onError: (err: Error) => any): void
 
     throw(status: number, message?: string, data?: any): void
 

@@ -162,36 +162,34 @@ class HttpContainer {
         this.response.statusCode = status;
         throw new exception_1.RuntimeException(this);
     }
-    fetchData() {
-        return new Promise((resolve, reject) => {
-            if (this.isDataFetched || this.isFormData) {
-                resolve(this._data);
-                return;
-            }
-            const chunks = [];
-            this.request.on('data', chunk => chunks.push(chunk));
-            this.request.on('end', () => {
-                this._data = {};
-                this.onFetchData(Buffer.concat(chunks), (err) => {
-                    if (err) {
-                        reject(err);
-                        this.handleError(err, 'Failed to fetch data from request');
-                        return;
-                    }
-                    this.isDataFetched = true;
-                    resolve(this._data);
-                });
+    fetchData(callback, onError) {
+        if (this.isDataFetched || this.isFormData) {
+            callback(this._data);
+            return;
+        }
+        const chunks = [];
+        this.request.on('data', chunk => chunks.push(chunk));
+        this.request.on('end', () => {
+            this._data = {};
+            this.onFetchData(Buffer.concat(chunks), (err) => {
+                if (err) {
+                    onError === null || onError === void 0 ? void 0 : onError(err);
+                    this.handleError(err, 'Failed to fetch data from request');
+                    return;
+                }
+                this.isDataFetched = true;
+                callback(this._data);
             });
-            this.request.on('error', (err) => {
-                var _a, _b;
-                reject(err);
-                this.handleError(err, 'Failed to fetch data from request');
-                (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
-            });
-            this.request.on('aborted', () => {
-                reject({ message: 'request aborted' });
-                this.handleError();
-            });
+        });
+        this.request.on('error', (err) => {
+            var _a, _b;
+            onError === null || onError === void 0 ? void 0 : onError(err);
+            this.handleError(err, 'Failed to fetch data from request');
+            (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
+        });
+        this.request.on('aborted', () => {
+            onError === null || onError === void 0 ? void 0 : onError(new Error('request aborted'));
+            this.handleError();
         });
     }
     onFetchData(buffer, callback) {
@@ -388,7 +386,7 @@ class HttpClient {
     }
     static sendJSON(response, body, status = http_1.HTTP_STATUS.OK) {
         response.writeHead(status, { 'Content-Type': exports.JSON_CONTENT_TYPE });
-        response.end(JSON.stringify(body));
+        response.end(typeof body === 'string' ? body : JSON.stringify(body));
     }
     static throwBadRequest(message = '') {
         throw new exception_1.HttpException(message || 'The current HTTP method receives no response from the request method.', {

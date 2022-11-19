@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpClientLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
@@ -23,14 +14,10 @@ class HttpClientLoader extends app_loader_1.AppLoader {
         const container = new http_client_1.HttpContainer(config);
         container.assignData({
             onSetResponseData: config.onSetResponseData || (function (data) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    yield app_config_1.SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data));
-                });
+                app_config_1.SYSTEM_STORE.events.HTTP_RESPONSE(app, container.getHttpResponse(data));
             }),
             onError: config.onError || (function () {
-                return __awaiter(this, void 0, void 0, function* () {
-                    yield app.resolveException(new exception_1.RuntimeException(container), container.request, container.response);
-                });
+                app.resolveException(new exception_1.RuntimeException(container), container.request, container.response);
             }),
             session: {
                 config: session.config,

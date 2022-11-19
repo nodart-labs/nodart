@@ -6,82 +6,6 @@ import {Service} from "../../core/service";
 
 const config = require('./config')
 
-/*
-new App({...config}).start(3000).then(({app, http, server}) => {
-
-    http.get('/sample-http-service/:+id?', ({
-        app,
-        http,
-        session,
-        route,
-        model,
-        service,
-        controller
-    }) => {
-
-        const sampleService = service().sample as SampleService
-
-        const scope = {}
-
-        Object.entries(sampleService.scope).forEach(([entry, data]) => scope[entry] = data?.constructor ?? data)
-
-        console.log('SampleService scope:', scope)
-
-        console.log('----------------------------')
-
-        console.log('current request headers:', http.request.headers)
-
-        console.log('----------------------------')
-
-        console.log('current route data:', route)
-
-        console.log('----------------------------')
-
-        console.log('current URL data:', http.url)
-
-        http.respond.view('index', {
-            title: 'Sample Http Service',
-            code:
-                '\r\n'
-                + 'http.get("/sample-http-service/:+id?", (scope) => {'
-                + '\r\n'
-                + '\r\n'
-                + '...'
-                + '\r\n'
-                + '\r\n'
-                + '})'
-        })
-
-    })
-
-    http.get('/form-data', ({respond}) => {
-
-        respond.send.view('form')
-
-    })
-
-//
-
-    http.post('/form-data', async ({http}) => {
-
-        const data = http.isFormData
-            ? await http.form.fetchFormData().then(form => {
-                const {fields, files} = form
-                return {fields, files}
-            })
-            : await http.data
-
-        console.log(data)
-
-        if (http.isFormData) return {fields: data.fields, files: data.files}
-
-        return data
-
-    })
-
-
-})
-*/
 
 new App({...config}).init().then(async app => {
 
@@ -113,11 +37,10 @@ new App({...config}).init().then(async app => {
      * @param callback (scope: ServiceScope) => Promise<void> | void
      */
 
-    // http.get('/:foo/:id', ({route}) => {
-    //     const { foo, id } = route.params
-    //
-    //     return { foo, id }
-    // })
+    /*http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
+        const {param1, param2, param3, param4} = route.params
+        return {param1, param2, param3, param4}
+    })*/
 
     http.get('/', ({service, model}) => {
 

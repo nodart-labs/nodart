@@ -48,31 +48,32 @@ export class ServiceFactory {
             app: this.app,
             route,
             http,
-            service: () => intercept('service'),
-            model: () => intercept('model'),
-            controller: () => loaders().controller.getControllerByServiceScope(scope),
-        }
-
-        const intercept = (property: 'service' | 'model') => {
-            if (status[property] === false) {
-                status[property] = true
-                this.app.di.inject(dependencies, property, property)
-                this.app.di.intercepted(dependencies) || this.app.di.intercept(dependencies, this.app.factory.createDependencyInterceptor({
-                    getDependency(dependencies: object, property: string, dependency: any): any {
-                        switch (property) {
-                            case 'service':
-                                return Reflect.construct(dependency, [scope])
-                            case 'model':
-                                return loaders().model.call([scope.app, dependency as typeof Model])
-                        }
-                    }
-                }))
-            }
-
-            return dependencies[property]
+            service: () => this.intercept('service', dependencies, scope, status),
+            model: () => this.intercept('model', dependencies, scope, status),
+            controller: () => loaders().controller.getControllerByRouteDescriptor(this.app, route, http),
         }
 
         return scope
+    }
+
+    private intercept(property: 'service' | 'model', dependencies: object, scope: ServiceScope, status: object) {
+
+        if (status[property] === false) {
+            status[property] = true
+            this.app.di.inject(dependencies, property, property)
+            this.app.di.intercepted(dependencies) || this.app.di.intercept(dependencies, this.app.factory.createDependencyInterceptor({
+                getDependency(dependencies: object, property: string, dependency: any): any {
+                    switch (property) {
+                        case 'service':
+                            return Reflect.construct(dependency, [scope])
+                        case 'model':
+                            return loaders().model.call([scope.app, dependency as typeof Model])
+                    }
+                }
+            }))
+        }
+
+        return dependencies[property]
     }
 
 }

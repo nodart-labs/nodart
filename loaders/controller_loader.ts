@@ -49,7 +49,7 @@ export class ControllerLoader extends AppLoader {
         }
     }
 
-    getControllerByRoute(app: App, route: RouteData, http: HttpContainer): BaseController | void {
+    getControllerByRoutePath(app: App, route: RouteData, http: HttpContainer): BaseController | void {
 
         const data = {path: '', action: ''}
         const rootDir = app.rootDir
@@ -82,9 +82,9 @@ export class ControllerLoader extends AppLoader {
         if (controller) return this.call([app, http, {...route, action: data.action}, controller])
     }
 
-    getControllerByServiceScope(scope: ServiceScope): BaseController | void {
+    getControllerByRouteDescriptor(app: App, route: RouteData, http: HttpContainer): BaseController | void {
 
-        const controller = scope.route.controller?.(scope.route)
+        const controller = route.controller?.(route)
 
         if (controller) {
 
@@ -92,7 +92,7 @@ export class ControllerLoader extends AppLoader {
 
                 throw `Controller loader: The provided type "${object.getProtoConstructor(controller)?.name}" is not a "Controller".`
 
-            return this.call([scope.app, scope.http, scope.route, controller])
+            return this.call([app, http, route, controller])
         }
     }
 

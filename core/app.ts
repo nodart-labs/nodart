@@ -217,19 +217,16 @@ export class App {
 
         this.service.requestPayload
 
-            ? this.service.requestPayload(req, res).then(() => {
+            ? this.service.requestPayload(req, res).then(() => SYSTEM_STORE.events.HTTP_REQUEST(this, req, res))
 
-                SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res))
-            })
-
-            : SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res))
+            : SYSTEM_STORE.events.HTTP_REQUEST(this, req, res)
     }
 
-    async resolveException(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
+    resolveException(exception: any, req: Http2ServerRequest, res: Http2ServerResponse) {
 
         const resolve = this.config.get.exception.resolve || AppExceptionResolve
 
-        await new resolve(this, exception).resolveOnHttp(req, res)
+        new resolve(this, exception).resolveOnHttp(req, res)
     }
 
     static store(storeName: string): State {

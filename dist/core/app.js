@@ -129,16 +129,12 @@ class App {
     }
     resolveHttpRequest(req, res) {
         this.service.requestPayload
-            ? this.service.requestPayload(req, res).then(() => {
-                app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res));
-            })
-            : app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res).catch(err => this.resolveException(err, req, res));
+            ? this.service.requestPayload(req, res).then(() => app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res))
+            : app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res);
     }
     resolveException(exception, req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const resolve = this.config.get.exception.resolve || AppExceptionResolve;
-            yield new resolve(this, exception).resolveOnHttp(req, res);
-        });
+        const resolve = this.config.get.exception.resolve || AppExceptionResolve;
+        new resolve(this, exception).resolveOnHttp(req, res);
     }
     static store(storeName) {
         return store_1.Store.get(storeName);

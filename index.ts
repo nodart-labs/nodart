@@ -9,6 +9,7 @@ import {Service, ServiceFactory} from "./core/service";
 import {Model} from "./core/model";
 import {Orm, OrmMigrationSource, OrmMigrator, OrmSeedSource, OrmSeeder} from "./core/orm";
 import {HttpClient, HttpFormData} from "./core/http_client";
+import {HttpHandler} from "./core/http_handler";
 import {HttpResponder} from "./core/http_responder";
 import {HttpService, HttpServiceAcceptor} from "./services/http";
 import {OrmService} from "./services/orm";
@@ -66,6 +67,7 @@ export {
     DIContainer,
     DependencyInterceptor,
     BaseDependencyInterceptor,
+    HttpHandler,
     HttpClient,
     HttpFormData,
     HttpResponder,

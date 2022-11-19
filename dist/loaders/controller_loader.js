@@ -36,7 +36,7 @@ class ControllerLoader extends app_loader_1.AppLoader {
                 return (0, app_1.loaders)().model.call([controller.app, dependency]);
         }
     }
-    getControllerByRoute(app, route, http) {
+    getControllerByRoutePath(app, route, http) {
         const data = { path: '', action: '' };
         const rootDir = app.rootDir;
         if (route.route) {
@@ -60,13 +60,13 @@ class ControllerLoader extends app_loader_1.AppLoader {
         if (controller)
             return this.call([app, http, Object.assign(Object.assign({}, route), { action: data.action }), controller]);
     }
-    getControllerByServiceScope(scope) {
-        var _a, _b, _c;
-        const controller = (_b = (_a = scope.route).controller) === null || _b === void 0 ? void 0 : _b.call(_a, scope.route);
+    getControllerByRouteDescriptor(app, route, http) {
+        var _a, _b;
+        const controller = (_a = route.controller) === null || _a === void 0 ? void 0 : _a.call(route, route);
         if (controller) {
             if (false === utils_1.object.isProtoConstructor(controller, controller_1.BaseController))
-                throw `Controller loader: The provided type "${(_c = utils_1.object.getProtoConstructor(controller)) === null || _c === void 0 ? void 0 : _c.name}" is not a "Controller".`;
-            return this.call([scope.app, scope.http, scope.route, controller]);
+                throw `Controller loader: The provided type "${(_b = utils_1.object.getProtoConstructor(controller)) === null || _b === void 0 ? void 0 : _b.name}" is not a "Controller".`;
+            return this.call([app, http, route, controller]);
         }
     }
     onCall() {
