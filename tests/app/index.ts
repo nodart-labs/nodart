@@ -3,6 +3,7 @@ import {SampleService} from "./services/sample";
 import {Sample2Controller} from "./controllers/sample2_controller";
 import {measure, fs} from "../../utils";
 import {Service} from "../../core/service";
+import {SampleController} from "./controllers/sample_controller";
 
 const config = require('./config')
 
@@ -42,18 +43,20 @@ new App({...config}).init().then(async app => {
         return {param1, param2, param3, param4}
     })*/
 
-    http.get('/', ({service, model}) => {
+    http.get('/', (scope) => {
 
-        // service().sample
+        // scope.service().sample
 
-        // console.log(service().sample)
-        // console.log(model().sub.sample)
+        // console.log(scope.service().sample)
+        // console.log(scope.model().sub.sample)
+
+        // new SampleService(scope)
 
         return {ok: true}
 
     })
 
-    http.get('/sample-http-service/:+id?', ({
+    http.get({path: '/sample-http-service/:+id?', controller: () => SampleController}, ({
         app,
         http,
         route,
@@ -61,6 +64,10 @@ new App({...config}).init().then(async app => {
         service,
         controller
     }) => {
+
+        const sampleController = controller() as SampleController
+
+        console.log('Sample Controller:', sampleController.constructor)
 
         const sampleService = service().sample as SampleService
 

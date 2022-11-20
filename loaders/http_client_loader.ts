@@ -1,11 +1,7 @@
 import {App} from "../core/app";
 import {AppLoader} from "../core/app_loader";
 import {HttpContainer} from "../core/http_client";
-import {
-    HttpResponseData,
-    HttpContainerConfigInterface,
-    HttpDataInterface
-} from "../core/interfaces/http";
+import {HttpResponseData, HttpContainerConfigInterface, HttpDataInterface} from "../core/interfaces/http";
 import {RuntimeException} from "../core/exception";
 import {SYSTEM_STORE} from "../core/app_config";
 

@@ -95,14 +95,15 @@ class HttpHandler {
     processData(data, callback) {
         if (http_client_1.HttpClient.getResponseIsSent(this.response))
             return;
-        if (data)
+        if (data !== undefined) {
             return data instanceof Promise
                 ? data.then((data) => {
                     if (http_client_1.HttpClient.getResponseIsSent(this.response))
                         return;
-                    data ? http_client_1.HttpClient.sendJSON(this.response, data) : callback === null || callback === void 0 ? void 0 : callback();
-                })
+                    data !== undefined ? http_client_1.HttpClient.sendJSON(this.response, data) : callback === null || callback === void 0 ? void 0 : callback();
+                }).catch(err => this.app.resolveException(err, this.request, this.response))
                 : http_client_1.HttpClient.sendJSON(this.response, data);
+        }
         callback === null || callback === void 0 ? void 0 : callback();
     }
 }

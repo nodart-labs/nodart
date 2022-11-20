@@ -146,12 +146,20 @@ export class HttpHandler {
 
         if (HttpClient.getResponseIsSent(this.response)) return
 
-        if (data) return data instanceof Promise
-            ? data.then((data) => {
-                if (HttpClient.getResponseIsSent(this.response)) return
-                data ? HttpClient.sendJSON(this.response, data) : callback?.()
-            })
-            : HttpClient.sendJSON(this.response, data)
+        if (data !== undefined) {
+
+            return data instanceof Promise
+
+                ? data.then((data) => {
+
+                    if (HttpClient.getResponseIsSent(this.response)) return
+
+                    data !== undefined ? HttpClient.sendJSON(this.response, data) : callback?.()
+
+                }).catch(err => this.app.resolveException(err, this.request, this.response))
+
+                : HttpClient.sendJSON(this.response, data)
+        }
 
         callback?.()
     }
