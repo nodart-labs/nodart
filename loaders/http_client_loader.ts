@@ -39,9 +39,6 @@ export class HttpClientLoader extends AppLoader {
         return container
     }
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 

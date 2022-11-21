@@ -29,8 +29,6 @@ class EngineLoader extends app_loader_1.AppLoader {
             ? this.app.config.get.http.engine.client(config)
             : new engine_1.Engine(config);
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

@@ -190,11 +190,6 @@ class AppFactory {
     createLoader(name) {
         return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app]);
     }
-    createDependencyInterceptor(source) {
-        const interceptor = new di_1.BaseDependencyInterceptor;
-        interceptor.getDependency = source.getDependency;
-        return interceptor;
-    }
 }
 exports.AppFactory = AppFactory;
 class AppModule {

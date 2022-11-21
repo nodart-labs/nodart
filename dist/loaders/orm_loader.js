@@ -66,8 +66,6 @@ class OrmLoader extends app_loader_1.AppLoader {
             }
         });
     }
-    onCall(target) {
-    }
 }
 exports.OrmLoader = OrmLoader;
 //# sourceMappingURL=orm_loader.js.map

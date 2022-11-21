@@ -86,9 +86,6 @@ export class StaticLoader extends AppLoader {
         readStream.pipe(scope.response)
     }
 
-    onCall(): void {
-    }
-
     onGenerate(repository: string): void {
     }
 

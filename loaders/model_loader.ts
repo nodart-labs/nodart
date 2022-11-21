@@ -11,9 +11,9 @@ export class ModelLoader extends AppLoader {
         return Model
     }
 
-    call(args?: [app: App, type?: typeof Model], path?: string, rootDir?: string) {
+    call(args?: [type: typeof Model, app?: App], path?: string, rootDir?: string) {
 
-        let [app, type] = args || []
+        let [type, app] = args || []
 
         type ||= this._source
 
@@ -29,9 +29,6 @@ export class ModelLoader extends AppLoader {
         }
 
         return model
-    }
-
-    onCall(target: any) {
     }
 
     onGenerate(repository: string) {

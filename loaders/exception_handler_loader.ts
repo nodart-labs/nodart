@@ -4,9 +4,6 @@ import {RuntimeException} from "../core/exception";
 
 export class ExceptionHandlerLoader extends AppLoader {
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 

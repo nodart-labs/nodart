@@ -20,8 +20,6 @@ class SessionLoader extends app_loader_1.AppLoader {
             ? this.app.config.get.http.session.client(config, http)
             : new session_1.Session(config).load(http);
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

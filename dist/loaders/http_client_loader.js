@@ -34,8 +34,6 @@ class HttpClientLoader extends app_loader_1.AppLoader {
         });
         return container;
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

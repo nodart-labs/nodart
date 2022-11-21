@@ -8,9 +8,6 @@ export class ExceptionLogLoader extends AppLoader {
         return Reflect.construct(this.app.config.get.exception?.log || ExceptionLog, [args[0]])
     }
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 }

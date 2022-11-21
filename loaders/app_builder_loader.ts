@@ -3,9 +3,6 @@ import {App, AppBuilder} from "../core/app";
 
 export class AppBuilderLoader extends AppLoader {
 
-    onCall(target: any, args?: any[]): void {
-    }
-
     onGenerate(repository: string): void {
     }
 

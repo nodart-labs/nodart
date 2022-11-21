@@ -11,9 +11,6 @@ export class HttpFormDataLoader extends AppLoader {
         return new HttpFormData(args[0], config)
     }
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 

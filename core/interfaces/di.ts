@@ -14,6 +14,7 @@ export type DIScope = {
 export type DependencyScope = {
     acceptor: object
     reference: string
+    dependency?: Object
     container: DIContainer
     property: string
     value: any
@@ -22,15 +23,15 @@ export type DependencyScope = {
 
 export type InjectionContainer = {
     props: { [property: string]: InjectionProperty }
-    intercept(property: string, reference: string): any
+    intercept(property: string, reference?: string, dependency?: Object): any
 }
 
 export type InjectionProperty = {
     value: any
     reference: string
+    dependency?: Object
 }
 
 export interface DependencyInterceptorInterface {
-
     getDependency(acceptor: any, property: string, dependency: any): any
 }

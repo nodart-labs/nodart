@@ -4,9 +4,6 @@ import {CommandLine} from "../core/cmd";
 
 export class CommandLineLoader extends AppLoader {
 
-    onCall(target: any, args?: any[]): void {
-    }
-
     onGenerate(repository: string): void {
 
         this._init()

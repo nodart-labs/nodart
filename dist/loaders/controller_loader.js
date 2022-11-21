@@ -33,7 +33,7 @@ class ControllerLoader extends app_loader_1.AppLoader {
                         route: controller.route
                     }]);
             case 'model':
-                return (0, app_1.loaders)().model.call([controller.app, dependency]);
+                return (0, app_1.loaders)().model.call([dependency, controller.app]);
         }
     }
     getControllerByRoutePath(app, route, http) {
@@ -68,8 +68,6 @@ class ControllerLoader extends app_loader_1.AppLoader {
                 throw `Controller loader: The provided type "${(_b = utils_1.object.getProtoConstructor(controller)) === null || _b === void 0 ? void 0 : _b.name}" is not a "Controller".`;
             return this.call([app, http, route, controller]);
         }
-    }
-    onCall() {
     }
     onGenerate(repository) {
     }

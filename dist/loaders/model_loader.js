@@ -12,7 +12,7 @@ class ModelLoader extends app_loader_1.AppLoader {
         return model_1.Model;
     }
     call(args, path, rootDir) {
-        let [app, type] = args || [];
+        let [type, app] = args || [];
         type || (type = this._source);
         app || (app = this.app);
         const model = this.resolve(path ? this.load(path, model_1.Model, rootDir) : type, args);
@@ -21,8 +21,6 @@ class ModelLoader extends app_loader_1.AppLoader {
             model.queryBuilder || (model.queryBuilder = model.orm.queryBuilder);
         }
         return model;
-    }
-    onCall(target) {
     }
     onGenerate(repository) {
     }

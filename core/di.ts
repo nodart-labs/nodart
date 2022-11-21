@@ -59,9 +59,7 @@ export class DIContainer {
 
         if (dependency === undefined) {
 
-            if (scope.value?.prototype?.constructor) return DIContainer.resolve(dependency, scope)
-
-            dependency = this.getDependencyByReference(scope)
+            dependency = scope.dependency || this.getDependencyByReference(scope)
 
             if (dependency && typeof dependency === 'object' && dependency.constructor === Object)
 
@@ -71,7 +69,7 @@ export class DIContainer {
         return dependency?.prototype?.constructor ? DIContainer.resolve(dependency, scope) : null
     }
 
-    private static resolve(dependency: object, scope: DependencyScope) {
+    private static resolve(dependency: Object, scope: DependencyScope) {
 
         return scope.interceptor ? scope.interceptor.getDependency(scope.acceptor, scope.property, dependency) : dependency
     }
@@ -88,7 +86,7 @@ export class DIContainer {
         }).get
     }
 
-    private static container(target: object, property?: string, reference?: string): InjectionContainer {
+    private static container(target: object, property?: string, injection?: InjectionProperty): InjectionContainer {
 
         const container = target[DIContainer.id] ||= {
             props: {},
@@ -96,27 +94,39 @@ export class DIContainer {
         } as InjectionContainer
 
         if (property) {
+
             container.props[property] ||= {}
+
+            const {reference, value, dependency} = injection || {}
+
+            container.props[property].value = value
             reference && (container.props[property].reference = reference)
+            dependency && (container.props[property].dependency = dependency)
+
+            value?.prototype?.constructor && (container.props[property].dependency = value)
         }
 
         return container
     }
 
-    intercept(acceptor: object, interceptor?: DependencyInterceptor, interceptors?: {[property: string]: DependencyInterceptor}) {
+    intercept(
+        acceptor: object,
+        interceptor?: DependencyInterceptorInterface,
+        interceptors?: {[property: string]: DependencyInterceptorInterface}) {
 
         if (!DIContainer.injectable(acceptor)) return
 
         const container = DIContainer.container(acceptor)
 
-        container.intercept = (property: string, reference: string) => {
+        container.intercept = (property: string, reference?: string, dependency?: Object) => {
 
             container.props[property] ||= {} as InjectionProperty
 
             return this.getDependency({
                 container: this,
                 acceptor,
-                reference,
+                reference: reference || container.props[property].reference,
+                dependency: container.props[property].dependency || dependency,
                 value: container.props[property].value,
                 interceptor: interceptors?.[property] || interceptor,
                 property,
@@ -124,29 +134,34 @@ export class DIContainer {
         }
     }
 
-    inject(target: object, property: string, reference: string) {
+    use(acceptor: object, interceptor: DependencyInterceptorInterface) {
 
-        DIContainer.defineProperty(target, property, reference)
+        this.intercepted(acceptor) || this.intercept(acceptor, interceptor)
+    }
+
+    inject(target: object, property: string, reference: string, dependency?: Object) {
+
+        DIContainer.defineProperty(target, property, reference, dependency)
     }
 
     intercepted(target: object): boolean {
 
-        return DIContainer.injectable(target) && target[DIContainer.id]?.intercept !== undefined
+        return target[DIContainer.id]?.intercept !== undefined
     }
 
     static injectable(target: any): boolean {
 
-        return !!(target && typeof target === 'object' && !target.prototype?.constructor)
+        return !!(target && typeof target === 'object')
     }
 
-    static defineProperty(target: object, property: string, reference: string) {
+    static defineProperty(target: object, property: string, reference: string, dependency?: Object) {
 
         DIContainer.injectable(target) && Object.defineProperty(target, property, {
             get: function () {
-                return DIContainer.container(this).intercept(property, reference)
+                return DIContainer.container(this).intercept(property, reference, dependency)
             },
             set: function (value) {
-                return DIContainer.container(this, property, reference).props[property].value = value
+                return DIContainer.container(this, property, {reference, dependency, value}).props[property].value
             },
             configurable: true,
             enumerable: true
@@ -154,8 +169,8 @@ export class DIContainer {
     }
 }
 
-export function injects(reference: string) {
+export function injects(reference: string, dependency?: Object) {
     return function (target: any, property: string) {
-        DIContainer.defineProperty(target, property, reference)
+        DIContainer.defineProperty(target, property, reference, dependency)
     }
 }

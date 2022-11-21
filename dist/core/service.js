@@ -48,16 +48,16 @@ class ServiceFactory {
         if (status[property] === false) {
             status[property] = true;
             this.app.di.inject(dependencies, property, property);
-            this.app.di.intercepted(dependencies) || this.app.di.intercept(dependencies, this.app.factory.createDependencyInterceptor({
+            this.app.di.use(dependencies, {
                 getDependency(dependencies, property, dependency) {
                     switch (property) {
                         case 'service':
                             return Reflect.construct(dependency, [scope]);
                         case 'model':
-                            return (0, app_1.loaders)().model.call([scope.app, dependency]);
+                            return (0, app_1.loaders)().model.call([dependency, scope.app]);
                     }
                 }
-            }));
+            });
         }
         return dependencies[property];
     }

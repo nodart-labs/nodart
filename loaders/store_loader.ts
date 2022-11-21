@@ -12,9 +12,6 @@ export class StoreLoader extends AppLoader {
         repository && (this.repository = repository)
     }
 
-    onCall(target: any) {
-    }
-
     onGenerate(repository: string) {
 
         if (!repository) return

@@ -40,9 +40,6 @@ export class EngineLoader extends AppLoader {
             : new Engine(config)
     }
 
-    onCall(): void {
-    }
-
     onGenerate(repository: string): void {
     }
 

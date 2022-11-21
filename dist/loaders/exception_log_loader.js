@@ -8,8 +8,6 @@ class ExceptionLogLoader extends app_loader_1.AppLoader {
         var _a;
         return Reflect.construct(((_a = this.app.config.get.exception) === null || _a === void 0 ? void 0 : _a.log) || exception_1.ExceptionLog, [args[0]]);
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

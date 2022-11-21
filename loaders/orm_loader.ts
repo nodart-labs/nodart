@@ -91,7 +91,4 @@ export class OrmLoader extends AppLoader {
         })
     }
 
-    onCall(target: any) {
-    }
-
 }

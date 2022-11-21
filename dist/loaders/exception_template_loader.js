@@ -16,8 +16,6 @@ class ExceptionTemplateLoader extends app_loader_1.AppLoader {
             return;
         return engine.getTemplate(template, { response: args[0] });
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

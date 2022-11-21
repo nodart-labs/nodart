@@ -10,8 +10,6 @@ class StoreLoader extends app_loader_1.AppLoader {
         const repository = app.service.store.repo;
         repository && (this.repository = repository);
     }
-    onCall(target) {
-    }
     onGenerate(repository) {
         if (!repository)
             return;

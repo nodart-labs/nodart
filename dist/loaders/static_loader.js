@@ -66,8 +66,6 @@ class StaticLoader extends app_loader_1.AppLoader {
         });
         readStream.pipe(scope.response);
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

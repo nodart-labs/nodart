@@ -30,9 +30,6 @@ export class SessionLoader extends AppLoader {
             : new Session(config).load(http)
     }
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 

@@ -14,8 +14,6 @@ class ServiceLoader extends app_loader_1.AppLoader {
     call(args, path, rootDir) {
         return this.resolve(path ? this.load(path, service_1.Service, rootDir) : this._source, args);
     }
-    onCall(target) {
-    }
     onGenerate(repository) {
     }
 }

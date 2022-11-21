@@ -16,8 +16,6 @@ export abstract class AppLoader extends DependencyInterceptor {
         super()
     }
 
-    abstract onCall(target: any, args?: any[]): void
-
     abstract onGenerate(repository: string): void
 
     getDependency(acceptor: any, property: string, dependency: any): any {
@@ -63,8 +61,6 @@ export abstract class AppLoader extends DependencyInterceptor {
     call(args: any[] = [], path?: string, sourceType?: any, rootDir?: string) {
 
         path && this.require(path, sourceType, rootDir)
-
-        this.onCall(this._source, args)
 
         this._source = this.resolve(this._source, args)
 

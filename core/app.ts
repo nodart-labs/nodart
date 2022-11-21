@@ -293,12 +293,6 @@ export class AppFactory {
     createLoader<K extends keyof AppLoaders>(name: K): AppLoaders[K] {
         return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app])
     }
-
-    createDependencyInterceptor(source: DependencyInterceptorInterface) {
-        const interceptor = new BaseDependencyInterceptor
-        interceptor.getDependency = source.getDependency
-        return interceptor
-    }
 }
 
 export abstract class AppModule {

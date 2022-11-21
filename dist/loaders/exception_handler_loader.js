@@ -5,8 +5,6 @@ const app_loader_1 = require("../core/app_loader");
 const exception_1 = require("../core/exception");
 const exception_2 = require("../core/exception");
 class ExceptionHandlerLoader extends app_loader_1.AppLoader {
-    onCall() {
-    }
     onGenerate(repository) {
     }
     call(args) {

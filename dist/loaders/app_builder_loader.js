@@ -4,8 +4,6 @@ exports.AppBuilderLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const app_1 = require("../core/app");
 class AppBuilderLoader extends app_loader_1.AppLoader {
-    onCall(target, args) {
-    }
     onGenerate(repository) {
     }
     call(args) {

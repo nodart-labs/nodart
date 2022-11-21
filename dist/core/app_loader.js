@@ -46,7 +46,6 @@ class AppLoader extends di_1.DependencyInterceptor {
     }
     call(args = [], path, sourceType, rootDir) {
         path && this.require(path, sourceType, rootDir);
-        this.onCall(this._source, args);
         this._source = this.resolve(this._source, args);
         this.intercept();
         return this._source;

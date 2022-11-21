@@ -9,8 +9,6 @@ class HttpFormDataLoader extends app_loader_1.AppLoader {
         const config = ((args === null || args === void 0 ? void 0 : args[1]) || ((_a = this.app.config.get.http) === null || _a === void 0 ? void 0 : _a.form) || {});
         return new http_client_1.HttpFormData(args[0], config);
     }
-    onCall() {
-    }
     onGenerate(repository) {
     }
 }

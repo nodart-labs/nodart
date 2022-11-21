@@ -21,9 +21,6 @@ export class ExceptionTemplateLoader extends AppLoader {
         return engine.getTemplate(template, {response: args[0]})
     }
 
-    onCall() {
-    }
-
     onGenerate(repository: string) {
     }
 
