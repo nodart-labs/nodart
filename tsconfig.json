@@ -4,6 +4,7 @@
     "target": "es6",
     "sourceMap": true,
     "experimentalDecorators": true,
+    "noImplicitAny": false,
     "outDir": "dist"
   },
   "exclude": [
@@ -11,5 +12,8 @@
     "tests",
     "sources",
     "bin"
+  ],
+  "lib": [
+    "esnext"
   ]
 }

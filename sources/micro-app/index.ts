@@ -17,13 +17,14 @@ const config: nodart.app.AppConfigInterface = {
     orm: {
         client: 'better-sqlite3', // or 'sqlite3'
         connection: {
-            filename: require("path").resolve(__dirname, 'database/sample.sqlite')
+            filename: require("node:path").resolve(__dirname, 'database/sample.sqlite')
         },
         useNullAsDefault: true,
     },
     exception: {
-        // Uncomment this line and set another path to your exception.html or leave it as is.
-        // This option provides template for view data from Exception. (under the "views" folder)
+        /* Uncomment this line and set another path to your exception.html or leave it as is. */
+        /* This option provides template (under the "views" folder) for view data from Exception on client side. */
+
         // template: 'exception' // or (response: nodart.http.HttpResponseDataInterface) => 'string/path'
     }
 }

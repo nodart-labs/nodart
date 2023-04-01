@@ -14,6 +14,13 @@ node_modules/
 
 # Log files
 *.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+errlog
 
 # Package files
 *.jar
@@ -48,9 +55,7 @@ Thumbs.db
 
 .history
 package-lock.json
-/*.log
-
-errlog
+yarn.lock
 
 /cmd
 /tests/app/*

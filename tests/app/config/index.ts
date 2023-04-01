@@ -26,6 +26,6 @@ export = <AppConfigInterface>Object.freeze({
         template: 'exception'
     },
     static: {
-        serve: false
+        // serve: false
     }
 })

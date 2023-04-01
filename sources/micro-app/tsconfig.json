@@ -4,9 +4,16 @@
     "target": "es6",
     "sourceMap": true,
     "experimentalDecorators": true,
+    "noImplicitAny": false,
     "outDir": "build"
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "tests",
+    "sources",
+    "bin"
+  ],
+  "lib": [
+    "esnext"
   ]
 }

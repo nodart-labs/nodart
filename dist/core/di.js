@@ -106,8 +106,8 @@ class DIContainer {
         });
     }
 }
-exports.DIContainer = DIContainer;
 DIContainer.id = CONTAINER_ID;
+exports.DIContainer = DIContainer;
 function injects(reference, dependency) {
     return function (target, property) {
         DIContainer.defineProperty(target, property, reference, dependency);

@@ -205,7 +205,7 @@ class SystemCommandLine {
             exitOnError && process.exit(1)
         })
 
-        fs.isDir(rootDir) && app.config.set({rootDir})
+        app.config.set({rootDir: fs.isDir(rootDir) ? rootDir : dist})
     }
 
 }

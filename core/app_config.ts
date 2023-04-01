@@ -1,7 +1,13 @@
 import {$, fs, object} from '../utils'
 import {App, AppExceptionResolve} from './app'
 import {AppConfigInterface, AppStoreInterface} from "./interfaces/app";
-import {HttpExceptionHandler, RuntimeExceptionHandler, HttpException, RuntimeException, ExceptionLog} from "./exception";
+import {
+    HttpExceptionHandler,
+    RuntimeExceptionHandler,
+    HttpException,
+    RuntimeException,
+    ExceptionLog
+} from "./exception";
 import {ControllerLoader} from "../loaders/controller_loader";
 import {ModelLoader} from "../loaders/model_loader";
 import {StoreLoader} from "../loaders/store_loader";
@@ -112,7 +118,7 @@ export class AppConfig {
         this._config = {...APP_CONFIG}
     }
 
-    get get (): AppConfigInterface {
+    get get(): AppConfigInterface {
         return this._config
     }
 

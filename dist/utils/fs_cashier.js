@@ -86,6 +86,6 @@ class FSCashier {
         Object.keys(paths).forEach(key => FSCashier._files[key] && delete FSCashier._files[key]);
     }
 }
-exports.FSCashier = FSCashier;
 FSCashier._files = {};
+exports.FSCashier = FSCashier;
 //# sourceMappingURL=fs_cashier.js.map

@@ -6,14 +6,6 @@ import {
     AppModuleConfigInterface,
     AppStateLoadersInterface
 } from "./interfaces/app";
-import {State, Store} from "./store";
-import {Http2ServerRequest, Http2ServerResponse} from "http2";
-import {HttpServiceRouteObject} from "./interfaces/service";
-import {HttpServiceAcceptor, HttpService} from "../services/http";
-import {BaseDependencyInterceptor, DIContainer} from "./di";
-import {Router} from "./router";
-import {StoreState, StoreListenerArguments, StoreListeners} from "./interfaces/store";
-import {ExceptionHandler, ExceptionLog, RuntimeException} from "./exception";
 import {
     AppConfig,
     SYSTEM_STORE,
@@ -24,6 +16,14 @@ import {
     DEFAULT_ENV_FILE_NAME,
     CLIENT_STORE_REPOSITORY
 } from "./app_config";
+import {State, Store} from "./store";
+import {Http2ServerRequest, Http2ServerResponse} from "http2";
+import {HttpServiceRouteObject} from "./interfaces/service";
+import {HttpServiceAcceptor, HttpService} from "../services/http";
+import {DIContainer} from "./di";
+import {Router} from "./router";
+import {StoreState, StoreListenerArguments, StoreListeners} from "./interfaces/store";
+import {ExceptionHandler, ExceptionLog, RuntimeException} from "./exception";
 import {Server} from "http";
 import {Server as SecureServer} from "https";
 import {HttpHost, HttpMethod, HttpProtocols, HttpResponseDataInterface} from "./interfaces/http";
@@ -33,7 +33,6 @@ import {ModuleService} from "../services/module";
 import {CashierService} from "../services/cashier";
 import {OrmService} from "../services/orm";
 import {RouteData} from "./interfaces/router";
-import {DependencyInterceptorInterface} from "./interfaces/di";
 import {ServiceFactory} from "./service";
 
 export const DEFAULT_PORT = 3000

@@ -4,7 +4,7 @@ const path = require('path')
 
 module.exports = async ({app, cmd}) => {
 
-    const source = path.resolve(__dirname, '../../sources/app.zip')
+    const source = path.resolve(__dirname, '../../sources/nodart-app.zip')
 
     await decompress(source, app.rootDir).then(() => {
 

@@ -10,12 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppBuilder = exports.AppExceptionResolve = exports.AppEmitter = exports.AppEnv = exports.AppServiceManager = exports.AppModuleFacade = exports.AppModule = exports.AppFactory = exports.App = exports.loaders = exports.DEFAULT_HOST = exports.DEFAULT_PORT = void 0;
+const app_config_1 = require("./app_config");
 const store_1 = require("./store");
 const http_1 = require("../services/http");
 const di_1 = require("./di");
 const router_1 = require("./router");
 const exception_1 = require("./exception");
-const app_config_1 = require("./app_config");
 const http_2 = require("http");
 const https_1 = require("https");
 const http_client_1 = require("./http_client");

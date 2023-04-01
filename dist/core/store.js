@@ -25,8 +25,8 @@ class Store {
         return Store.stores[store];
     }
 }
-exports.Store = Store;
 Store.stores = {};
+exports.Store = Store;
 class State {
     constructor(repo) {
         this.repo = repo;

@@ -399,11 +399,11 @@ class HttpClient {
         });
     }
 }
-exports.HttpClient = HttpClient;
 HttpClient.corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Request-Method': '*',
     'Access-Control-Allow-Methods': 'OPTIONS, GET',
     'Access-Control-Allow-Headers': '*',
 };
+exports.HttpClient = HttpClient;
 //# sourceMappingURL=http_client.js.map

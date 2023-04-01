@@ -20,7 +20,7 @@ new App({...config}).init().then(async app => {
 
     http.get('/', async (scope) => {
 
-        // scope.service().sample
+        scope.service().sample
 
         // console.log(scope.service().sample)
         // console.log(scope.model().sub.sample)

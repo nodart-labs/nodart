@@ -369,6 +369,8 @@ node cmd [command name] [command action optional] --[argument name optional] [ar
 
 ### DATABASE MIGRATION CLI
 
+> Before making migrations you should insert database configuration options into "cmd/index.js" file
+
 #### Creating and running a Single Migration
 
 ```shell

@@ -107,10 +107,10 @@ class HttpHandler {
         callback === null || callback === void 0 ? void 0 : callback();
     }
 }
-exports.HttpHandler = HttpHandler;
 HttpHandler.warnings = {
     useCors: false,
     serveStatic: false,
     fetchDataOnRequest: false
 };
+exports.HttpHandler = HttpHandler;
 //# sourceMappingURL=http_handler.js.map

@@ -98,8 +98,8 @@ class CommandLine {
         });
     }
 }
-exports.CommandLine = CommandLine;
 CommandLine._lock = false;
+exports.CommandLine = CommandLine;
 class SystemCommandLine {
     constructor(cmd) {
         this.cmd = cmd;
@@ -139,7 +139,7 @@ class SystemCommandLine {
             console.error('The App build directory does not exist.');
             exitOnError && process.exit(1);
         });
-        utils_1.fs.isDir(rootDir) && app.config.set({ rootDir });
+        app.config.set({ rootDir: utils_1.fs.isDir(rootDir) ? rootDir : dist });
     }
 }
 class CommandLineParser {

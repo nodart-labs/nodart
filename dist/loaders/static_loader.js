@@ -69,6 +69,6 @@ class StaticLoader extends app_loader_1.AppLoader {
     onGenerate(repository) {
     }
 }
-exports.StaticLoader = StaticLoader;
 StaticLoader.cache = {};
+exports.StaticLoader = StaticLoader;
 //# sourceMappingURL=static_loader.js.map

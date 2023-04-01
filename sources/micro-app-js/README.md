@@ -65,6 +65,8 @@ node cmd [command name] [command action (optional)] --[argument name (optional)]
 
 ### DATABASE MIGRATION CLI
 
+> Before you migrate, make sure you have pasted the database configuration settings in the `cmd/index.js` file.
+
 #### Creating and running a Single Migration
 ```shell
 npx nodart migrate make --name migration-name
