@@ -121,8 +121,11 @@ class OrmMigrator {
      */
     source(src, ...args) {
         typeof src === 'string' && (src = this.fetchSource(src));
-        this._source = src instanceof OrmMigrationSource ? src : Reflect.construct(src, args);
+        this._source = src instanceof OrmMigrationSource ? src : src ? Reflect.construct(src, args) : null;
         return this;
+    }
+    getSource() {
+        return this._source;
     }
     /**
      * Creates a new migration, with the name of the migration being added.

@@ -119,7 +119,17 @@ module.exports = async ({app, cmd}) => {
             migrations = data.migrations
 
             cmd.system.buildApp(app)
-            await orm().migrator().source(name, migrations).up().then(() => console.log('migrate source up complete.'))
+
+            const migrator = orm().migrator()
+            const source = migrator.source(name, migrations).getSource();
+
+            if (source) {
+                for (const migration of source.migrationList) {
+                    await migrator.up().then(() => console.log(`migrate source "${migration}" up is complete.`))
+                }
+            } else {
+                console.error(`migration source "${name}" is not found.`)
+            }
             process.exit()
         },
 
@@ -129,7 +139,17 @@ module.exports = async ({app, cmd}) => {
             migrations = data.migrations
 
             cmd.system.buildApp(app)
-            await orm().migrator().source(name, migrations).down().then(() => console.log('migrate source down complete.'))
+
+            const migrator = orm().migrator()
+            const source = migrator.source(name, migrations).getSource();
+
+            if (source) {
+                for (const migration of source.migrationList) {
+                    await migrator.down().then(() => console.log(`migrate source "${migration}" down is complete.`))
+                }
+            } else {
+                console.error(`migration source "${name}" is not found.`)
+            }
             process.exit()
         },
 

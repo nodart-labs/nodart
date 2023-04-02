@@ -152,9 +152,13 @@ export class OrmMigrator {
 
         typeof src === 'string' && (src = this.fetchSource(src))
 
-        this._source = src instanceof OrmMigrationSource ? src : Reflect.construct(src, args) as OrmMigrationSource
+        this._source = src instanceof OrmMigrationSource ? src : src ? Reflect.construct(src, args) as OrmMigrationSource : null
 
         return this
+    }
+
+    getSource() {
+        return this._source
     }
 
     /**
