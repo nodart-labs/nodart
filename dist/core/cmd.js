@@ -25,7 +25,7 @@ class CommandLine {
         return this._command || (this._command = CommandLineParser.parseCommand());
     }
     get appCmdDir() {
-        return utils_1.fs.formatPath(utils_1.fs.path(this.app.rootDir, app_config_1.DEFAULT_CMD_DIR));
+        return utils_1.fs.formatPath(utils_1.fs.path(process.cwd(), app_config_1.DEFAULT_CMD_DIR));
     }
     get commandsDirectory() {
         return utils_1.fs.path(this.appCmdDir, (this.app.config.get.cli.commandDirName || app_config_1.DEFAULT_CMD_COMMANDS_DIR));

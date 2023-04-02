@@ -41,7 +41,7 @@ export class CommandLine {
 
     get appCmdDir() {
 
-        return fs.formatPath(fs.path(this.app.rootDir, DEFAULT_CMD_DIR))
+        return fs.formatPath(fs.path(process.cwd(), DEFAULT_CMD_DIR))
     }
 
     get commandsDirectory() {
