@@ -391,6 +391,10 @@ npx nodart migrate make-source --name source-name --migrations[optional] migrati
 npx nodart migrate source-up | source-down --name source-name --migrations[optional] migration1 migration2 ...
 ```
 
+```shell
+npx nodart migrate all-source-up | all-source-down --exclude[optional] excluded-migration-sourcename
+```
+
 #### Roll back the latest migration
 
 ```shell
@@ -445,6 +449,10 @@ npx nodart seed make-source --name source-name --seeds[optional] seed1 seed2 ...
 
 ```shell
 npx nodart seed source-run --name source-name --seeds[optional] seed1 seed2 ...
+```
+
+```shell
+npx nodart seed all-source-run --exclude[optional] excluded-seed-sourcename
 ```
 
 ---

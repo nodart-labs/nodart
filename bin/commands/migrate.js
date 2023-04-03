@@ -12,27 +12,61 @@ module.exports = async ({app, cmd}) => {
 
     const orm = () => app.service.db.orm
 
-    const pattern = /^[a-z_\-\d\/]+$/i
+    const pattern = /^[a-z_\-\d\/\\]+$/i
 
     const fetchMigrations = (name, migrations = []) => {
         if (Array.isArray(name)) {
             migrations = name.slice(1)
             name = name.at(0)
         }
-        name = $.hyphen2Camel($.trim(name, ['/', '-', '_']))
+        name = $.hyphen2Camel($.trim(name, ['/', '\\', '-', '_']))
         if (!name.match(pattern)) {
-            console.error('The source name is not match pattern: A-z/_-0-9')
+            console.error(`The source name "${name}" is not match pattern: A-z\/_-0-9`)
             process.exit(1)
         }
         migrations = object.uniq(migrations.map(m => {
-            m = m.toString().replace(/\//g, '')
+            m = m.toString().replace(/\//g, '').replace(/\\/g, '')
             if (!m.match(pattern)) {
-                console.error('The migration name not match pattern: A-z_-0-9')
+                console.error(`The migration name "${m}" is not match pattern: A-z_-0-9`)
                 process.exit(1)
             }
             return $.hyphen2Camel(m)
         }))
         return {name, migrations}
+    }
+
+    async function migrateSource(name, action, migrations = []) {
+        const data = fetchMigrations(name, migrations)
+        name = $.camel2Snake(data.name).toLowerCase()
+        migrations = data.migrations
+
+        const migrator = orm().migrator()
+        const source = migrator.source(name, migrations).getSource();
+
+        if (source) {
+            for (const migration of source.migrationList) {
+                await migrator[action]().then(() => console.log(`migrate source "${migration}" ${action} is complete.`))
+            }
+        } else {
+            console.error(`migration source "${name}" is not found.`)
+        }
+    }
+
+    function getMigrationSources(exclude = []) {
+        cmd.system.buildApp(app)
+
+        const sourcesDir = app.get('orm').migrationSourceDirectory
+        const sources = fs.dir(sourcesDir, ({file}) => {
+            if (!file) return
+
+            return file.endsWith('.js')
+              ? fs.skipExtension($.trimPath(fs.formatPath(file.replace(sourcesDir, ''))))
+              : false
+        })
+
+        Array.isArray(exclude) || (exclude = [exclude])
+
+        return sources.filter(name => !exclude.includes(name))
     }
 
     return {
@@ -41,7 +75,7 @@ module.exports = async ({app, cmd}) => {
             const data = fetchMigrations(name)
             name = $.camel2Snake(data.name).toLowerCase()
             await orm().migrator().make(name).then(() => console.log(
-                `A new migration "${name}" was created in directory ${fs.path(orm().config.migrations.directory)}`
+              `A new migration "${name}" was created in directory ${fs.path(orm().config.migrations.directory)}`
             ))
         },
 
@@ -133,6 +167,18 @@ module.exports = async ({app, cmd}) => {
             process.exit()
         },
 
+        async allSourceUp (exclude = []) {
+            const sources = getMigrationSources(exclude)
+
+            if (sources.length) {
+                for (const name of sources) {
+                    await migrateSource(name, 'up')
+                }
+            }
+
+            process.exit()
+        },
+
         async sourceDown (name, migrations = []) {
             const data = fetchMigrations(name, migrations)
             name = $.camel2Snake(data.name).toLowerCase()
@@ -153,24 +199,36 @@ module.exports = async ({app, cmd}) => {
             process.exit()
         },
 
+        async allSourceDown (exclude = []) {
+            const sources = getMigrationSources(exclude)
+
+            if (sources.length) {
+                for (const name of sources) {
+                    await migrateSource(name, 'down')
+                }
+            }
+
+            process.exit()
+        },
+
         async latest () {
             cmd.system.buildApp(app)
             await orm().migrator().latest().then(() => console.log(
-                'all migrations that have not yet been run are complete.'))
+              'all migrations that have not yet been run are complete.'))
             process.exit()
         },
 
         async rollback (all = false) {
             cmd.system.buildApp(app)
             await orm().migrator().rollback(all).then(() => console.log(
-                `${all ? 'all' : 'the latest'} migration group was rolled back.`))
+              `${all ? 'all' : 'the latest'} migration group was rolled back.`))
             process.exit()
         },
 
         async version () {
             cmd.system.buildApp(app)
             await orm().migrator().currentVersion().then((ver) => console.log(
-                `the current migration version is: ${ver}`))
+              `the current migration version is: ${ver}`))
             process.exit()
         },
 
@@ -182,10 +240,10 @@ module.exports = async ({app, cmd}) => {
             }).catch(err => {
                 console.error(err?.message)
                 if (err?.message?.toLowerCase().includes(
-                    'the migration directory is corrupt, the following files are missing')) {
+                  'the migration directory is corrupt, the following files are missing')) {
                     console.log(
-                        '(This issue probably is not a mistake, ' +
-                        'cause ORM client does not check the files in the custom migration sources folder.)')
+                      '(This issue probably is not a mistake, ' +
+                      'cause ORM client does not check the files in the custom migration sources folder.)')
                 }
             })
             process.exit()

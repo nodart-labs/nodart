@@ -266,8 +266,11 @@ class OrmSeeder {
      */
     source(src, ...args) {
         typeof src === 'string' && (src = this.fetchSource(src));
-        this._source = src instanceof OrmSeedSource ? src : Reflect.construct(src, args);
+        this._source = src instanceof OrmSeedSource ? src : src ? Reflect.construct(src, args) : null;
         return this;
+    }
+    getSource() {
+        return this._source;
     }
     /**
      * Creates a new seed file, with the name of the seed file being added.

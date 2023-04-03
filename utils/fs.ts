@@ -45,7 +45,11 @@ const dir = function (
             return
         }
 
-        if (callback?.({file}) === false) return
+        const res = callback?.({file})
+
+        if (res === false) return
+
+        if (res && typeof res === 'string') file = res
 
         results.push(file)
     })

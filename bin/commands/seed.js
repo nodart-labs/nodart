@@ -19,13 +19,13 @@ module.exports = async ({app, cmd}) => {
             seeds = name.slice(1)
             name = name.at(0)
         }
-        name = $.hyphen2Camel($.trim(name, ['/', '-', '_']))
+        name = $.hyphen2Camel($.trim(name, ['/', '\\', '-', '_']))
         if (!name.match(pattern)) {
-            console.error('The source name is not match pattern: A-z/_-0-9')
+            console.error('The source name is not match pattern: A-z\/_-0-9')
             process.exit(1)
         }
         seeds = object.uniq(seeds.map(s => {
-            s = s.toString().replace('/', '')
+            s = s.toString().replace(/\//g, '').replace(/\\/g, '')
             if (!s.match(pattern)) {
                 console.error('The seed name not match pattern: A-z_-0-9')
                 process.exit(1)
@@ -35,13 +35,28 @@ module.exports = async ({app, cmd}) => {
         return {name, seeds}
     }
 
+    async function seedSource(name, seeds = []) {
+        const data = fetchSeeds(name, seeds)
+        name = $.camel2Snake(data.name).toLowerCase()
+        seeds = data.seeds
+
+        const seeder = orm().seeder();
+        const source = seeder.source(name, seeds).getSource();
+
+        if (source) {
+            await seeder.run().then(() => console.log(`seed source "${name}" is complete.`))
+        } else {
+            console.error(`seed source "${name}" is not found.`)
+        }
+    }
+
     return {
 
         async make (name) {
             const data = fetchSeeds(name)
             name = $.camel2Snake(data.name).toLowerCase()
             await orm().seeder().make(name).then(() => console.log(
-                `A new seed "${name}" was created in directory ${fs.path(orm().config.seeds.directory)}`
+              `A new seed "${name}" was created in directory ${fs.path(orm().config.seeds.directory)}`
             ))
         },
 
@@ -108,13 +123,30 @@ module.exports = async ({app, cmd}) => {
         },
 
         async sourceRun (name, seeds = []) {
-            const data = fetchSeeds(name, seeds)
-            name = $.camel2Snake(data.name).toLowerCase()
-            seeds = data.seeds
-
             cmd.system.buildApp(app)
-            await orm().seeder().source(name, seeds).run().then(() => console.log('seed source complete.'))
+            await seedSource(name, seeds)
             process.exit()
         },
+
+        async allSourceRun(exclude = []) {
+            cmd.system.buildApp(app)
+
+            Array.isArray(exclude) || (exclude = [exclude])
+
+            const sourcesDir = app.get('orm').seedSourceDirectory
+            const sources = fs.dir(sourcesDir, ({file}) => {
+                if (!file) return
+
+                return file.endsWith('.js')
+                  ? fs.skipExtension($.trimPath(fs.formatPath(file.replace(sourcesDir, ''))))
+                  : false
+            }).filter(name => !exclude.includes(name))
+
+            for (const name of sources) {
+                await seedSource(name)
+            }
+
+            process.exit()
+        }
     }
 }

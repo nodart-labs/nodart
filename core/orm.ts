@@ -308,9 +308,13 @@ export class OrmSeeder {
 
         typeof src === 'string' && (src = this.fetchSource(src))
 
-        this._source = src instanceof OrmSeedSource ? src : Reflect.construct(src, args) as OrmSeedSource
+        this._source = src instanceof OrmSeedSource ? src : src ? Reflect.construct(src, args) as OrmSeedSource : null
 
         return this
+    }
+
+    getSource() {
+        return this._source
     }
 
     /**

@@ -28,8 +28,11 @@ const dir = function (directory, callback, excludeFolders) {
             results = results.concat(dir(file, callback, excludeFolders));
             return;
         }
-        if ((callback === null || callback === void 0 ? void 0 : callback({ file })) === false)
+        const res = callback === null || callback === void 0 ? void 0 : callback({ file });
+        if (res === false)
             return;
+        if (res && typeof res === 'string')
+            file = res;
         results.push(file);
     });
     return results;

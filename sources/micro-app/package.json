@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "nodart": "^4.3.2"
+    "nodart": "^4.3.3"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
