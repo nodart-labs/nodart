@@ -1,20 +1,17 @@
-const {OrmSeedSource} = require("nodart")
+const { OrmSeedSource } = require("nodart")
 
 class [NAME]Seed extends OrmSeedSource {
 
     seeds = {
 SEED>>>
-        /*
         [SEED_NAME]: (client) => {
-            return client('TABLE_NAME').truncate()
+            return client('[TABLE]').truncate()
                 .then(function () {
-                    // Inserts seed entries
-                    return client('TABLE_NAME').insert([
-                        // {},
+                    return client('[TABLE]').insert([
+                        {},
                     ])
                 })
         },
-        */
 SEED>>>
     }
 }

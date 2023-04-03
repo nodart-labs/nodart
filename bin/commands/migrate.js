@@ -116,7 +116,9 @@ module.exports = async ({app, cmd}) => {
                 if (Array.isArray(migrations) && migrations.length) {
                     const parts = output.split('MIGRATION>>>')
                     const out = [parts[0]]
-                    migrations.forEach(name => out.push(parts[1].replace('[MIGRATION_NAME]', name)))
+                    migrations.forEach(name => {
+                        out.push(parts[1].replace('[MIGRATION_NAME]', name).replace(/\[(TABLE)]/g, $.camel2Snake(name)))
+                    })
                     out.push(parts[2])
                     output = out.join('')
                 }

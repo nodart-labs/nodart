@@ -97,7 +97,9 @@ module.exports = async ({app, cmd}) => {
                 if (Array.isArray(seeds) && seeds.length) {
                     const parts = output.split('SEED>>>')
                     const out = [parts[0]]
-                    seeds.forEach(name => out.push(parts[1].replace('[SEED_NAME]', name)))
+                    seeds.forEach(name => {
+                        out.push(parts[1].replace('[SEED_NAME]', name).replace(/\[(TABLE)]/g, $.camel2Snake(name)))
+                    })
                     out.push(parts[2])
                     output = out.join('')
                 }
