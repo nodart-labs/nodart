@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg viewBox="92.546 58.889 400 400" width="400px" height="400px" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="292.511" cy="259.026" r="175" style="fill: rgba(99, 194, 226, 0.31);"/>
-  <path style="stroke-width: 17px; paint-order: fill; stroke: rgb(58, 150, 181); fill: rgb(202, 248, 255);" d="M 160.746 360.158 L 160.25 85.038 L 351.75 247.642 L 352.445 79.573 L 427.357 139.403 L 427.567 433.246 L 240.417 267.719 L 239.805 432.199 L 160.746 360.158 Z"/>
+<svg viewBox="92.546 58.889 400 400" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="292.511" cy="259.026" r="175" style="fill: rgba(99, 194, 226, 0.31);" transform="matrix(1.106429, 0, 0, 1.09756, -31.131989, -25.049099)"/>
+  <path style="stroke-width: 17px; paint-order: fill; stroke: rgb(48, 141, 176); fill: rgb(202, 248, 255);" d="M 177.081 332.249 L 176.658 140.266 L 339.883 253.733 L 340.475 136.451 L 404.328 178.204 L 404.507 383.252 L 244.989 267.744 L 244.464 382.524 L 177.081 332.249 Z"/>
 </svg>

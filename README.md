@@ -1,7 +1,7 @@
 <p align="center" dir="auto">
-<img src="sources/img/nodart-logo.svg" width="90">
+<img src="sources/img/nodart-logo.svg" width="130">
 </p>
-<h3 align="center">NodArt - The Art of Node.js.</h3>
+<h1 align="center">NodArt - The Art of Node.js</h1>
 <h3 align="center">A complete framework 
 <br/>
 for creating microservices and 
@@ -57,7 +57,7 @@ The framework is independent, thus it doesn't rely on other frameworks like Expr
 
 ---
 
-### APPLICATION CREATION, INITIALISATION AND START
+## APPLICATION CREATION, INITIALISATION AND START
 
 ### System requirements:
 
@@ -74,7 +74,7 @@ git clone https://github.com/nodart-labs/nodart-app.git
 
 #### 2. CLI
 
-it creates a base application structure with some usage examples.
+it creates a base application structure from cli.
 
 ```shell
 npx nodart create-app
@@ -102,10 +102,12 @@ import {App} from "nodart"
 
 const config = require('./config')
 
-// Be aware that this fundamental initialization 
-// automatically creates the necessary app files and folders.
-// (database folder, controllers folder, models folder, 
-// services folder, views folder and etc.)
+/**
+    Be aware that this fundamental initialization 
+    automatically creates the necessary app files and folders.
+    (database folder, controllers folder, models folder, 
+    services folder, views folder and etc.)
+*/
 
 new App({...config}).init().then(async (app) => {
 
@@ -132,7 +134,7 @@ new App({...config}).init().then(async (app) => {
 
 ---
 
-**STARTING HTTP SERVICE:**
+### STARTING HTTP SERVICE
 
 ```typescript
 
@@ -270,9 +272,31 @@ npm run dev
 npm run start
 ```
 
+## SPECIFYING LOADERS
+
+You can change the basic behavior of class loaders by specifying in the base project configuration
+
+```typescript
+import { App, ControllerLoader, nodart } from "nodart"
+
+class ControllerLoaderOverride extends ControllerLoader {
+  
+  protected _pathSuffix = "Controller"
+
+}
+
+const config = <nodart.app.AppConfigInterface>{
+    loaders: {
+        controller: ControllerLoaderOverride
+    }
+}
+
+new App(config)
+```
+
 ---
 
-### BENCHMARKS
+## BENCHMARKS
 
 The framework is built on the premise that performance
 and functionality should be perfectly balanced.
@@ -351,7 +375,7 @@ http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
 
 ---
 
-### COMMAND LINE INTERFACE
+## COMMAND LINE INTERFACE
 
 ### System Commands:
 
