@@ -1,38 +1,43 @@
-const fs = require('fs')
-const path = require('path')
-const decompress = require('decompress')
+const fs = require("node:fs");
+const path = require("node:path");
+const decompress = require("decompress");
 
-module.exports = ({app, cmd}) => {
+module.exports = ({ cmd }) => {
+  const isJS = !!cmd.command.options.js;
 
-    const isJS = !!cmd.command.options.js
+  const source = isJS
+    ? "../../sources/micro-app-js"
+    : "../../sources/micro-app";
 
-    const source = isJS ? '../../sources/micro-app-js' : '../../sources/micro-app'
+  if (!fs.existsSync(path.resolve(__dirname, source))) {
+    console.log("Failed to retrieve app source.");
+    process.exit(1);
+  }
 
-    if (!fs.existsSync(path.resolve(__dirname, source))) {
-        console.log('Failed to retrieve app source.')
-        process.exit(1)
-    }
+  const dest = path.resolve(process.cwd(), "nodart-app");
 
-    const dest = path.resolve(process.cwd(), 'nodart-app')
+  fs.cp(
+    path.resolve(__dirname, source),
+    dest,
+    { recursive: true },
+    async (err) => {
+      if (err) {
+        console.log("Failed to create app.");
+        console.log(err);
+        process.exit(1);
+      }
 
-    fs.cp(path.resolve(__dirname, source), dest, { recursive: true }, async (err) => {
+      const license = path.resolve(__dirname, "../../LICENSE");
+      const gitignore = path.resolve(__dirname, "../../sources/gitignore.zip");
 
-        if (err) {
-            console.log('Failed to create app.')
-            console.log(err)
-            process.exit(1)
-        }
+      fs.existsSync(license) &&
+        fs.copyFile(license, path.resolve(dest, "LICENSE"), () => {});
 
-        const license = path.resolve(__dirname, '../../LICENSE')
-        const gitignore = path.resolve(__dirname, '../../sources/gitignore.zip')
+      fs.existsSync(gitignore) && (await decompress(gitignore, dest));
 
-        fs.existsSync(license) && fs.copyFile(license, path.resolve(dest, 'LICENSE'), () => {})
+      console.log(`A new application created by path: ${dest}`);
 
-        fs.existsSync(gitignore) && await decompress(gitignore, dest)
-
-        console.log(`A new application created by path: ${dest}`)
-
-        process.exit()
-    })
-
-}
+      process.exit();
+    },
+  );
+};

@@ -8,24 +8,29 @@ module.exports = ((app, request, response) => {
         return;
     const handler = new http_handler_1.HttpHandler(app, request, response);
     handler.setCors();
-    try {
-        handler.serveStatic((result) => {
-            if (result)
-                return;
-            if (result === false) {
-                response.writeHead(http_1.HTTP_STATUS.NO_CONTENT, { 'Content-Type': http_1.HTTP_CONTENT_MIME_TYPES.icon });
-                response.end();
-                return;
-            }
-            handler.fetchRequestData(() => {
-                const route = app.router.getRouteByURLPathname(handler.url, handler.http.method);
-                if (false === handler.runHttpService(route) && false === handler.initController(route))
-                    throw new exception_1.HttpException(handler.http, { status: http_1.HTTP_STATUS.NOT_FOUND });
+    handler.serveStatic((result) => {
+        if (result)
+            return;
+        if (result === false) {
+            response.writeHead(http_1.HTTP_STATUS.NO_CONTENT, {
+                "Content-Type": http_1.HTTP_CONTENT_MIME_TYPES.icon,
+            });
+            response.end();
+            return;
+        }
+        handler.fetchRequestData(() => {
+            const route = app.router.getRouteByURLPathname(handler.url, handler.http.method);
+            new Promise((resolve) => {
+                if (false === handler.runHttpService(route) &&
+                    false === handler.initController(route))
+                    throw new exception_1.HttpException(handler.http, {
+                        status: http_1.HTTP_STATUS.NOT_FOUND,
+                    });
+                resolve(null);
+            }).catch((err) => {
+                app.resolveException(err, request, response);
             });
         });
-    }
-    catch (err) {
-        app.resolveException(err, request, response);
-    }
+    });
 });
 //# sourceMappingURL=http_request.js.map

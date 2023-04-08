@@ -4,7 +4,7 @@ exports.CommandLineLoader = void 0;
 const app_loader_1 = require("../core/app_loader");
 const cmd_1 = require("../core/cmd");
 class CommandLineLoader extends app_loader_1.AppLoader {
-    onGenerate(repository) {
+    onGenerate() {
         this._init();
     }
     call(args) {

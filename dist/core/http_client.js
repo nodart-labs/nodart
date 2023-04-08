@@ -7,12 +7,12 @@ const http_responder_1 = require("./http_responder");
 const engine_1 = require("./engine");
 const session_1 = require("./session");
 const exception_1 = require("./exception");
-exports.FILE_CONTENT_TYPE = 'application/octet-stream';
-exports.JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
-exports.TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
-exports.HTML_CONTENT_TYPE = 'text/html';
-exports.FORM_CONTENT_TYPE = 'multipart/form-data';
-const querystring = require('node:querystring');
+exports.FILE_CONTENT_TYPE = "application/octet-stream";
+exports.JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+exports.TEXT_CONTENT_TYPE = "text/plain; charset=utf-8";
+exports.HTML_CONTENT_TYPE = "text/html";
+exports.FORM_CONTENT_TYPE = "multipart/form-data";
+const querystring = require("node:querystring");
 class HttpContainer {
     constructor(config) {
         this.config = config;
@@ -28,13 +28,13 @@ class HttpContainer {
     }
     get method() {
         var _a;
-        return (_a = this.config).method || (_a.method = this.request.method.toLowerCase());
+        return ((_a = this.config).method || (_a.method = this.request.method.toLowerCase()));
     }
     get query() {
         return this.config.query;
     }
     get queryString() {
-        return this.config.queryString || '';
+        return this.config.queryString || "";
     }
     get request() {
         return this.config.request;
@@ -56,10 +56,12 @@ class HttpContainer {
     }
     get isFormData() {
         var _a;
-        return (_a = this.request.headers['content-type']) === null || _a === void 0 ? void 0 : _a.includes(exports.FORM_CONTENT_TYPE);
+        return (_a = this.request.headers["content-type"]) === null || _a === void 0 ? void 0 : _a.includes(exports.FORM_CONTENT_TYPE);
     }
     get hasError() {
-        return !!(this.exceptionMessage || this.exceptionData || this.form.hasError);
+        return !!(this.exceptionMessage ||
+            this.exceptionData ||
+            this.form.hasError);
     }
     get responseSent() {
         return HttpClient.getResponseIsSent(this.response);
@@ -70,19 +72,20 @@ class HttpContainer {
             return this._responder;
         const responder = this.config.responder || http_responder_1.HttpResponder;
         const engineConfig = ((_a = this.config.engine) === null || _a === void 0 ? void 0 : _a.config) || {};
-        const engine = typeof ((_b = this.config.engine) === null || _b === void 0 ? void 0 : _b.client) === 'function'
+        const engine = typeof ((_b = this.config.engine) === null || _b === void 0 ? void 0 : _b.client) === "function"
             ? this.config.engine.client(engineConfig)
             : new engine_1.Engine(engineConfig);
-        return this._responder = Reflect.construct(responder, [this, engine]);
+        return (this._responder = Reflect.construct(responder, [this, engine]));
     }
     get session() {
         var _a, _b;
         if (this._session)
             return this._session;
         const sessionConfig = ((_a = this.config.session) === null || _a === void 0 ? void 0 : _a.config) || {};
-        return this._session = typeof ((_b = this.config.session) === null || _b === void 0 ? void 0 : _b.client) === 'function'
-            ? this.config.session.client(sessionConfig, this)
-            : new session_1.Session(sessionConfig).load(this);
+        return (this._session =
+            typeof ((_b = this.config.session) === null || _b === void 0 ? void 0 : _b.client) === "function"
+                ? this.config.session.client(sessionConfig, this)
+                : new session_1.Session(sessionConfig).load(this));
     }
     assignData(config) {
         Object.assign(this.config, config);
@@ -112,32 +115,36 @@ class HttpContainer {
     send(content, status = http_1.HTTP_STATUS.OK, contentType) {
         this.setResponseData({
             status,
-            contentType: contentType || HttpClient.getDefaultContentType('json', this.config.mimeTypes),
-            content: { json: content }
+            contentType: contentType ||
+                HttpClient.getDefaultContentType("json", this.config.mimeTypes),
+            content: { json: content },
         });
     }
     sendText(content, status = http_1.HTTP_STATUS.OK, contentType) {
         this.setResponseData({
             status,
-            contentType: contentType || HttpClient.getDefaultContentType('text', this.config.mimeTypes, exports.TEXT_CONTENT_TYPE),
-            content: { text: content }
+            contentType: contentType ||
+                HttpClient.getDefaultContentType("text", this.config.mimeTypes, exports.TEXT_CONTENT_TYPE),
+            content: { text: content },
         });
     }
     sendHtml(content, status = http_1.HTTP_STATUS.OK, contentType) {
         this.setResponseData({
             status,
-            contentType: contentType || HttpClient.getDefaultContentType('html', this.config.mimeTypes, exports.HTML_CONTENT_TYPE),
-            content: { html: content }
+            contentType: contentType ||
+                HttpClient.getDefaultContentType("html", this.config.mimeTypes, exports.HTML_CONTENT_TYPE),
+            content: { html: content },
         });
     }
     sendFile(filePath, contentType) {
         if (this.responseSent)
             return;
         this.response.writeHead(http_1.HTTP_STATUS.OK, {
-            'Content-Type': contentType || HttpClient.getDefaultContentType(utils_1.fs.getExtension(filePath), this.config.mimeTypes, exports.FILE_CONTENT_TYPE)
+            "Content-Type": contentType ||
+                HttpClient.getDefaultContentType(utils_1.fs.getExtension(filePath), this.config.mimeTypes, exports.FILE_CONTENT_TYPE),
         });
         const readStream = utils_1.fs.system.createReadStream(filePath);
-        readStream.on('error', err => {
+        readStream.on("error", (err) => {
             var _a, _b;
             this.handleError(err, `Could not read data from file ${filePath}.`);
             (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
@@ -168,36 +175,37 @@ class HttpContainer {
             return;
         }
         const chunks = [];
-        this.request.on('data', chunk => chunks.push(chunk));
-        this.request.on('end', () => {
+        this.request.on("data", (chunk) => chunks.push(chunk));
+        this.request.on("end", () => {
             this._data = {};
             this.onFetchData(Buffer.concat(chunks), (err) => {
                 if (err) {
                     onError === null || onError === void 0 ? void 0 : onError(err);
-                    this.handleError(err, 'Failed to fetch data from request');
+                    this.handleError(err, "Failed to fetch data from request");
                     return;
                 }
                 this.isDataFetched = true;
                 callback(this._data);
             });
         });
-        this.request.on('error', (err) => {
+        this.request.on("error", (err) => {
             var _a, _b;
             onError === null || onError === void 0 ? void 0 : onError(err);
-            this.handleError(err, 'Failed to fetch data from request');
+            this.handleError(err, "Failed to fetch data from request");
             (_b = (_a = this.config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
         });
-        this.request.on('aborted', () => {
-            onError === null || onError === void 0 ? void 0 : onError(new Error('request aborted'));
+        this.request.on("aborted", () => {
+            onError === null || onError === void 0 ? void 0 : onError(new Error("request aborted"));
             this.handleError();
         });
     }
     onFetchData(buffer, callback) {
         const data = buffer.toString().trim();
         try {
-            this._data = data.startsWith('{') || data.startsWith('[')
-                ? JSON.parse(data)
-                : HttpClient.parseURLQuery(data);
+            this._data =
+                data.startsWith("{") || data.startsWith("[")
+                    ? JSON.parse(data)
+                    : HttpClient.parseURLQuery(data);
             callback();
         }
         catch (e) {
@@ -211,7 +219,7 @@ class HttpFormData {
         var _a;
         this.http = http;
         this.config = config;
-        this.client = require('busboy');
+        this.client = require("busboy");
         this.fields = {};
         this.files = {};
         this._stat = {
@@ -222,13 +230,15 @@ class HttpFormData {
         this._errors = [];
         this._filePromises = [];
         (_a = this.config).options || (_a.options = {});
-        this.config.uploadDir = utils_1.fs.isDir(this.config.uploadDir) ? this.config.uploadDir : require('os').tmpdir();
+        this.config.uploadDir = utils_1.fs.isDir(this.config.uploadDir)
+            ? this.config.uploadDir
+            : require("os").tmpdir();
     }
     get uploadDir() {
         return this.config.uploadDir;
     }
     get form() {
-        return this.client(Object.assign(Object.assign({}, this.config.options || {}), { headers: this.http.request.headers }));
+        return this.client(Object.assign(Object.assign({}, (this.config.options || {})), { headers: this.http.request.headers }));
     }
     get ready() {
         return !!this.isDataFetched;
@@ -250,20 +260,20 @@ class HttpFormData {
                 resolve(this);
                 return;
             }
-            form.on('field', (name, value, info) => {
+            form.on("field", (name, value, info) => {
                 this._onFieldUpload(name, value, info, filter === null || filter === void 0 ? void 0 : filter.field);
             });
-            form.on('file', (name, file, info) => {
+            form.on("file", (name, file, info) => {
                 this._onFileUpload(name, file, info, filter === null || filter === void 0 ? void 0 : filter.file);
             });
-            form.on('close', () => {
+            form.on("close", () => {
                 this.isDataFetched = true;
                 Promise.all(this._filePromises).then(() => {
                     resolve(this);
                     this._filePromises = [];
                 });
             });
-            form.on('error', (error) => {
+            form.on("error", (error) => {
                 this._errors.push({ error });
                 reject(error);
             });
@@ -274,8 +284,10 @@ class HttpFormData {
         if (false === (filter === null || filter === void 0 ? void 0 : filter(field, value, info)))
             return;
         if (field in this.fields) {
-            Array.isArray(this.fields[field]) || (this.fields[field] = [this.fields[field]]);
-            Array.isArray(this._stat[field]) || (this._stat[field] = [this._stat[field]]);
+            Array.isArray(this.fields[field]) ||
+                (this.fields[field] = [this.fields[field]]);
+            Array.isArray(this._stat[field]) ||
+                (this._stat[field] = [this._stat[field]]);
             this.fields[field].push(value);
             this._stat[field].push(info);
             return;
@@ -293,10 +305,10 @@ class HttpFormData {
             return;
         let resolver = null;
         let error = null;
-        this._filePromises.push(new Promise(res => resolver = res));
+        this._filePromises.push(new Promise((res) => (resolver = res)));
         const path = utils_1.fs.join(this.uploadDir, utils_1.$.random.hex());
         const writeStream = utils_1.fs.system.createWriteStream(path);
-        writeStream.on('close', () => {
+        writeStream.on("close", () => {
             if (error) {
                 this._errors.push({ field, error });
                 resolver();
@@ -307,14 +319,16 @@ class HttpFormData {
             this._stat.files[field].push(info);
             resolver();
         });
-        writeStream.on('error', (err) => error = err);
+        writeStream.on("error", (err) => (error = err));
         file.pipe(writeStream);
     }
 }
 exports.HttpFormData = HttpFormData;
 class HttpClient {
     static getResponseIsSent(response) {
-        return response.headersSent || response.writableEnded || response.writableFinished;
+        return (response.headersSent ||
+            response.writableEnded ||
+            response.writableFinished);
     }
     static setCorsHeaders(response, headers) {
         headers = Object.assign(Object.assign({}, HttpClient.corsHeaders), headers || {});
@@ -323,51 +337,57 @@ class HttpClient {
         });
     }
     static mimeTypes(assign) {
-        return assign ? Object.assign(Object.assign({}, http_1.HTTP_CONTENT_MIME_TYPES), assign) : http_1.HTTP_CONTENT_MIME_TYPES;
+        return assign
+            ? Object.assign(Object.assign({}, http_1.HTTP_CONTENT_MIME_TYPES), assign) : http_1.HTTP_CONTENT_MIME_TYPES;
     }
     static getHttpResponseData(http, assignData) {
         http.responseData || (http.responseData = {});
         (assignData === null || assignData === void 0 ? void 0 : assignData.content) && (http.responseData.content = assignData === null || assignData === void 0 ? void 0 : assignData.content);
-        http.responseData.status = (assignData === null || assignData === void 0 ? void 0 : assignData.status)
-            || http.responseData.status || http.response.statusCode || http_1.HTTP_STATUS.OK;
-        http.responseData.contentType = (assignData === null || assignData === void 0 ? void 0 : assignData.contentType)
-            || http.responseData.contentType || http.response.getHeader('content-type');
+        http.responseData.status =
+            (assignData === null || assignData === void 0 ? void 0 : assignData.status) ||
+                http.responseData.status ||
+                http.response.statusCode ||
+                http_1.HTTP_STATUS.OK;
+        http.responseData.contentType =
+            (assignData === null || assignData === void 0 ? void 0 : assignData.contentType) ||
+                http.responseData.contentType ||
+                http.response.getHeader("content-type");
         HttpClient.getHttpResponseDataContent(http.responseData);
         return http.responseData;
     }
     static getHttpResponseDataContent(data) {
-        data.content || (data.content = { json: '' });
+        data.content || (data.content = { json: "" });
         const contentEntry = Object.keys(data.content)[0];
-        contentEntry === 'json'
-            && data.content[contentEntry]
-            && typeof data.content[contentEntry] === 'object'
-            && (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]));
+        contentEntry === "json" &&
+            data.content[contentEntry] &&
+            typeof data.content[contentEntry] === "object" &&
+            (data.content[contentEntry] = JSON.stringify(data.content[contentEntry]));
         data.contentType || (data.contentType = HttpClient.getDefaultContentType(contentEntry));
         return data.content[contentEntry];
     }
     static getDefaultContentType(entry, mimeTypes = {}, defaultMimeType = exports.JSON_CONTENT_TYPE) {
-        return mimeTypes[entry] || http_1.HTTP_CONTENT_MIME_TYPES[entry] || defaultMimeType;
+        return (mimeTypes[entry] || http_1.HTTP_CONTENT_MIME_TYPES[entry] || defaultMimeType);
     }
     static getStatusCodeMessage(status) {
         for (const [key, value] of Object.entries(http_1.HTTP_STATUS)) {
             if (status === value)
                 return key;
         }
-        return '';
+        return "";
     }
     static getDataFromStatusCode(http, statusOnNone) {
         var _a, _b, _c, _d;
         http.responseData || (http.responseData = {});
         const status = (_b = (_a = http.responseData.status) !== null && _a !== void 0 ? _a : statusOnNone) !== null && _b !== void 0 ? _b : http.response.statusCode;
-        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader('content-type')) !== null && _d !== void 0 ? _d : exports.JSON_CONTENT_TYPE;
+        const contentType = (_d = (_c = http.responseData.contentType) !== null && _c !== void 0 ? _c : http.response.getHeader("content-type")) !== null && _d !== void 0 ? _d : exports.JSON_CONTENT_TYPE;
         const content = HttpClient.getStatusCodeMessage(status);
         return { status, contentType, content };
     }
     static parseURL(url) {
-        const entries = url.split('?');
+        const entries = url.split("?");
         url = entries[0];
         entries.shift();
-        const queryString = entries.length ? entries.join('?') : '';
+        const queryString = entries.length ? entries.join("?") : "";
         return {
             url,
             queryString,
@@ -378,32 +398,34 @@ class HttpClient {
         return querystring.parse(query);
     }
     static fetchHostData(httpHost) {
-        const { port, protocol, host, hostname } = require('url').parse(HttpClient.getURI(httpHost));
+        const { port, protocol, host, hostname } = require("url").parse(HttpClient.getURI(httpHost));
         return Object.assign(Object.assign({}, httpHost), { port, protocol, host, hostname });
     }
     static getURI(data) {
-        return `${data.protocol.replace(':', '')}://${data.host.replace(':' + data.port, '')}` + (data.port ? ':' + data.port : '');
+        return (`${data.protocol.replace(":", "")}://${data.host.replace(":" + data.port, "")}` + (data.port ? ":" + data.port : ""));
     }
     static sendJSON(response, body, status = http_1.HTTP_STATUS.OK) {
-        response.writeHead(status, { 'Content-Type': exports.JSON_CONTENT_TYPE });
-        response.end(typeof body === 'string' ? body : JSON.stringify(body));
+        response.writeHead(status, { "Content-Type": exports.JSON_CONTENT_TYPE });
+        response.end(typeof body === "string" ? body : JSON.stringify(body));
     }
-    static throwBadRequest(message = '') {
-        throw new exception_1.HttpException(message || 'The current HTTP method receives no response from the request method.', {
-            status: http_1.HTTP_STATUS.BAD_REQUEST
+    static throwBadRequest(message = "") {
+        throw new exception_1.HttpException(message ||
+            "The current HTTP method receives no response from the request method.", {
+            status: http_1.HTTP_STATUS.BAD_REQUEST,
         });
     }
-    static throwNoContent(message = '') {
-        throw new exception_1.HttpException(message || 'The current HTTP request receives no content from the response.', {
-            status: http_1.HTTP_STATUS.NO_CONTENT
+    static throwNoContent(message = "") {
+        throw new exception_1.HttpException(message ||
+            "The current HTTP request receives no content from the response.", {
+            status: http_1.HTTP_STATUS.NO_CONTENT,
         });
     }
 }
 HttpClient.corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Request-Method': '*',
-    'Access-Control-Allow-Methods': 'OPTIONS, GET',
-    'Access-Control-Allow-Headers': '*',
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Request-Method": "*",
+    "Access-Control-Allow-Methods": "OPTIONS, GET",
+    "Access-Control-Allow-Headers": "*",
 };
 exports.HttpClient = HttpClient;
 //# sourceMappingURL=http_client.js.map

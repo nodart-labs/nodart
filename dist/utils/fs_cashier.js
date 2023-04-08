@@ -18,7 +18,7 @@ class FSCashier {
             [file]: data,
             [pathSkipExt]: data,
             [index_1.fs.formatPath(file)]: data,
-            [index_1.fs.formatPath(pathSkipExt)]: data
+            [index_1.fs.formatPath(pathSkipExt)]: data,
         };
     }
     addFile(file, data) {
@@ -33,42 +33,46 @@ class FSCashier {
     }
     requireFileData(file, extension) {
         extension || (extension = index_1.fs.getExtension(file));
-        return ['js', 'ts', 'mjs'].includes(extension) ? require(file) : {};
+        return ["js", "ts", "mjs"].includes(extension) ? require(file) : {};
     }
     cacheFolder(folder) {
         FSCashier._files = {};
         index_1.fs.dir(folder, ({ file, directory }) => {
             var _a;
-            if (directory === null || directory === void 0 ? void 0 : directory.includes('.'))
+            if (directory === null || directory === void 0 ? void 0 : directory.includes("."))
                 return false;
             if (!file)
                 return;
             const extension = index_1.fs.getExtension(file);
             if (!((_a = this.config.extensions) === null || _a === void 0 ? void 0 : _a.includes(extension)))
                 return;
-            const data = { ext: extension, data: this.requireFileData(file, extension) };
+            const data = {
+                ext: extension,
+                data: this.requireFileData(file, extension),
+            };
             this.addFile(file, data);
         }, this.config.excludeFolders);
     }
     watchFolder(folder, callback) {
-        index_1.fs.system.readdirSync(folder).forEach(path => {
+        index_1.fs.system.readdirSync(folder).forEach((path) => {
             var _a;
             path = index_1.fs.path(folder, path);
-            if (!index_1.fs.isDir(path) || path.includes('.'))
+            if (!index_1.fs.isDir(path) || path.includes("."))
                 return;
-            if ((_a = this.config.excludeFolders) === null || _a === void 0 ? void 0 : _a.some(v => path.endsWith(index_1.fs.path(folder, v))))
+            if ((_a = this.config.excludeFolders) === null || _a === void 0 ? void 0 : _a.some((v) => path.endsWith(index_1.fs.path(folder, v))))
                 return;
             index_1.fs.system.watch(path, { recursive: true }, (mode, file) => {
                 if (false === (callback === null || callback === void 0 ? void 0 : callback(mode, file)))
                     return;
-                setTimeout(() => index_1.fs.system.existsSync(index_1.fs.join(path, file)) && this.cacheFolder(folder), 1);
+                setTimeout(() => index_1.fs.system.existsSync(index_1.fs.join(path, file)) &&
+                    this.cacheFolder(folder), 1);
             });
         });
     }
     watchFile(path, callback) {
         if (!index_1.fs.system.existsSync(path) || !index_1.fs.isFile(path))
             return;
-        const folder = require('path').dirname(path);
+        const folder = require("path").dirname(path);
         index_1.fs.system.watch(path, (mode, file) => {
             if (false === (callback === null || callback === void 0 ? void 0 : callback(mode, file, folder)))
                 return;
@@ -77,13 +81,16 @@ class FSCashier {
             if (!index_1.fs.system.existsSync(file))
                 return;
             const extension = index_1.fs.getExtension(file);
-            const data = { ext: extension, data: this.requireFileData(file, extension) };
+            const data = {
+                ext: extension,
+                data: this.requireFileData(file, extension),
+            };
             this.addFile(file, data);
         });
     }
     removeFile(path) {
         const paths = this.createFileEntry(path);
-        Object.keys(paths).forEach(key => FSCashier._files[key] && delete FSCashier._files[key]);
+        Object.keys(paths).forEach((key) => FSCashier._files[key] && delete FSCashier._files[key]);
     }
 }
 FSCashier._files = {};

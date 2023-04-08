@@ -1,5 +1,5 @@
 export = Object.freeze({
-    states: {},
-    events: {},
-    listeners: []
-})
+  states: {},
+  events: {},
+  listeners: [],
+});

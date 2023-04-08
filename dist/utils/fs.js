@@ -1,8 +1,8 @@
 "use strict";
-const index_1 = require("./index");
 const fs_cashier_1 = require("./fs_cashier");
-const fs = require('fs');
-const _path = require('path');
+const index_1 = require("./index");
+const fs = require("fs");
+const _path = require("path");
 const separator = _path.sep;
 const cashier = fs_cashier_1.FSCashier;
 const stat = function (path) {
@@ -23,7 +23,8 @@ const dir = function (directory, callback, excludeFolders) {
         if (isDir(file)) {
             if ((callback === null || callback === void 0 ? void 0 : callback({ directory: file })) === false)
                 return;
-            if (excludeFolders && excludeFolders.some(v => file.endsWith(path(index_1.$.trimPath(v)))))
+            if (excludeFolders &&
+                excludeFolders.some((v) => file.endsWith(path(index_1.$.trimPath(v)))))
                 return;
             results = results.concat(dir(file, callback, excludeFolders));
             return;
@@ -31,7 +32,7 @@ const dir = function (directory, callback, excludeFolders) {
         const res = callback === null || callback === void 0 ? void 0 : callback({ file });
         if (res === false)
             return;
-        if (res && typeof res === 'string')
+        if (res && typeof res === "string")
             file = res;
         results.push(file);
     });
@@ -43,7 +44,9 @@ const rmDir = function (directory, callback) {
     try {
         if ("rmdirSync" in fs) {
             fs.rmdirSync(directory, { recursive: true });
-            isDir(directory) ? callback === null || callback === void 0 ? void 0 : callback(`Could not delete directory "${directory}"`) : callback === null || callback === void 0 ? void 0 : callback();
+            isDir(directory)
+                ? callback === null || callback === void 0 ? void 0 : callback(`Could not delete directory "${directory}"`)
+                : callback === null || callback === void 0 ? void 0 : callback();
         }
         else {
             fs.rm(directory, { recursive: true }, (err) => callback === null || callback === void 0 ? void 0 : callback(err));
@@ -53,7 +56,7 @@ const rmDir = function (directory, callback) {
         callback === null || callback === void 0 ? void 0 : callback(e);
     }
 };
-const write = function (path, data = '') {
+const write = function (path, data = "") {
     try {
         fs.writeFileSync(path, data);
         return true;
@@ -76,10 +79,12 @@ const isFile = function (path, ext) {
     var _a;
     const exists = (path, ext) => {
         var _a;
-        path = path + '.' + trimExtension(ext);
+        path = path + "." + trimExtension(ext);
         return cashier.isFile(path) || !!((_a = stat(path)) === null || _a === void 0 ? void 0 : _a.isFile());
     };
-    return ext ? !!ext.some(ext => exists(path, ext)) : cashier.isFile(path) || !!((_a = stat(path)) === null || _a === void 0 ? void 0 : _a.isFile());
+    return ext
+        ? !!ext.some((ext) => exists(path, ext))
+        : cashier.isFile(path) || !!((_a = stat(path)) === null || _a === void 0 ? void 0 : _a.isFile());
 };
 const isDir = function (path) {
     var _a;
@@ -87,7 +92,9 @@ const isDir = function (path) {
 };
 const json = function (path) {
     try {
-        return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : undefined;
+        return fs.existsSync(path)
+            ? JSON.parse(fs.readFileSync(path, "utf8"))
+            : undefined;
     }
     catch (e) {
         console.error(e);
@@ -96,9 +103,10 @@ const json = function (path) {
 const read = function (path) {
     try {
         if (fs.existsSync(path))
-            return fs.readFileSync(path, 'utf8');
+            return fs.readFileSync(path, "utf8");
     }
     catch (_a) {
+        /* empty */
     }
 };
 const mkdir = function (path, chmod = 0o744) {
@@ -107,7 +115,7 @@ const mkdir = function (path, chmod = 0o744) {
 const mkDeepDir = function (path, chmod = 0o744) {
     path && fs.mkdirSync(path, { recursive: true, mode: chmod });
 };
-const copy = function (src, dest, callback = (() => undefined)) {
+const copy = function (src, dest, callback = () => undefined) {
     try {
         fs.copyFile(src, dest, callback);
         return true;
@@ -119,7 +127,9 @@ const copy = function (src, dest, callback = (() => undefined)) {
 const include = function (path, params = { log: true }) {
     try {
         params.skipExt && (path = skipExtension(path));
-        const data = cashier.isFile(path) ? cashier.files[path].data : require(path);
+        const data = cashier.isFile(path)
+            ? cashier.files[path].data
+            : require(path);
         const resolve = params.success && params.success(data);
         return resolve || data;
     }
@@ -131,8 +141,10 @@ const include = function (path, params = { log: true }) {
 };
 const getSource = function (path, sourceProtoObject) {
     try {
-        const data = cashier.isFile(path) ? cashier.files[path].data : require(path);
-        if (!(data && typeof data === 'object'))
+        const data = cashier.isFile(path)
+            ? cashier.files[path].data
+            : require(path);
+        if (!(data && typeof data === "object"))
             return;
         const keys = Object.keys(data);
         let i = 0;
@@ -142,6 +154,7 @@ const getSource = function (path, sourceProtoObject) {
         }
     }
     catch (_a) {
+        /* empty */
     }
 };
 const filename = function (path) {
@@ -151,25 +164,25 @@ const parseFile = function (path) {
     return isFile(path) ? _path.parse(path) : {};
 };
 const formatPath = function (path) {
-    return path ? index_1.$.trimPathEnd(path).replace(/\\/g, '/').replace(/\/$/, '') : '';
+    return path ? index_1.$.trimPathEnd(path).replace(/\\/g, "/").replace(/\/$/, "") : "";
 };
-const path = function (path, to = '') {
+const path = function (path, to = "") {
     return to
         ? _path.resolve(path, index_1.$.trimPath(to))
-        : _path.join(path[0] === separator ? path : separator === '/' ? '/' + path : path, '');
+        : _path.join(path[0] === separator ? path : separator === "/" ? "/" + path : path, "");
 };
 const join = function (path, to) {
     return _path.join(path, index_1.$.trimPath(to));
 };
 const skipExtension = function (path) {
-    return path.replace(/\.[a-z\d]+$/i, '');
+    return path.replace(/\.[a-z\d]+$/i, "");
 };
 const getExtension = function (path, withDot = false) {
     const matches = path === null || path === void 0 ? void 0 : path.match(/(\.)([^.]+?)$/g);
-    return matches ? (withDot ? matches[0] : matches[0].replace('.', '')) : '';
+    return matches ? (withDot ? matches[0] : matches[0].replace(".", "")) : "";
 };
 const trimExtension = function (ext) {
-    return ext.replace(/^(\.)*/g, '');
+    return ext.replace(/^(\.)*/g, "");
 };
 module.exports = {
     system: fs,
@@ -195,6 +208,6 @@ module.exports = {
     rmDir,
     skipExtension,
     getExtension,
-    trimExtension
+    trimExtension,
 };
 //# sourceMappingURL=fs.js.map

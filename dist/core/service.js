@@ -28,18 +28,18 @@ class ServiceFactory {
     createServiceScope(http, route) {
         const dependencies = {
             service: undefined,
-            model: undefined
+            model: undefined,
         };
         const status = {
             service: false,
-            model: false
+            model: false,
         };
         const scope = {
             app: this.app,
             route,
             http,
-            service: () => this.intercept('service', dependencies, scope, status),
-            model: () => this.intercept('model', dependencies, scope, status),
+            service: () => this.intercept("service", dependencies, scope, status),
+            model: () => this.intercept("model", dependencies, scope, status),
             controller: () => (0, app_1.loaders)().controller.getControllerByRouteDescriptor(this.app, route, http),
         };
         return scope;
@@ -51,12 +51,15 @@ class ServiceFactory {
             this.app.di.use(dependencies, {
                 getDependency(dependencies, property, dependency) {
                     switch (property) {
-                        case 'service':
+                        case "service":
                             return Reflect.construct(dependency, [scope]);
-                        case 'model':
-                            return (0, app_1.loaders)().model.call([dependency, scope.app]);
+                        case "model":
+                            return (0, app_1.loaders)().model.call([
+                                dependency,
+                                scope.app,
+                            ]);
                     }
-                }
+                },
             });
         }
         return dependencies[property];

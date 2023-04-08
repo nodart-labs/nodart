@@ -1,45 +1,50 @@
-const decompress = require('decompress')
-const fs = require('fs')
-const path = require('path')
+const fs = require("node:fs");
+const path = require("node:path");
+const decompress = require("decompress");
 
-module.exports = async ({app, cmd}) => {
+module.exports = async ({ app }) => {
+  const source = path.resolve(__dirname, "../../sources/nodart-app.zip");
 
-    const source = path.resolve(__dirname, '../../sources/nodart-app.zip')
+  await decompress(source, app.rootDir)
+    .then(() => {
+      const err =
+        "Warning: Failed to apply package version from existing source.";
 
-    await decompress(source, app.rootDir).then(() => {
+      console.log("done!");
 
-        const err = 'Warning: Failed to apply package version from existing source.'
+      try {
+        const packJson = app.rootDir + "/package.json";
 
-        console.log('done!')
+        if (!fs.existsSync(packJson)) return;
 
-        try {
-            const packJson = app.rootDir + '/package.json'
+        const pack = JSON.parse(
+          fs.readFileSync(packJson, { encoding: "utf-8" }),
+        );
 
-            if (!fs.existsSync(packJson)) return
+        if (!pack?.dependencies?.nodart) {
+          console.log(err);
 
-            const pack = JSON.parse(fs.readFileSync(packJson, {encoding: "utf-8"}))
-
-            if (!pack?.dependencies?.nodart) {
-                console.log(err)
-                return process.exit()
-            }
-
-            const ver = (str, v) => str.replace(/("nodart")(\s*:\s*")([^"]+)/, `$1$2${v}`)
-
-            const appPackage = fs.readFileSync(app.rootDir + '/nodart-app/package.json', {encoding: "utf-8"})
-
-            fs.writeFileSync(
-                app.rootDir + '/nodart-app/package.json',
-                ver(appPackage, pack.dependencies.nodart),
-                {encoding: "utf-8"}
-            )
-
-        } catch (e) {
-            console.log(err)
+          return process.exit();
         }
 
-    }).catch(() => {
-        console.error('Failed to unpack base application resource file.')
-    })
+        const ver = (str, v) =>
+          str.replace(/("nodart")(\s*:\s*")([^"]+)/, `$1$2${v}`);
 
-}
+        const appPackage = fs.readFileSync(
+          app.rootDir + "/nodart-app/package.json",
+          { encoding: "utf-8" },
+        );
+
+        fs.writeFileSync(
+          app.rootDir + "/nodart-app/package.json",
+          ver(appPackage, pack.dependencies.nodart),
+          { encoding: "utf-8" },
+        );
+      } catch (e) {
+        console.log(err);
+      }
+    })
+    .catch(() => {
+      console.error("Failed to unpack base application resource file.");
+    });
+};

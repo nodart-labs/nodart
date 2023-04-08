@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-const {App} = require('../dist')
+const { App } = require("../dist");
 
-const rootDir = process.cwd()
+const rootDir = process.cwd();
 
-const app = new App({rootDir})
+const app = new App({ rootDir });
 
-const cmd = app.get('cmd').call()
+const cmd = app.get("cmd").call();
 
-cmd.system.run()
+cmd.system.run();

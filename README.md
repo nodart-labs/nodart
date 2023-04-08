@@ -24,9 +24,7 @@ large-scale server-side applications for businesses
 </a>
 </p>
 
-
 ---
-
 
 The framework adheres to the concept of "just install and use".
 Everything you need to run a server application:
@@ -61,8 +59,8 @@ The framework is independent, thus it doesn't rely on other frameworks like Expr
 
 ### System requirements:
 
-* OS Linux or Windows
-* Node.js >= **v16.14.2**
+- OS Linux or Windows
+- Node.js >= **v16.14.2**
 
 #### 1. GIT
 
@@ -97,10 +95,9 @@ you can read more about application architecture.
 **BASIC INITIALISATION:**
 
 ```typescript
+import { App } from "nodart";
 
-import {App} from "nodart"
-
-const config = require('./config')
+const config = require("./config");
 
 /**
     Be aware that this fundamental initialization 
@@ -109,27 +106,22 @@ const config = require('./config')
     services folder, views folder and etc.)
 */
 
-new App({...config}).init().then(async (app) => {
+new App({ ...config }).init().then(async (app) => {
+  const server = await app.serve(3000, "http", "127.0.0.1");
 
-    const server = await app.serve(3000, 'http', '127.0.0.1')
+  // do anything on startup, for example:
 
-    // do anything on startup, for example:
+  // configure server:
+  server.timeout = 30000; // setting max timeout on requests
 
-    // configure server:
-    server.timeout = 30000 // setting max timeout on requests
+  // or create payload for all HTTP requests:
+  app.service.setRequestPayload((req, res) => {});
 
-    // or create payload for all HTTP requests:
-    app.service.setRequestPayload((req, res) => {
-    })
+  // or launch HTTP service:
+  const http = app.service.http;
 
-    // or launch HTTP service: 
-    const http = app.service.http
-
-    http.get('url/path/with/:params', (scope) => {
-    })
-
-})
-
+  http.get("url/path/with/:params", (scope) => {});
+});
 ```
 
 ---
@@ -137,90 +129,77 @@ new App({...config}).init().then(async (app) => {
 ### STARTING HTTP SERVICE
 
 ```typescript
+import { App } from "nodart";
 
-import {App} from "nodart"
+const config = require("./config");
 
-const config = require('./config')
+new App({ ...config }).start(3000).then(({ app, http, server }) => {
+  // base HTTP processing:
 
-new App({...config}).start(3000).then(({app, http, server}) => {
+  http.get("/path/:first/:second/:+optional_id?", ({ route, http }) => {
+    const { first, second, optional_id } = route.params;
 
-    // base HTTP processing:
+    const { httpQueryStringParam } = http.query;
 
-    http.get('/path/:first/:second/:+optional_id?', ({route, http}) => {
+    // sending template from views folder:
+    http.respond.view("path/to/template/from/views/folder", { queryParam });
 
-        const {first, second, optional_id} = route.params
+    // sending file:
+    http.sendFile("absolute/path/to/file.png", "image/png");
 
-        const {httpQueryStringParam} = http.query
+    // sending response JSON:
+    http.respond.data({ first, second, optional_id }, 200);
+    // or
+    http.send({ first, second, optional_id }, 200, "application/json");
+    // or just:
+    return { first, second, optional_id };
 
-        // sending template from views folder:
-        http.respond.view('path/to/template/from/views/folder', {queryParam})
+    // throwing HttpException. The message will be sent to user.
+    http.throw(500, "some error occurred.");
 
-        // sending file:
-        http.sendFile('absolute/path/to/file.png', 'image/png')
+    // throwing RuntimeException. The message will not be sent to user,
+    // but shown in server logs.
+    http.exit(500, "some error occurred.", { someData });
+  });
 
-        // sending response JSON:
-        http.respond.data({first, second, optional_id}, 200)
-        // or
-        http.send({first, second, optional_id}, 200, 'application/json')
-        // or just:
-        return {first, second, optional_id}
+  // fetching data from POST request:
 
-        // throwing HttpException. The message will be sent to user.
-        http.throw(500, 'some error occurred.')
+  http.post("/", ({ http }) => {
+    const { someData } = http.data;
+  });
 
-        // throwing RuntimeException. The message will not be sent to user,
-        // but shown in server logs.
-        http.exit(500, 'some error occurred.', {someData})
+  // fetching data from POST miltipart/form-data:
 
-    })
+  http.post("/", async ({ http }) => {
+    const { fields, files } = await http.form.fetchFormData();
 
-    // fetching data from POST request:
+    const stat = http.form.stat("field_name");
+  });
 
-    http.post('/', ({http}) => {
+  // dealing with services and models:
 
-        const {someData} = http.data
+  import { SampleService } from "./services/sample";
+  import { SampleModel } from "./models/subfolder/sample";
 
-    })
+  http.get("/", async ({ service, model }) => {
+    const sampleService = service().sample as SampleService;
+    const sampleModel = model().subfolder.sample as SampleModel;
 
-    // fetching data from POST miltipart/form-data:
+    const users = await sampleModel.query.select().table("users");
 
-    http.post('/', async ({http}) => {
-
-        const {fields, files} = await http.form.fetchFormData()
-
-        const stat = http.form.stat('field_name')
-
-    })
-
-    // dealing with services and models:
-
-    import {SampleService} from "./services/sample"
-    import {SampleModel} from "./models/subfolder/sample"
-
-    http.get('/', async ({service, model}) => {
-
-        const sampleService = service().sample as SampleService
-        const sampleModel = model().subfolder.sample as SampleModel
-
-        const users = await sampleModel.query.select().table('users')
-
-        sampleService.scope.http.send({users})
-
-    })
-})
+    sampleService.scope.http.send({ users });
+  });
+});
 
 // "./services/sample.ts"
 
-import {Service} from "nodart";
+import { Service } from "nodart";
 
 export class SampleService extends Service {
-
-    get orm() {
-
-        return this.scope.app.service.db.orm // or this.scope.app.get('orm').call()
-    }
+  get orm() {
+    return this.scope.app.service.db.orm; // or this.scope.app.get('orm').call()
+  }
 }
-
 ```
 
 ---
@@ -228,34 +207,30 @@ export class SampleService extends Service {
 ### CREATION OF CUSTOM SERVER
 
 ```typescript
-new App({...config}).init().then(async app => {
+new App({ ...config }).init().then(async (app) => {
+  const server = await app.serve(3000, "https", "127.0.0.1", () => {
+    const fs = require("fs");
 
-    const server = await app.serve(3000, 'https', '127.0.0.1', () => {
+    const ssl = {
+      cert: fs.readFileSync("./localhost.crt"),
+      key: fs.readFileSync("./localhost.key"),
+    };
 
-        const fs = require('fs')
-
-        const ssl = {
-            cert: fs.readFileSync('./localhost.crt'),
-            key: fs.readFileSync('./localhost.key')
-        }
-
-        return require('https').createServer(ssl)
-    })
-})
+    return require("https").createServer(ssl);
+  });
+});
 ```
 
 ```typescript
-new App({...config}).start(3000, 'http', '127.0.0.1', (app) => {
-    
-    return require('http').createServer((req, res) => {
-
-        app.resolveHttpRequest(req, res)
-        
-    })
-
-}).then(({app, http, server}) => {
+new App({ ...config })
+  .start(3000, "http", "127.0.0.1", (app) => {
+    return require("http").createServer((req, res) => {
+      app.resolveHttpRequest(req, res);
+    });
+  })
+  .then(({ app, http, server }) => {
     //...
-})
+  });
 ```
 
 ---
@@ -277,21 +252,19 @@ npm run start
 You can change the basic behavior of class loaders by specifying in the base project configuration
 
 ```typescript
-import { App, ControllerLoader, nodart } from "nodart"
+import { App, ControllerLoader, nodart } from "nodart";
 
 class ControllerLoaderOverride extends ControllerLoader {
-  
-  protected _pathSuffix = "Controller"
-
+  protected _pathSuffix = "Controller";
 }
 
 const config = <nodart.app.AppConfigInterface>{
-    loaders: {
-        controller: ControllerLoaderOverride
-    }
-}
+  loaders: {
+    controller: ControllerLoaderOverride,
+  },
+};
 
-new App(config)
+new App(config);
 ```
 
 ---
@@ -302,76 +275,71 @@ The framework is built on the premise that performance
 and functionality should be perfectly balanced.
 The performance of some well-known **server-side** frameworks is compared here.
 
->
 > Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
 > and in some aspects surpasses it and all other frameworks.
 
 Environment:
 
-* Computer: AMD Ryzen 5 4600H Radeon, 3000 MHz, 6 Cores, SSD, 16 Gb RAM
-* Benchmarking tool: <a href="https://www.npmjs.com/package/autocannon">AutoCannon</a>
-* Benchmarking command:
+- Computer: AMD Ryzen 5 4600H Radeon, 3000 MHz, 6 Cores, SSD, 16 Gb RAM
+- Benchmarking tool: <a href="https://www.npmjs.com/package/autocannon">AutoCannon</a>
+- Benchmarking command:
 
-```autocannon -R 10000 http://localhost:3000```
+`autocannon -R 10000 http://localhost:3000`
 
-*(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)*
-
+_(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)_
 
 ### 1. Testing simple JSON response:
 
 ```typescript
-http.get('/', () => {
-    return {hello: "world"}
-})
+http.get("/", () => {
+  return { hello: "world" };
+});
 ```
 
 | Framework         | Bytes/sec   | Requests/sec |
-|-------------------|-------------|--------------|
+| ----------------- | ----------- | ------------ |
 | Fastify v4.0.0    | 1.91 MB     | 10183        |
 | **NodArt v4.2.0** | **2.02 MB** | **10143**    |
 | Express v4.18.2   | 1.94 MB     | 7683         |
 | Nest.js v9.0.0    | 1.61 MB     | 6395         |
 
-
 ### 2. Testing parametric route:
 
 ```typescript
-http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
-    const {param1, param2, param3, param4} = route.params
-    return {param1, param2, param3, param4}
-})
+http.get("/test/:param1/:param2/:param3/:param4", ({ route }) => {
+  const { param1, param2, param3, param4 } = route.params;
+  return { param1, param2, param3, param4 };
+});
 ```
 
 | Framework         | Bytes/sec   | Requests/sec |
-|-------------------|-------------|--------------|
+| ----------------- | ----------- | ------------ |
 | Fastify v4.0.0    | 2.27 MB     | 10143        |
 | **NodArt v4.2.0** | **2.45 MB** | **10127**    |
 | Express v4.18.2   | 2.17 MB     | 7531         |
 | Nest.js v9.0.0    | 1.8 MB      | 6239         |
-
 
 ### 3. Testing static file serve:
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Title</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Hello world!</h1>
-</body>
+  </body>
 </html>
 ```
 
-| Framework         | Bytes/sec    | Requests/sec |
-|-------------------|--------------|--------------|
-| **NodArt v4.2.0** | **4.4 MB**   | **7955**     |
-| Fastify v4.0.0    | 2.32 MB      | 5295         |
-| Express v4.18.2   | 2 MB         | 4343         |
-| Nest.js v9.0.0    | 1.87 MB      | 4057         |
-
+| Framework         | Bytes/sec  | Requests/sec |
+| ----------------- | ---------- | ------------ |
+| **NodArt v4.2.0** | **4.4 MB** | **7955**     |
+| Fastify v4.0.0    | 2.32 MB    | 5295         |
+| Express v4.18.2   | 2 MB       | 4343         |
+| Nest.js v9.0.0    | 1.87 MB    | 4057         |
 
 ---
 
@@ -482,4 +450,3 @@ npx nodart seed all-source-run --exclude[optional] excluded-seed-sourcename
 ---
 
 #### <font color=orange>Documentation is processing. The link will be available as soon as possible.</font>
-

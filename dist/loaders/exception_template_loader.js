@@ -6,18 +6,17 @@ class ExceptionTemplateLoader extends app_loader_1.AppLoader {
     getTemplate(response) {
         var _a;
         const template = (_a = this.app.config.get.exception) === null || _a === void 0 ? void 0 : _a.template;
-        return typeof template === 'function' ? template(response) : template;
+        return typeof template === "function" ? template(response) : template;
     }
     call(args) {
         const template = this.getTemplate(args[0]);
-        const engineLoader = this.app.get('engine');
+        const engineLoader = this.app.get("engine");
         const engine = engineLoader.call();
         if (!template || !engineLoader.isFile(engine.normalize(template)))
             return;
         return engine.getTemplate(template, { response: args[0] });
     }
-    onGenerate(repository) {
-    }
+    onGenerate() { }
 }
 exports.ExceptionTemplateLoader = ExceptionTemplateLoader;
 //# sourceMappingURL=exception_template_loader.js.map

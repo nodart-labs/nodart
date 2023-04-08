@@ -1,176 +1,198 @@
-import {Observer} from "./observer";
+import { Observer } from "./observer";
 import {
-    DependencyInterceptorInterface,
-    DependencyScope,
-    DIScope,
-    InjectionContainer,
-    InjectionProperty
+  DIScope,
+  DependencyInterceptorInterface,
+  DependencyScope,
+  InjectionContainer,
+  InjectionProperty,
 } from "./interfaces/di";
 
-export abstract class DependencyInterceptor implements DependencyInterceptorInterface {
-
-    abstract getDependency(acceptor: any, property: string, dependency: any): any
+export abstract class DependencyInterceptor
+  implements DependencyInterceptorInterface
+{
+  abstract getDependency(acceptor: any, property: string, dependency: any): any;
 }
 
 export class BaseDependencyInterceptor extends DependencyInterceptor {
-
-    getDependency(acceptor: any, property: string, dependency: any): any {
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getDependency(acceptor: any, property: string, dependency: any): any {}
 }
 
-const CONTAINER_ID = require('crypto').randomBytes(20).toString('hex')
+const CONTAINER_ID = require("crypto").randomBytes(20).toString("hex");
 
 export class DIContainer {
+  private static id: string = CONTAINER_ID;
 
-    private static id: string = CONTAINER_ID
+  private scope: DIScope = {};
 
-    private scope: DIScope = {}
+  constructor(scope: DIScope = {}) {
+    this.setScope(scope);
+  }
 
-    constructor(scope: DIScope = {}) {
+  setScope(scope: DIScope = {}) {
+    this.scope.references ||= {};
 
-        this.setScope(scope)
+    scope.mediator && (this.scope.mediator = scope.mediator);
+
+    scope.references &&
+      typeof scope.references === "object" &&
+      scope.references.constructor === Object &&
+      Object.assign(
+        this.scope.references,
+
+        scope.references,
+      );
+  }
+
+  getDependencyByReference(scope: DependencyScope) {
+    return scope.container.scope.references[scope.reference]?.(
+      scope.container.scope.mediator,
+      scope.property,
+      scope.value,
+      scope.acceptor,
+    );
+  }
+
+  private getDependency(scope: DependencyScope, dependency?: any): any {
+    if (dependency === undefined) {
+      dependency = scope.dependency || this.getDependencyByReference(scope);
+
+      if (
+        dependency &&
+        typeof dependency === "object" &&
+        dependency.constructor === Object
+      )
+        return this.watchDependency(scope, dependency);
     }
 
-    setScope(scope: DIScope = {}) {
+    return dependency?.prototype?.constructor
+      ? DIContainer.resolve(dependency, scope)
+      : null;
+  }
 
-        this.scope.references ||= {}
-
-        scope.mediator && (this.scope.mediator = scope.mediator)
-
-        scope.references && typeof scope.references === 'object' && scope.references.constructor === Object && Object.assign(
-
-            this.scope.references,
-
-            scope.references
+  private static resolve(dependency: any, scope: DependencyScope) {
+    return scope.interceptor
+      ? scope.interceptor.getDependency(
+          scope.acceptor,
+          scope.property,
+          dependency,
         )
+      : dependency;
+  }
+
+  private watchDependency(scope: DependencyScope, dependency: object) {
+    return new Observer(dependency, {
+      get: (property, descriptor) => {
+        return this.getDependency(scope, descriptor.value || null);
+      },
+    }).get;
+  }
+
+  private static container(
+    target: object,
+    property?: string,
+    injection?: InjectionProperty,
+  ): InjectionContainer {
+    const container = (target[DIContainer.id] ||= {
+      props: {},
+      intercept: (property: string) => container.props[property]?.value,
+    } as InjectionContainer);
+
+    if (property) {
+      container.props[property] ||= {};
+
+      const { reference, value, dependency } = injection || {};
+
+      container.props[property].value = value;
+      reference && (container.props[property].reference = reference);
+      dependency && (container.props[property].dependency = dependency);
+
+      value?.prototype?.constructor &&
+        (container.props[property].dependency = value);
     }
 
-    getDependencyByReference(scope: DependencyScope) {
+    return container;
+  }
 
-        return scope.container.scope.references[scope.reference]?.(
-            scope.container.scope.mediator,
-            scope.property,
-            scope.value,
-            scope.acceptor,
-        )
-    }
+  intercept(
+    acceptor: object,
+    interceptor?: DependencyInterceptorInterface,
+    interceptors?: { [property: string]: DependencyInterceptorInterface },
+  ) {
+    if (!DIContainer.injectable(acceptor)) return;
 
-    private getDependency(scope: DependencyScope, dependency?: any): any {
+    const container = DIContainer.container(acceptor);
 
-        if (dependency === undefined) {
+    container.intercept = (
+      property: string,
+      reference?: string,
+      dependency?: any,
+    ) => {
+      container.props[property] ||= {} as InjectionProperty;
 
-            dependency = scope.dependency || this.getDependencyByReference(scope)
+      return this.getDependency({
+        container: this,
+        acceptor,
+        reference: reference || container.props[property].reference,
+        dependency: container.props[property].dependency || dependency,
+        value: container.props[property].value,
+        interceptor: interceptors?.[property] || interceptor,
+        property,
+      });
+    };
+  }
 
-            if (dependency && typeof dependency === 'object' && dependency.constructor === Object)
+  use(acceptor: object, interceptor: DependencyInterceptorInterface) {
+    this.intercepted(acceptor) || this.intercept(acceptor, interceptor);
+  }
 
-                return this.watchDependency(scope, dependency)
-        }
+  inject(
+    target: object,
+    property: string,
+    reference: string,
+    dependency?: any,
+  ) {
+    DIContainer.defineProperty(target, property, reference, dependency);
+  }
 
-        return dependency?.prototype?.constructor ? DIContainer.resolve(dependency, scope) : null
-    }
+  intercepted(target: object): boolean {
+    return target[DIContainer.id]?.intercept !== undefined;
+  }
 
-    private static resolve(dependency: Object, scope: DependencyScope) {
+  static injectable(target: any): boolean {
+    return !!(target && typeof target === "object");
+  }
 
-        return scope.interceptor ? scope.interceptor.getDependency(scope.acceptor, scope.property, dependency) : dependency
-    }
-
-    private watchDependency(scope: DependencyScope, dependency: object) {
-
-        return new Observer(dependency, {
-
-            get: (property, descriptor) => {
-
-                return this.getDependency(scope, descriptor.value || null)
-            },
-
-        }).get
-    }
-
-    private static container(target: object, property?: string, injection?: InjectionProperty): InjectionContainer {
-
-        const container = target[DIContainer.id] ||= {
-            props: {},
-            intercept: (property: string) => container.props[property]?.value
-        } as InjectionContainer
-
-        if (property) {
-
-            container.props[property] ||= {}
-
-            const {reference, value, dependency} = injection || {}
-
-            container.props[property].value = value
-            reference && (container.props[property].reference = reference)
-            dependency && (container.props[property].dependency = dependency)
-
-            value?.prototype?.constructor && (container.props[property].dependency = value)
-        }
-
-        return container
-    }
-
-    intercept(
-        acceptor: object,
-        interceptor?: DependencyInterceptorInterface,
-        interceptors?: {[property: string]: DependencyInterceptorInterface}) {
-
-        if (!DIContainer.injectable(acceptor)) return
-
-        const container = DIContainer.container(acceptor)
-
-        container.intercept = (property: string, reference?: string, dependency?: Object) => {
-
-            container.props[property] ||= {} as InjectionProperty
-
-            return this.getDependency({
-                container: this,
-                acceptor,
-                reference: reference || container.props[property].reference,
-                dependency: container.props[property].dependency || dependency,
-                value: container.props[property].value,
-                interceptor: interceptors?.[property] || interceptor,
-                property,
-            })
-        }
-    }
-
-    use(acceptor: object, interceptor: DependencyInterceptorInterface) {
-
-        this.intercepted(acceptor) || this.intercept(acceptor, interceptor)
-    }
-
-    inject(target: object, property: string, reference: string, dependency?: Object) {
-
-        DIContainer.defineProperty(target, property, reference, dependency)
-    }
-
-    intercepted(target: object): boolean {
-
-        return target[DIContainer.id]?.intercept !== undefined
-    }
-
-    static injectable(target: any): boolean {
-
-        return !!(target && typeof target === 'object')
-    }
-
-    static defineProperty(target: object, property: string, reference: string, dependency?: Object) {
-
-        DIContainer.injectable(target) && Object.defineProperty(target, property, {
-            get: function () {
-                return DIContainer.container(this).intercept(property, reference, dependency)
-            },
-            set: function (value) {
-                return DIContainer.container(this, property, {reference, dependency, value}).props[property].value
-            },
-            configurable: true,
-            enumerable: true
-        })
-    }
+  static defineProperty(
+    target: object,
+    property: string,
+    reference: string,
+    dependency?: any,
+  ) {
+    DIContainer.injectable(target) &&
+      Object.defineProperty(target, property, {
+        get: function () {
+          return DIContainer.container(this).intercept(
+            property,
+            reference,
+            dependency,
+          );
+        },
+        set: function (value) {
+          return DIContainer.container(this, property, {
+            reference,
+            dependency,
+            value,
+          }).props[property].value;
+        },
+        configurable: true,
+        enumerable: true,
+      });
+  }
 }
 
-export function injects(reference: string, dependency?: Object) {
-    return function (target: any, property: string) {
-        DIContainer.defineProperty(target, property, reference, dependency)
-    }
+export function injects(reference: string, dependency?: any) {
+  return function (target: any, property: string) {
+    DIContainer.defineProperty(target, property, reference, dependency);
+  };
 }

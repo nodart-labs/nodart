@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "4.3.5",
+  "version": "5.0.0",
   "description": "A complete framework for creating microservices and large-scale server-side applications for businesses",
   "repository": {
     "type": "git",
@@ -13,7 +13,8 @@
     "pre-build": "node pre-build.js",
     "post-build": "node post-build.js",
     "clean": "tsc --build --clean",
-    "test": "tests"
+    "lint": "eslint . --ext .js,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "format": "prettier --write ."
   },
   "author": "ArGab",
   "license": "MIT",
@@ -54,7 +55,11 @@
     "JavaScript",
     "typescript",
     "back-end",
+    "backend",
     "server-side",
+    "server",
+    "MVC",
+    "OOP",
     "node.js"
   ],
   "bin": "bin/index.js"

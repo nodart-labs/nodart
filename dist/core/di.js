@@ -6,11 +6,11 @@ class DependencyInterceptor {
 }
 exports.DependencyInterceptor = DependencyInterceptor;
 class BaseDependencyInterceptor extends DependencyInterceptor {
-    getDependency(acceptor, property, dependency) {
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDependency(acceptor, property, dependency) { }
 }
 exports.BaseDependencyInterceptor = BaseDependencyInterceptor;
-const CONTAINER_ID = require('crypto').randomBytes(20).toString('hex');
+const CONTAINER_ID = require("crypto").randomBytes(20).toString("hex");
 class DIContainer {
     constructor(scope = {}) {
         this.scope = {};
@@ -20,7 +20,10 @@ class DIContainer {
         var _a;
         (_a = this.scope).references || (_a.references = {});
         scope.mediator && (this.scope.mediator = scope.mediator);
-        scope.references && typeof scope.references === 'object' && scope.references.constructor === Object && Object.assign(this.scope.references, scope.references);
+        scope.references &&
+            typeof scope.references === "object" &&
+            scope.references.constructor === Object &&
+            Object.assign(this.scope.references, scope.references);
     }
     getDependencyByReference(scope) {
         var _a, _b;
@@ -30,13 +33,19 @@ class DIContainer {
         var _a;
         if (dependency === undefined) {
             dependency = scope.dependency || this.getDependencyByReference(scope);
-            if (dependency && typeof dependency === 'object' && dependency.constructor === Object)
+            if (dependency &&
+                typeof dependency === "object" &&
+                dependency.constructor === Object)
                 return this.watchDependency(scope, dependency);
         }
-        return ((_a = dependency === null || dependency === void 0 ? void 0 : dependency.prototype) === null || _a === void 0 ? void 0 : _a.constructor) ? DIContainer.resolve(dependency, scope) : null;
+        return ((_a = dependency === null || dependency === void 0 ? void 0 : dependency.prototype) === null || _a === void 0 ? void 0 : _a.constructor)
+            ? DIContainer.resolve(dependency, scope)
+            : null;
     }
     static resolve(dependency, scope) {
-        return scope.interceptor ? scope.interceptor.getDependency(scope.acceptor, scope.property, dependency) : dependency;
+        return scope.interceptor
+            ? scope.interceptor.getDependency(scope.acceptor, scope.property, dependency)
+            : dependency;
     }
     watchDependency(scope, dependency) {
         return new observer_1.Observer(dependency, {
@@ -48,17 +57,18 @@ class DIContainer {
     static container(target, property, injection) {
         var _a;
         var _b, _c;
-        const container = target[_b = DIContainer.id] || (target[_b] = {
+        const container = (target[_b = DIContainer.id] || (target[_b] = {
             props: {},
-            intercept: (property) => { var _a; return (_a = container.props[property]) === null || _a === void 0 ? void 0 : _a.value; }
-        });
+            intercept: (property) => { var _a; return (_a = container.props[property]) === null || _a === void 0 ? void 0 : _a.value; },
+        }));
         if (property) {
             (_c = container.props)[property] || (_c[property] = {});
             const { reference, value, dependency } = injection || {};
             container.props[property].value = value;
             reference && (container.props[property].reference = reference);
             dependency && (container.props[property].dependency = dependency);
-            ((_a = value === null || value === void 0 ? void 0 : value.prototype) === null || _a === void 0 ? void 0 : _a.constructor) && (container.props[property].dependency = value);
+            ((_a = value === null || value === void 0 ? void 0 : value.prototype) === null || _a === void 0 ? void 0 : _a.constructor) &&
+                (container.props[property].dependency = value);
         }
         return container;
     }
@@ -91,19 +101,24 @@ class DIContainer {
         return ((_a = target[DIContainer.id]) === null || _a === void 0 ? void 0 : _a.intercept) !== undefined;
     }
     static injectable(target) {
-        return !!(target && typeof target === 'object');
+        return !!(target && typeof target === "object");
     }
     static defineProperty(target, property, reference, dependency) {
-        DIContainer.injectable(target) && Object.defineProperty(target, property, {
-            get: function () {
-                return DIContainer.container(this).intercept(property, reference, dependency);
-            },
-            set: function (value) {
-                return DIContainer.container(this, property, { reference, dependency, value }).props[property].value;
-            },
-            configurable: true,
-            enumerable: true
-        });
+        DIContainer.injectable(target) &&
+            Object.defineProperty(target, property, {
+                get: function () {
+                    return DIContainer.container(this).intercept(property, reference, dependency);
+                },
+                set: function (value) {
+                    return DIContainer.container(this, property, {
+                        reference,
+                        dependency,
+                        value,
+                    }).props[property].value;
+                },
+                configurable: true,
+                enumerable: true,
+            });
     }
 }
 DIContainer.id = CONTAINER_ID;

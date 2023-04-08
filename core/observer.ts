@@ -1,136 +1,144 @@
 import {
-    ObserverDescriptor,
-    ObserverHandlers,
-    ObserverSetter,
-    ObserverGetter
+  ObserverDescriptor,
+  ObserverGetter,
+  ObserverHandlers,
+  ObserverSetter,
 } from "./interfaces/observer";
 
 export class Observer {
+  protected _setter?: ObserverSetter;
+  protected _getter?: ObserverGetter;
 
-    protected _setter?: ObserverSetter
-    protected _getter?: ObserverGetter
+  constructor(readonly observable: object = {}, handlers?: ObserverHandlers) {
+    handlers && this.handlers(handlers);
+  }
 
-    constructor(readonly observable: object = {}, handlers?: ObserverHandlers) {
-        handlers && this.handlers(handlers)
-    }
+  get getter() {
+    return this._getter;
+  }
 
-    get getter() {
-        return this._getter
-    }
+  set getter(get: ObserverGetter) {
+    this._getter = get;
+  }
 
-    get setter() {
-        return this._setter
-    }
+  get setter() {
+    return this._setter;
+  }
 
-    set getter(get: ObserverGetter) {
-        this._getter = get
-    }
+  set setter(set: ObserverSetter) {
+    this._setter = set;
+  }
 
-    set setter(set: ObserverSetter) {
-        this._setter = set
-    }
+  handlers(hdr: ObserverHandlers) {
+    hdr.set && (this._setter = hdr.set);
+    hdr.get && (this._getter = hdr.get);
 
-    handlers(hdr: ObserverHandlers) {
-        hdr.set && (this._setter = hdr.set)
-        hdr.get && (this._getter = hdr.get)
-        return this
-    }
+    return this;
+  }
 
-    get get() {
-        return Observable.get(this.observable, this)
-    }
+  get get() {
+    return Observable.get(this.observable, this);
+  }
 
-    pull(data: ObserverDescriptor) {
-        const {prop, source} = data
-        return this._getter ? this._getter(prop, data) : Array.isArray(source) ? source[prop] : source
-    }
+  pull(data: ObserverDescriptor) {
+    const { prop, source } = data;
 
-    push(data: ObserverDescriptor) {
-        const {prop, value} = data
-        return this._setter ? this._setter(prop, value, data) : undefined
-    }
+    return this._getter
+      ? this._getter(prop, data)
+      : Array.isArray(source)
+      ? source[prop]
+      : source;
+  }
 
-    static isObject(data: any) {
-        return data && typeof data === 'object' && data.constructor === Object
-    }
+  push(data: ObserverDescriptor) {
+    const { prop, value } = data;
 
+    return this._setter ? this._setter(prop, value, data) : undefined;
+  }
+
+  static isObject(data: any) {
+    return data && typeof data === "object" && data.constructor === Object;
+  }
 }
 
 const setPath = (prop: string, path: string, delim: string) => {
-
-    return path += path ? delim + prop : prop
-}
+  return (path += path ? delim + prop : prop);
+};
 const getPath = (path: string, delim: string) => {
-
-    return path.split(delim).slice(0, -1)
-}
+  return path.split(delim).slice(0, -1);
+};
 
 class Observable {
+  private static _stackPointer = "stack";
 
-    private static _stackPointer = 'stack'
+  static get(
+    source: object,
+    observer: Observer,
+    {
+      path: path = "",
+      pathDelim: pathDelim = "",
+      lastCall: lastCall = "",
+    } = {},
+  ): any {
+    pathDelim ||= Math.random().toString(20);
 
-    static get(source: object, observer: Observer, {
-        path: path = '',
-        pathDelim: pathDelim = '',
-        lastCall: lastCall = ''
-    } = {}): any {
+    return new Proxy(source, {
+      set: (t: any, p: string, value: any): any => {
+        const newPath = setPath(p, path, pathDelim);
 
-        pathDelim ||= Math.random().toString(20)
+        lastCall === newPath || (path = newPath);
 
-        return new Proxy(source, {
+        const data = observer.push({
+          prop: p,
+          source,
+          path: getPath(path, pathDelim),
+          value,
+          old: source[p],
+        });
 
-            set: (t: any, p: string, value: any): any => {
+        if (data !== undefined) source[p] = data;
 
-                const newPath = setPath(p, path, pathDelim)
+        return true;
+      },
 
-                lastCall === newPath || (path = newPath)
+      get: (t: any, p: string): any => {
+        const isStackPointer = Observable.isStackPointer(source, p);
+        const isObject = Observer.isObject(source[p]);
+        const isTarget =
+          !isStackPointer && (!isObject || Object.keys(source[p]).length === 0);
 
-                const data = observer.push({
-                    prop: p,
-                    source,
-                    path: getPath(path, pathDelim),
-                    value,
-                    old: source[p]
-                })
+        if (false === isStackPointer) {
+          const newPath = setPath(p, path, pathDelim);
 
-                if (data !== undefined) source[p] = data
+          lastCall === newPath || (path = newPath);
+          lastCall = path + pathDelim + p;
 
-                return true
-            },
+          if (isTarget)
+            return observer.pull({
+              prop: p,
+              source,
+              value: source[p],
+              path: getPath(path, pathDelim),
+            });
+        }
 
-            get: (t: any, p: string): any => {
+        if (isObject)
+          return Observable.get(source[p], observer, {
+            path,
+            pathDelim,
+            lastCall,
+          });
 
-                const isStackPointer = Observable.isStackPointer(source, p)
-                const isObject = Observer.isObject(source[p])
-                const isTarget = !isStackPointer && (!isObject || Object.keys(source[p]).length === 0)
+        return source[p];
+      },
+    });
+  }
 
-                if (false === isStackPointer) {
-
-                    const newPath = setPath(p, path, pathDelim)
-
-                    lastCall === newPath || (path = newPath)
-                    lastCall = path + pathDelim + p
-
-                    if (isTarget) return observer.pull({
-                        prop: p,
-                        source,
-                        value: source[p],
-                        path: getPath(path, pathDelim)
-                    })
-                }
-
-                if (isObject) return Observable.get(source[p], observer, {path, pathDelim, lastCall})
-
-                return source[p]
-            }
-        })
-    }
-
-    private static isStackPointer(source: any, prop: string): boolean {
-        return ((Array.isArray(source) && isNaN(+prop))
-                || (source && typeof source === 'object' && !source.hasOwnProperty(prop)))
-            || Observable._stackPointer === prop && !(prop in source)
-    }
-
+  private static isStackPointer(source: any, prop: string): boolean {
+    return (
+      (Array.isArray(source) && isNaN(+prop)) ||
+      (source && typeof source === "object" && !source.hasOwnProperty(prop)) ||
+      (Observable._stackPointer === prop && !(prop in source))
+    );
+  }
 }
-

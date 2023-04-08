@@ -5,14 +5,15 @@ const app_loader_1 = require("../core/app_loader");
 const exception_1 = require("../core/exception");
 const exception_2 = require("../core/exception");
 class ExceptionHandlerLoader extends app_loader_1.AppLoader {
-    onGenerate(repository) {
-    }
+    onGenerate() { }
     call(args) {
         var _a;
-        const exception = args[0] instanceof exception_1.Exception ? args[0] : new exception_2.RuntimeException({
-            exceptionMessage: typeof args[0] === 'string' ? args[0] : (_a = args[0]) === null || _a === void 0 ? void 0 : _a.message,
-            exceptionData: args[0]
-        });
+        const exception = args[0] instanceof exception_1.Exception
+            ? args[0]
+            : new exception_2.RuntimeException({
+                exceptionMessage: typeof args[0] === "string" ? args[0] : (_a = args[0]) === null || _a === void 0 ? void 0 : _a.message,
+                exceptionData: args[0],
+            });
         const handler = this._getExceptionHandler(exception);
         return handler ? Reflect.construct(handler, [exception]) : undefined;
     }

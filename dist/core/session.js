@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Session = exports.DEFAULT_SESSION_NAME = void 0;
-exports.DEFAULT_SESSION_NAME = 'session';
+exports.DEFAULT_SESSION_NAME = "session";
 class Session {
     constructor(config) {
         this.config = config;
@@ -10,7 +10,7 @@ class Session {
         this._sessionName = config.cookieName || exports.DEFAULT_SESSION_NAME;
     }
     load(http) {
-        this.client(http.request, http.response, () => this._session = http.request[this._sessionName]);
+        this.client(http.request, http.response, () => (this._session = http.request[this._sessionName]));
         return this;
     }
     get get() {
@@ -21,7 +21,7 @@ class Session {
     }
     unset(key) {
         Array.isArray(key) || (key = [key]);
-        key.forEach(k => k in this.get && delete this.get[k]);
+        key.forEach((k) => k in this.get && delete this.get[k]);
     }
 }
 exports.Session = Session;

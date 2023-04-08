@@ -4,14 +4,14 @@ exports.Engine = void 0;
 class Engine {
     constructor(config) {
         this.config = config;
-        this.client = require('nunjucks');
+        this.client = require("nunjucks");
         this.client.configure(config.views, config.options);
     }
     getTemplate(templatePath, args, callback) {
         return this.client.render(this.normalize(templatePath), args, callback);
     }
     normalize(templatePath) {
-        templatePath.match(/^(.*?)\.([^.]+)$/i) || (templatePath += '.html');
+        templatePath.match(/^(.*?)\.([^.]+)$/i) || (templatePath += ".html");
         return templatePath;
     }
 }

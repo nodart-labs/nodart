@@ -1,22 +1,17 @@
-import {App} from "../core/app";
-import {AppLoader} from "../core/app_loader";
-import {CommandLine} from "../core/cmd";
+import { App } from "../core/app";
+import { AppLoader } from "../core/app_loader";
+import { CommandLine } from "../core/cmd";
 
 export class CommandLineLoader extends AppLoader {
+  onGenerate() {
+    this._init();
+  }
 
-    onGenerate(repository: string): void {
+  call(args?: [app: App]): CommandLine {
+    return this._init(args?.[0]);
+  }
 
-        this._init()
-    }
-
-    call(args?: [app: App]): CommandLine {
-
-        return this._init(args?.[0])
-    }
-
-    protected _init(app?: App) {
-
-        return new CommandLine(app ?? this.app).system.init()
-    }
-
+  protected _init(app?: App) {
+    return new CommandLine(app ?? this.app).system.init();
+  }
 }

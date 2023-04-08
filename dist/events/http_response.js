@@ -5,7 +5,9 @@ module.exports = ((app, http) => {
         return;
     const response = http.responseData;
     const content = http_client_1.HttpClient.getHttpResponseDataContent(response);
-    http.response.writeHead(response.status, { 'Content-Type': response.contentType });
+    http.response.writeHead(response.status, {
+        "Content-Type": response.contentType,
+    });
     http.response.end(content);
 });
 //# sourceMappingURL=http_response.js.map

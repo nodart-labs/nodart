@@ -18,14 +18,16 @@ class OrmLoader extends app_loader_1.AppLoader {
     get seedSourceDirectory() {
         return utils_1.fs.join(this.getRepo(), app_config_1.DEFAULT_DATABASE_SEED_SRC_REPOSITORY);
     }
-    onGenerate(repository) {
+    onGenerate() {
         const db = this.database(this.app.config.get.orm || {});
         const migrationsDir = db.migrations.directory;
         const seedsDir = db.seeds.directory;
         const srcDir = this.migrationSourceDirectory;
         const srcSeedDir = this.seedSourceDirectory;
-        typeof migrationsDir === 'string' && (utils_1.fs.isDir(migrationsDir) || utils_1.fs.mkDeepDir(migrationsDir));
-        typeof seedsDir === 'string' && (utils_1.fs.isDir(seedsDir) || utils_1.fs.mkDeepDir(seedsDir));
+        typeof migrationsDir === "string" &&
+            (utils_1.fs.isDir(migrationsDir) || utils_1.fs.mkDeepDir(migrationsDir));
+        typeof seedsDir === "string" &&
+            (utils_1.fs.isDir(seedsDir) || utils_1.fs.mkDeepDir(seedsDir));
         utils_1.fs.isDir(srcDir) || utils_1.fs.mkDeepDir(srcDir);
         utils_1.fs.isDir(srcSeedDir) || utils_1.fs.mkDeepDir(srcSeedDir);
     }
@@ -48,22 +50,29 @@ class OrmLoader extends app_loader_1.AppLoader {
         const migrations = config.migrations;
         const seeds = config.seeds;
         const repo = this.getRepo();
-        const ext = this.app.env.isBuild ? 'js' : 'ts';
-        const loadExt = ['.js', '.ts'];
-        Array.isArray(migrations.loadExtensions) || (migrations.loadExtensions = []);
+        const ext = this.app.env.isBuild ? "js" : "ts";
+        const loadExt = [".js", ".ts"];
+        Array.isArray(migrations.loadExtensions) ||
+            (migrations.loadExtensions = []);
         Array.isArray(seeds.loadExtensions) || (seeds.loadExtensions = []);
         return utils_1.object.merge(config, {
             migrations: {
-                tableName: migrations.tableName || (migrations.tableName = app_config_1.DEFAULT_DATABASE_MIGRATION_REPOSITORY),
-                directory: migrations.directory || (migrations.directory = utils_1.fs.path(repo, app_config_1.DEFAULT_DATABASE_MIGRATION_REPOSITORY)),
-                extension: migrations.extension || (migrations.extension = ext),
-                loadExtensions: migrations.loadExtensions = [...migrations.loadExtensions, ...loadExt],
+                tableName: (migrations.tableName || (migrations.tableName = app_config_1.DEFAULT_DATABASE_MIGRATION_REPOSITORY)),
+                directory: (migrations.directory || (migrations.directory = utils_1.fs.path(repo, app_config_1.DEFAULT_DATABASE_MIGRATION_REPOSITORY))),
+                extension: (migrations.extension || (migrations.extension = ext)),
+                loadExtensions: (migrations.loadExtensions = [
+                    ...migrations.loadExtensions,
+                    ...loadExt,
+                ]),
             },
             seeds: {
-                directory: seeds.directory || (seeds.directory = utils_1.fs.path(repo, app_config_1.DEFAULT_DATABASE_SEED_REPOSITORY)),
-                extension: seeds.extension || (seeds.extension = ext),
-                loadExtensions: seeds.loadExtensions = [...seeds.loadExtensions, ...loadExt],
-            }
+                directory: (seeds.directory || (seeds.directory = utils_1.fs.path(repo, app_config_1.DEFAULT_DATABASE_SEED_REPOSITORY))),
+                extension: (seeds.extension || (seeds.extension = ext)),
+                loadExtensions: (seeds.loadExtensions = [
+                    ...seeds.loadExtensions,
+                    ...loadExt,
+                ]),
+            },
         });
     }
 }

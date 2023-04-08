@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-    states: {},
-    events: {},
-    listeners: []
-})
+  states: {},
+  events: {},
+  listeners: [],
+});

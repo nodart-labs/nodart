@@ -1,89 +1,81 @@
-import {App} from "../core/app";
-import {fs, object, $, measure} from "../utils";
-import {DEFAULT_CMD_DIR} from "../core/app_config";
-import {FSCashier} from "../utils/fs_cashier";
-import {Model} from "../core/model";
-import {Service} from "../core/service";
+import { App } from "../core/app";
+import { $, fs, object } from "../utils";
+import { DEFAULT_CMD_DIR } from "../core/app_config";
+import { FSCashier } from "../utils/fs_cashier";
+import { Model } from "../core/model";
+import { Service } from "../core/service";
 
 export class CashierService {
+  readonly fs: FSCashier;
 
-    readonly fs: FSCashier
+  private model = {};
 
-    private model = {}
+  private service = {};
 
-    private service = {}
+  constructor(readonly app: App) {
+    const staticLoader = app.get("static");
+    const engineLoader = app.get("engine");
+    const storeLoader = app.get("store");
+    const ormLoader = app.get("orm");
 
-    constructor(readonly app: App) {
+    const excludeFolders = [
+      fs.join(app.rootDir, "node_modules"),
+      fs.join(app.rootDir, DEFAULT_CMD_DIR),
+      staticLoader.getRepo(),
+      engineLoader.getRepo(),
+      storeLoader.getRepo(),
+      ormLoader.getRepo(),
+      app.builder.buildDir,
+    ];
 
-        const staticLoader = app.get('static')
-        const engineLoader = app.get('engine')
-        const storeLoader = app.get('store')
-        const ormLoader = app.get('orm')
+    this.fs = new FSCashier({ excludeFolders, extensions: ["ts", "js"] });
+  }
 
-        const excludeFolders = [
-            fs.join(app.rootDir, 'node_modules'),
-            fs.join(app.rootDir, DEFAULT_CMD_DIR),
-            staticLoader.getRepo(),
-            engineLoader.getRepo(),
-            storeLoader.getRepo(),
-            ormLoader.getRepo(),
-            app.builder.buildDir
-        ]
+  cacheAppFolder() {
+    this.fs.cacheFolder(this.app.rootDir);
 
-        this.fs = new FSCashier({excludeFolders, extensions: ['ts', 'js']})
-    }
+    this._fetchSources("model");
 
-    cacheAppFolder() {
+    this._fetchSources("service");
+  }
 
-        this.fs.cacheFolder(this.app.rootDir)
+  watchAppFolder() {
+    this.fs.watchFolder(this.app.rootDir);
+  }
 
-        this._fetchSources('model')
+  getFile(path: string) {
+    return this.fs.getFile(path);
+  }
 
-        this._fetchSources('service')
-    }
+  isFile(path: string) {
+    return FSCashier.isFile(path);
+  }
 
-    watchAppFolder() {
+  protected _fetchSources(name: "model" | "service") {
+    this[name] = {};
 
-        this.fs.watchFolder(this.app.rootDir)
-    }
+    const loader = this.app.get(name);
+    const repo = loader.getRepo();
+    const types = {
+      model: Model,
+      service: Service,
+    };
 
-    getFile(path: string) {
+    fs.dir(repo, ({ file }) => {
+      if (!file) return;
 
-        return this.fs.getFile(path)
-    }
+      const path = fs.skipExtension(
+        $.trimPath(fs.formatPath(file.replace(repo, ""))),
+      );
+      const source = loader.load(path, types[name]);
 
-    isFile(path: string) {
+      source && object.set(this[name], path.replace(/\//g, "."), source);
+    });
 
-        return FSCashier.isFile(path)
-    }
+    this[name] = Object.freeze(this[name]);
+  }
 
-    protected _fetchSources(name: 'model' | 'service') {
-
-        this[name] = {}
-
-        const loader = this.app.get(name)
-        const repo = loader.getRepo()
-        const types = {
-            model: Model,
-            service: Service
-        }
-
-        fs.dir(repo, ({file}) => {
-
-            if (!file) return
-
-            const path = fs.skipExtension($.trimPath(fs.formatPath(file.replace(repo, ''))))
-            const source = loader.load(path, types[name])
-
-            source && object.set(this[name], path.replace(/\//g, '.'), source)
-        })
-
-        this[name] = Object.freeze(this[name])
-    }
-
-    get(name: 'model' | 'service') {
-
-        return {...this[name]}
-    }
-
+  get(name: "model" | "service") {
+    return { ...this[name] };
+  }
 }

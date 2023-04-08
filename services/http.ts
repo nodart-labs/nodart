@@ -1,121 +1,110 @@
-import {HttpAcceptorInterface} from "../core/interfaces/http";
-import {HttpServiceSubscriber, HttpServiceCallback} from "../core/interfaces/service";
-import {RouteDescriptor} from "../core/interfaces/router";
+import { HttpAcceptorInterface } from "../core/interfaces/http";
+import {
+  HttpServiceCallback,
+  HttpServiceSubscriber,
+} from "../core/interfaces/service";
+import { RouteDescriptor } from "../core/interfaces/router";
 
 export class HttpService {
+  readonly subscribers: HttpServiceSubscriber[] = [];
 
-    readonly subscribers: HttpServiceSubscriber[] = []
+  sendRoute(
+    route: string | RouteDescriptor,
+    action: string,
+    callback: HttpServiceCallback,
+  ) {
+    route = typeof route === "string" ? { path: route } : route;
 
-    sendRoute(route: string | RouteDescriptor, action: string, callback: HttpServiceCallback) {
+    this.subscribers.forEach((listen) => listen({ route, action, callback }));
+  }
 
-        route = typeof route === 'string' ? {path: route} : route
+  subscribe(subscriber: HttpServiceSubscriber) {
+    this.subscribers.push(subscriber);
+  }
 
-        this.subscribers.forEach(listen => listen({route, action, callback}))
-    }
-
-    subscribe(subscriber: HttpServiceSubscriber) {
-
-        this.subscribers.push(subscriber)
-    }
-
-    get httpAcceptor(): HttpServiceAcceptor {
-
-        return new HttpServiceAcceptor(this)
-    }
+  get httpAcceptor(): HttpServiceAcceptor {
+    return new HttpServiceAcceptor(this);
+  }
 }
 
 export class HttpServiceAcceptor implements HttpAcceptorInterface {
+  constructor(readonly service: HttpService) {}
 
-    constructor(readonly service: HttpService) {
-    }
+  any(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "any", callback);
+  }
 
-    any(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  get(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "get", callback);
+  }
 
-        this.service.sendRoute(route, 'any', callback)
-    }
+  head(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "head", callback);
+  }
 
-    get(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  patch(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "patch", callback);
+  }
 
-        this.service.sendRoute(route, 'get', callback)
-    }
+  post(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "post", callback);
+  }
 
-    head(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  put(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "put", callback);
+  }
 
-        this.service.sendRoute(route, 'head', callback)
-    }
+  delete(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+    this.service.sendRoute(route, "delete", callback);
+  }
 
-    patch(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  connect(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "connect", callback);
+  }
 
-        this.service.sendRoute(route, 'patch', callback)
-    }
+  copy(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "copy", callback);
+  }
 
-    post(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  lock(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "lock", callback);
+  }
 
-        this.service.sendRoute(route, 'post', callback)
-    }
+  mkcol(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "mkcol", callback);
+  }
 
-    put(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  move(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "move", callback);
+  }
 
-        this.service.sendRoute(route, 'put', callback)
-    }
+  options(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "options", callback);
+  }
 
-    delete(route: string | RouteDescriptor, callback: HttpServiceCallback) {
+  propfind(
+    route: string | RouteDescriptor,
+    callback: HttpServiceCallback,
+  ): any {
+    this.service.sendRoute(route, "propfind", callback);
+  }
 
-        this.service.sendRoute(route, 'delete', callback)
-    }
+  proppatch(
+    route: string | RouteDescriptor,
+    callback: HttpServiceCallback,
+  ): any {
+    this.service.sendRoute(route, "proppatch", callback);
+  }
 
-    connect(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+  search(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "search", callback);
+  }
 
-        this.service.sendRoute(route, 'connect', callback)
-    }
+  trace(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "trace", callback);
+  }
 
-    copy(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'copy', callback)
-    }
-
-    lock(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'lock', callback)
-    }
-
-    mkcol(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'mkcol', callback)
-    }
-
-    move(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'move', callback)
-    }
-
-    options(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'options', callback)
-    }
-
-    propfind(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'propfind', callback)
-    }
-
-    proppatch(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'proppatch', callback)
-    }
-
-    search(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'search', callback)
-    }
-
-    trace(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'trace', callback)
-    }
-
-    unlock(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
-
-        this.service.sendRoute(route, 'unlock', callback)
-    }
+  unlock(route: string | RouteDescriptor, callback: HttpServiceCallback): any {
+    this.service.sendRoute(route, "unlock", callback);
+  }
 }

@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Controller = exports.BaseController = exports.CONTROLLER_INITIAL_ACTION = void 0;
 const di_1 = require("./di");
-exports.CONTROLLER_INITIAL_ACTION = 'init';
+exports.CONTROLLER_INITIAL_ACTION = "init";
 class BaseController {
     constructor(app, http, route) {
         this.app = app;
@@ -26,10 +26,10 @@ exports.BaseController = BaseController;
 class Controller extends BaseController {
 }
 __decorate([
-    (0, di_1.injects)('service')
+    (0, di_1.injects)("service")
 ], Controller.prototype, "service", void 0);
 __decorate([
-    (0, di_1.injects)('model')
+    (0, di_1.injects)("model")
 ], Controller.prototype, "model", void 0);
 exports.Controller = Controller;
 //# sourceMappingURL=controller.js.map

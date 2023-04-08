@@ -16,8 +16,8 @@ const exception_1 = require("./exception");
 class Orm {
     constructor(config) {
         this.config = config;
-        this._sources = ''; // Migration sources directory
-        this._seedSources = ''; // Seed sources directory
+        this._sources = ""; // Migration sources directory
+        this._seedSources = ""; // Seed sources directory
         this.client = this.connect(config);
     }
     connect(config) {
@@ -41,16 +41,18 @@ class Orm {
 }
 exports.Orm = Orm;
 /*
-* Custom migration source class
-* See docs: https://knexjs.org/guide/migrations.html#custom-migration-sources
-* */
+ * Custom migration source class
+ * See docs: https://knexjs.org/guide/migrations.html#custom-migration-sources
+ * */
 class OrmMigrationSource {
     constructor(_migrationList = []) {
         this._migrationList = _migrationList;
     }
     get migrationList() {
         var _a;
-        return this._migrationList.length === 0 ? Object.keys((_a = this.migrations) !== null && _a !== void 0 ? _a : {}) : this._migrationList;
+        return this._migrationList.length === 0
+            ? Object.keys((_a = this.migrations) !== null && _a !== void 0 ? _a : {})
+            : this._migrationList;
     }
     // Must return a Promise containing a list of migrations.
     // Migrations can be whatever you want,
@@ -93,8 +95,8 @@ class OrmMigrator {
     }
     _connect(config) {
         var _a;
-        this.config = Object.assign(Object.assign({}, (_a = this.orm.config.migrations) !== null && _a !== void 0 ? _a : {}), config !== null && config !== void 0 ? config : {});
-        return this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { migrations: this.config }));
+        this.config = Object.assign(Object.assign({}, ((_a = this.orm.config.migrations) !== null && _a !== void 0 ? _a : {})), (config !== null && config !== void 0 ? config : {}));
+        return (this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { migrations: this.config })));
     }
     /**
      * Retrieves Migration Source class by its file name/path
@@ -107,7 +109,7 @@ class OrmMigrator {
         catch (e) {
             throw new exception_1.RuntimeException({
                 exceptionMessage: `The migration source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
-                exceptionData: e
+                exceptionData: e,
             });
         }
     }
@@ -120,8 +122,13 @@ class OrmMigrator {
      * @param args
      */
     source(src, ...args) {
-        typeof src === 'string' && (src = this.fetchSource(src));
-        this._source = src instanceof OrmMigrationSource ? src : src ? Reflect.construct(src, args) : null;
+        typeof src === "string" && (src = this.fetchSource(src));
+        this._source =
+            src instanceof OrmMigrationSource
+                ? src
+                : src
+                    ? Reflect.construct(src, args)
+                    : null;
         return this;
     }
     getSource() {
@@ -201,16 +208,18 @@ class OrmMigrator {
 }
 exports.OrmMigrator = OrmMigrator;
 /*
-* Custom seed source class
-* See docs: https://knexjs.org/guide/migrations.html#run
-* */
+ * Custom seed source class
+ * See docs: https://knexjs.org/guide/migrations.html#run
+ * */
 class OrmSeedSource {
     constructor(_seedsList = []) {
         this._seedsList = _seedsList;
     }
     get seedList() {
         var _a;
-        return this._seedsList.length === 0 ? Object.keys((_a = this.seeds) !== null && _a !== void 0 ? _a : {}) : this._seedsList;
+        return this._seedsList.length === 0
+            ? Object.keys((_a = this.seeds) !== null && _a !== void 0 ? _a : {})
+            : this._seedsList;
     }
     // Must return a Promise containing a list of seeds.
     // Seeds can be whatever you want, they will be passed as
@@ -225,7 +234,7 @@ class OrmSeedSource {
                 seed: (client) => __awaiter(this, void 0, void 0, function* () {
                     var _a, _b;
                     yield ((_b = (_a = this.seeds) === null || _a === void 0 ? void 0 : _a[seed]) === null || _b === void 0 ? void 0 : _b.call(_a, client));
-                })
+                }),
             };
         });
     }
@@ -238,8 +247,8 @@ class OrmSeeder {
     }
     _connect(config) {
         var _a;
-        this.config = Object.assign(Object.assign({}, (_a = this.orm.config.seeds) !== null && _a !== void 0 ? _a : {}), config !== null && config !== void 0 ? config : {});
-        return this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { seeds: this.config }));
+        this.config = Object.assign(Object.assign({}, ((_a = this.orm.config.seeds) !== null && _a !== void 0 ? _a : {})), (config !== null && config !== void 0 ? config : {}));
+        return (this.client = this.orm.connect(utils_1.object.merge(this.orm.config, { seeds: this.config })));
     }
     /**
      * Retrieves Seeder Source class by its file name/path
@@ -252,7 +261,7 @@ class OrmSeeder {
         catch (e) {
             throw new exception_1.RuntimeException({
                 exceptionMessage: `The seed source "${name}" does not exist. Check that the directory for sources has been defined correctly.`,
-                exceptionData: e
+                exceptionData: e,
             });
         }
     }
@@ -265,8 +274,13 @@ class OrmSeeder {
      * @param args
      */
     source(src, ...args) {
-        typeof src === 'string' && (src = this.fetchSource(src));
-        this._source = src instanceof OrmSeedSource ? src : src ? Reflect.construct(src, args) : null;
+        typeof src === "string" && (src = this.fetchSource(src));
+        this._source =
+            src instanceof OrmSeedSource
+                ? src
+                : src
+                    ? Reflect.construct(src, args)
+                    : null;
         return this;
     }
     getSource() {

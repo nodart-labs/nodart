@@ -10,22 +10,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppBuilder = exports.AppExceptionResolve = exports.AppEmitter = exports.AppEnv = exports.AppServiceManager = exports.AppModuleFacade = exports.AppModule = exports.AppFactory = exports.App = exports.loaders = exports.DEFAULT_HOST = exports.DEFAULT_PORT = void 0;
-const app_config_1 = require("./app_config");
-const store_1 = require("./store");
-const http_1 = require("../services/http");
-const di_1 = require("./di");
-const router_1 = require("./router");
-const exception_1 = require("./exception");
-const http_2 = require("http");
+const http_1 = require("http");
 const https_1 = require("https");
-const http_client_1 = require("./http_client");
+const http_2 = require("../services/http");
 const utils_1 = require("../utils");
 const module_1 = require("../services/module");
 const cashier_1 = require("../services/cashier");
 const orm_1 = require("../services/orm");
+const app_config_1 = require("./app_config");
+const store_1 = require("./store");
+const di_1 = require("./di");
+const router_1 = require("./router");
+const exception_1 = require("./exception");
+const http_client_1 = require("./http_client");
 const service_1 = require("./service");
 exports.DEFAULT_PORT = 3000;
-exports.DEFAULT_HOST = 'localhost';
+exports.DEFAULT_HOST = "localhost";
 const loaders = () => App.system.state.loaders;
 exports.loaders = loaders;
 class App {
@@ -33,8 +33,14 @@ class App {
         this._isStart = false;
         this._isInit = false;
         this._isServe = false;
-        this._host = { port: null, protocol: null, host: null, hostname: null, family: '' };
-        this._uri = '';
+        this._host = {
+            port: null,
+            protocol: null,
+            host: null,
+            hostname: null,
+            family: "",
+        };
+        this._uri = "";
         this.config = new app_config_1.AppConfig().set(config);
         this.factory = new AppFactory(this);
         this.service = new AppServiceManager(this);
@@ -42,7 +48,10 @@ class App {
         this.builder = new AppBuilder(this);
         this.emitter = new AppEmitter(this);
         this.env = new AppEnv(this);
-        this.di = new di_1.DIContainer({ mediator: this, references: this.config.getStrict('reference') });
+        this.di = new di_1.DIContainer({
+            mediator: this,
+            references: this.config.getStrict("reference"),
+        });
     }
     get rootDir() {
         return this.config.get.rootDir;
@@ -76,7 +85,7 @@ class App {
             return this;
         });
     }
-    start(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST, serve) {
+    start(port = exports.DEFAULT_PORT, protocol = "http", host = exports.DEFAULT_HOST, serve) {
         return __awaiter(this, void 0, void 0, function* () {
             this.service.check().throwIsStart;
             this.factory.createState();
@@ -87,7 +96,7 @@ class App {
             return { app: this, http, server };
         });
     }
-    serve(port = exports.DEFAULT_PORT, protocol = 'http', host = exports.DEFAULT_HOST, serve) {
+    serve(port = exports.DEFAULT_PORT, protocol = "http", host = exports.DEFAULT_HOST, serve) {
         return __awaiter(this, void 0, void 0, function* () {
             this.service.check().throwIsServe;
             const server = serve ? yield serve(this) : require(protocol).createServer();
@@ -100,18 +109,20 @@ class App {
                         host = connection.address;
                         this.setHost(connection, protocol);
                     }
-                    server.eventNames().includes('request') || server.on('request', (req, res) => {
-                        this.resolveHttpRequest(req, res);
-                    });
-                    server.listening || server.listen(port, host, () => {
-                        const connection = server.address();
-                        this.setHost(connection, protocol);
-                        console.log(`server start at port ${port}.`, this.uri);
-                    });
+                    server.eventNames().includes("request") ||
+                        server.on("request", (req, res) => {
+                            this.resolveHttpRequest(req, res);
+                        });
+                    server.listening ||
+                        server.listen(port, host, () => {
+                            const connection = server.address();
+                            this.setHost(connection, protocol);
+                            console.log(`server start at port ${port}.`, this.uri);
+                        });
                     setTimeout(() => __awaiter(this, void 0, void 0, function* () {
                         this._isServe = true;
                         this.service.cashier.cacheAppFolder();
-                        yield this.emitter.emit('ON_START_SERVER', { server });
+                        yield this.emitter.emit("ON_START_SERVER", { server });
                         resolve(server);
                     }), 100);
                 }), 500);
@@ -123,13 +134,15 @@ class App {
             port: connection.port,
             protocol,
             host: connection.address,
-            family: connection.family
+            family: connection.family,
         }));
         this._uri = http_client_1.HttpClient.getURI(this._host);
     }
     resolveHttpRequest(req, res) {
         this.service.requestPayload
-            ? this.service.requestPayload(req, res).then(() => app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res))
+            ? this.service
+                .requestPayload(req, res)
+                .then(() => app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res))
             : app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res);
     }
     resolveException(exception, req, res) {
@@ -165,7 +178,7 @@ class AppFactory {
     }
     createApp() {
         return __awaiter(this, void 0, void 0, function* () {
-            for (const loader of Object.keys(this.app.config.getStrict('loaders'))) {
+            for (const loader of Object.keys(this.app.config.getStrict("loaders"))) {
                 yield this.createLoader(loader).generate();
             }
         });
@@ -175,20 +188,24 @@ class AppFactory {
         repo && store && store_1.Store.add(store, utils_1.fs.path(this.app.rootDir, repo));
     }
     createState() {
-        App.system.store || store_1.Store.add(app_config_1.SYSTEM_STORE_NAME, utils_1.fs.path(__dirname, '../' + app_config_1.SYSTEM_STORE_REPOSITORY));
-        App.system.state.app || App.system.setup({
-            app: this.app,
-            loaders: {
-                static: this.createLoader('static'),
-                http: this.createLoader('http'),
-                controller: this.createLoader('controller'),
-                service: this.createLoader('service'),
-                model: this.createLoader('model'),
-            }
-        });
+        App.system.store ||
+            store_1.Store.add(app_config_1.SYSTEM_STORE_NAME, utils_1.fs.path(__dirname, "../" + app_config_1.SYSTEM_STORE_REPOSITORY));
+        App.system.state.app ||
+            App.system.setup({
+                app: this.app,
+                loaders: {
+                    static: this.createLoader("static"),
+                    http: this.createLoader("http"),
+                    controller: this.createLoader("controller"),
+                    service: this.createLoader("service"),
+                    model: this.createLoader("model"),
+                },
+            });
     }
     createLoader(name) {
-        return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [this.app]);
+        return Reflect.construct(this.app.config.getStrict(`loaders.${name}`), [
+            this.app,
+        ]);
     }
 }
 exports.AppFactory = AppFactory;
@@ -216,13 +233,17 @@ class AppServiceManager {
                 return {
                     store: config.storeName,
                     state: config.stateName,
-                    repo: this.repo
+                    repo: this.repo,
                 };
             },
             get repo() {
                 const repo = config.store;
-                return typeof repo === 'boolean' ? (repo ? app_config_1.CLIENT_STORE_REPOSITORY : '') : repo;
-            }
+                return typeof repo === "boolean"
+                    ? repo
+                        ? app_config_1.CLIENT_STORE_REPOSITORY
+                        : ""
+                    : repo;
+            },
         };
     }
     check(app) {
@@ -230,44 +251,45 @@ class AppServiceManager {
         return {
             get throwIsServe() {
                 if (app.isServe)
-                    throw 'The App already is being served.';
+                    throw "The App already is being served.";
                 return;
             },
             get throwIsStart() {
                 if (app.isStart)
-                    throw 'The App already has been started.';
+                    throw "The App already has been started.";
                 return;
             },
             get throwIsInit() {
                 if (app.isInit)
-                    throw 'The App already has been initialised.';
+                    throw "The App already has been initialised.";
                 return;
             },
             throwIsServer(server) {
-                if (server instanceof http_2.Server)
+                if (server instanceof http_1.Server)
                     return;
                 if (server instanceof https_1.Server)
                     return;
                 throw 'The provided server is not an instance of node "Server".';
-            }
+            },
         };
     }
     get http() {
-        this.httpService.subscribers.length || this.httpService.subscribe((data) => {
-            data.route.callback = data.callback;
-            this.app.router.addRoute(data.route, data.action);
-        });
+        this.httpService.subscribers.length ||
+            this.httpService.subscribe((data) => {
+                data.route.callback = data.callback;
+                this.app.router.addRoute(data.route, data.action);
+            });
         return this.httpService.httpAcceptor;
     }
     get httpService() {
-        return this._http || (this._http = new http_1.HttpService());
+        return (this._http || (this._http = new http_2.HttpService()));
     }
     get requestPayload() {
         return this._requestPayload;
     }
     setRequestPayload(payload) {
         if (this._requestPayload)
-            throw 'The request payload already has been set.';
+            throw "The request payload already has been set.";
         this._requestPayload = payload;
     }
     get exceptionPayload() {
@@ -275,17 +297,17 @@ class AppServiceManager {
     }
     setExceptionPayload(payload) {
         if (this._exceptionPayload)
-            throw 'The exception payload already has been set.';
+            throw "The exception payload already has been set.";
         this._exceptionPayload = payload;
     }
     get db() {
-        return this._orm || (this._orm = new orm_1.OrmService(this.app));
+        return (this._orm || (this._orm = new orm_1.OrmService(this.app)));
     }
     get module() {
-        return this._module || (this._module = new module_1.ModuleService(this.app, this.app.config.get.modules));
+        return (this._module || (this._module = new module_1.ModuleService(this.app, this.app.config.get.modules)));
     }
     get cashier() {
-        return this._cashier || (this._cashier = new cashier_1.CashierService(this.app));
+        return (this._cashier || (this._cashier = new cashier_1.CashierService(this.app)));
     }
 }
 exports.AppServiceManager = AppServiceManager;
@@ -293,17 +315,19 @@ class AppEnv {
     constructor(app) {
         this.app = app;
         this.envFilenamePattern = /^[A-z\d.-_]+(\.ts|\.js)$/;
-        this.tsConfigFileName = 'tsconfig.json';
+        this.tsConfigFileName = "tsconfig.json";
     }
     get baseDir() {
-        return utils_1.fs.isFile(utils_1.fs.path(this.app.rootDir, this.tsConfigFileName)) ? this.app.rootDir : process.cwd();
+        return utils_1.fs.isFile(utils_1.fs.path(this.app.rootDir, this.tsConfigFileName))
+            ? this.app.rootDir
+            : process.cwd();
     }
     get data() {
-        return this.env || (this.env = utils_1.fs.include(this.envFile, {
+        return (this.env || (this.env = utils_1.fs.include(this.envFile, {
             log: false,
             skipExt: true,
-            success: (data) => utils_1.$.isPlainObject(data) ? data : {}
-        }));
+            success: (data) => (utils_1.$.isPlainObject(data) ? data : {}),
+        })));
     }
     get envFilename() {
         const name = this.app.config.get.envFilename || app_config_1.DEFAULT_ENV_FILE_NAME;
@@ -355,20 +379,26 @@ class AppExceptionResolve {
         this.exception = exception;
     }
     getHandler() {
-        return this._handler || (this._handler = this.app.get('exception_handler').call([this.exception]));
+        return (this._handler || (this._handler = this.app
+            .get("exception_handler")
+            .call([this.exception])));
     }
     getLog() {
-        return this._log || (this._log = this.app.get('exception_log').call([this.exception]));
+        return (this._log || (this._log = this.app
+            .get("exception_log")
+            .call([this.exception])));
     }
     getExceptionTemplate(response) {
-        return this.app.get('exception_template').call([response]);
+        return this.app.get("exception_template").call([response]);
     }
     resolveOnHttp(request, response) {
         return __awaiter(this, void 0, void 0, function* () {
             const handler = this.getHandler();
             handler && (this.exception = handler) && (yield handler.resolve());
             const exceptionLog = this.getLog();
-            this._httpResponseData = exceptionLog.onHttp(request, response).getHttpResponseData(request, response);
+            this._httpResponseData = exceptionLog
+                .onHttp(request, response)
+                .getHttpResponseData(request, response);
             exceptionLog.dump();
             this._sendHttpException(request, response);
         });
@@ -384,9 +414,11 @@ class AppExceptionResolve {
         payload && Object.assign(data, payload(data, this) || {});
         const exceptionTemplate = this.getExceptionTemplate(data);
         response.writeHead(data.status, {
-            'Content-Type': contentType === data.contentType
-                ? (exceptionTemplate ? 'text/html' : contentType)
-                : data.contentType
+            "Content-Type": contentType === data.contentType
+                ? exceptionTemplate
+                    ? "text/html"
+                    : contentType
+                : data.contentType,
         });
         response.end(exceptionTemplate || data.content);
     }
@@ -408,16 +440,20 @@ class AppBuilder {
             return;
         const buildDir = this.buildDir;
         if (buildDir === null)
-            throw new exception_1.RuntimeException('App Build failed. Cannot retrieve a build directory name.'
-                + ' Check that configuration parameter "buildDirname" and the option "outDir"'
-                + ' in tsconfig.json file are both the same values.');
+            throw new exception_1.RuntimeException("App Build failed. Cannot retrieve a build directory name." +
+                ' Check that configuration parameter "buildDirname" and the option "outDir"' +
+                " in tsconfig.json file are both the same values.");
         utils_1.fs.rmDir(buildDir, (err) => {
-            err || require('child_process').execFileSync('tsc', ['--build'], { shell: true, encoding: "utf-8" });
+            err ||
+                require("child_process").execFileSync("tsc", ["--build"], {
+                    shell: true,
+                    encoding: "utf-8",
+                });
             err && (onError === null || onError === void 0 ? void 0 : onError(err));
         });
     }
     substractRootDir(buildDir, rootDir) {
-        const substract = utils_1.$.trimPath(rootDir.replace(this.app.env.baseDir, ''));
+        const substract = utils_1.$.trimPath(rootDir.replace(this.app.env.baseDir, ""));
         return substract ? utils_1.fs.path(buildDir, substract) : buildDir;
     }
 }

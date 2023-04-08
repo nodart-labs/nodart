@@ -9,45 +9,54 @@ const utils_1 = require("../utils");
 class ControllerLoader extends app_loader_1.AppLoader {
     constructor() {
         super(...arguments);
-        this._repository = 'controllers';
-        this._pathSuffix = '_controller';
+        this._repository = "controllers";
+        this._pathSuffix = "_controller";
     }
     get sourceType() {
         return controller_1.BaseController;
     }
     call(args) {
         const app = args[0] || this.app;
-        const controller = this.resolve(args[3] || this._source, [app, args[1], args[2]]);
+        const controller = this.resolve(args[3] || this._source, [
+            app,
+            args[1],
+            args[2],
+        ]);
         controller && this.intercept(controller, app);
         return controller;
     }
     getDependency(controller, property, dependency) {
         switch (property) {
-            case 'service':
-                return this.resolve(dependency, [{
+            case "service":
+                return this.resolve(dependency, [
+                    {
                         app: controller.app,
                         controller: () => controller,
                         model: () => controller.model,
                         service: () => controller.service,
                         http: controller.http,
-                        route: controller.route
-                    }]);
-            case 'model':
-                return (0, app_1.loaders)().model.call([dependency, controller.app]);
+                        route: controller.route,
+                    },
+                ]);
+            case "model":
+                return (0, app_1.loaders)().model.call([
+                    dependency,
+                    controller.app,
+                ]);
         }
     }
     getControllerByRoutePath(app, route, http) {
-        const data = { path: '', action: '' };
+        const data = { path: "", action: "" };
         const rootDir = app.rootDir;
         if (route.route) {
             data.path = route.route;
-            data.action = route.action || '';
+            data.action = route.action || "";
         }
         else {
             data.path = route.pathname || app_config_1.DEFAULT_CONTROLLER_NAME;
             if (false === this.isSource(data.path, rootDir)) {
-                const path = data.path.split('/');
-                const skipAction = path.slice(0, -1).join('/');
+                const path = data.path.split("/");
+                const skipAction = path.slice(0, -1).join("/");
                 if (this.isSource(skipAction, rootDir)) {
                     data.path = skipAction;
                     data.action = path.at(-1);
@@ -58,7 +67,12 @@ class ControllerLoader extends app_loader_1.AppLoader {
         }
         const controller = this.load(data.path, controller_1.BaseController, rootDir);
         if (controller)
-            return this.call([app, http, Object.assign(Object.assign({}, route), { action: data.action }), controller]);
+            return this.call([
+                app,
+                http,
+                Object.assign(Object.assign({}, route), { action: data.action }),
+                controller,
+            ]);
     }
     getControllerByRouteDescriptor(app, route, http) {
         var _a, _b;
@@ -69,8 +83,7 @@ class ControllerLoader extends app_loader_1.AppLoader {
             return this.call([app, http, route, controller]);
         }
     }
-    onGenerate(repository) {
-    }
+    onGenerate() { }
 }
 exports.ControllerLoader = ControllerLoader;
 //# sourceMappingURL=controller_loader.js.map

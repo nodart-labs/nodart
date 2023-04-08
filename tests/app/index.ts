@@ -1,109 +1,95 @@
-import {App} from "../../core/app"
-import {SampleService} from "./services/sample";
-import {Sample2Controller} from "./controllers/sample2_controller";
-import {measure, fs} from "../../utils";
-import {Service} from "../../core/service";
-import {SampleController} from "./controllers/sample_controller";
+import { App } from "../../core/app";
+import { SampleService } from "./services/sample";
+import { SampleController } from "./controllers/sample_controller";
 
-const config = require('./config')
+const config = require("./config");
 
-new App({...config}).init().then(async app => {
+new App({ ...config }).init().then(async (app) => {
+  const server = await app.serve(3000, "http", "127.0.0.1");
 
-    const server = await app.serve(3000, 'http', '127.0.0.1')
+  const http = app.service.http;
 
-    const http = app.service.http
-
-    /*http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
+  /*http.get('/test/:param1/:param2/:param3/:param4', ({route}) => {
         const {param1, param2, param3, param4} = route.params
         return {param1, param2, param3, param4}
     })*/
 
-    http.get('/', async (scope) => {
+  http.get("/", async (scope) => {
+    // scope.service().sample;
 
-        scope.service().sample
+    // console.log(scope.service().sample)
+    // console.log(scope.model().sub.sample)
 
-        // console.log(scope.service().sample)
-        // console.log(scope.model().sub.sample)
+    // new SampleService(scope)
 
-        // new SampleService(scope)
+    // const users = await  scope.model().sub.sample.query.select().table('users')
 
-        // const users = await  scope.model().sub.sample.query.select().table('users')
+    return { ok: true };
+  });
 
-        return {ok: true}
+  http.get(
+    { path: "/sample-http-service/:+id?", controller: () => SampleController },
+    ({ http, route, service, controller }) => {
+      const sampleController = controller() as SampleController;
 
-    })
+      console.log("Sample Controller:", sampleController.constructor);
 
-    http.get({path: '/sample-http-service/:+id?', controller: () => SampleController}, ({
-        app,
-        http,
-        route,
-        model,
-        service,
-        controller
-    }) => {
+      const sampleService = service().sample as SampleService;
 
-        const sampleController = controller() as SampleController
+      const scope = {};
 
-        console.log('Sample Controller:', sampleController.constructor)
+      Object.entries(sampleService.scope).forEach(
+        ([entry, data]) => (scope[entry] = data?.constructor ?? data),
+      );
 
-        const sampleService = service().sample as SampleService
+      console.log("SampleService scope:", scope);
 
-        const scope = {}
+      console.log("----------------------------");
 
-        Object.entries(sampleService.scope).forEach(([entry, data]) => scope[entry] = data?.constructor ?? data)
+      console.log("current request headers:", http.request.headers);
 
-        console.log('SampleService scope:', scope)
+      console.log("----------------------------");
 
-        console.log('----------------------------')
+      console.log("current route data:", route);
 
-        console.log('current request headers:', http.request.headers)
+      console.log("----------------------------");
 
-        console.log('----------------------------')
+      console.log("current HOST data:", http.host);
 
-        console.log('current route data:', route)
+      http.respond.view("index", {
+        title: "Sample Http Service",
+        code:
+          "\r\n" +
+          'http.get("/sample-http-service/:+id?", (scope) => {' +
+          "\r\n" +
+          "\r\n" +
+          "..." +
+          "\r\n" +
+          "\r\n" +
+          "})",
+      });
+    },
+  );
 
-        console.log('----------------------------')
+  http.get("/form-data", ({ http }) => {
+    http.respond.view("form");
+  });
 
-        console.log('current HOST data:', http.host)
+  http.post("/form-data", async ({ http }) => {
+    const data = http.isFormData
+      ? await http.form.fetchFormData().then((form) => {
+          const { fields, files } = form;
 
-        http.respond.view('index', {
-            title: 'Sample Http Service',
-            code:
-                '\r\n'
-                + 'http.get("/sample-http-service/:+id?", (scope) => {'
-                + '\r\n'
-                + '\r\n'
-                + '...'
-                + '\r\n'
-                + '\r\n'
-                + '})'
+          return { fields, files };
         })
+      : await http.data;
 
-    })
+    console.log(data);
 
-    http.get('/form-data', ({http}) => {
+    if (http.isFormData) {
+      return { fields: data.fields, files: data.files };
+    }
 
-        http.respond.view('form')
-
-    })
-
-    http.post('/form-data', async ({http}) => {
-
-        const data = http.isFormData
-            ? await http.form.fetchFormData().then(form => {
-                const {fields, files} = form
-                return {fields, files}
-            })
-            : await http.data
-
-        console.log(data)
-
-        if (http.isFormData) {
-
-            return {fields: data.fields, files: data.files}
-        }
-
-        return data
-
-    })
-})
+    return data;
+  });
+});

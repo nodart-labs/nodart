@@ -6,7 +6,7 @@ const service_1 = require("../core/service");
 class ServiceLoader extends app_loader_1.AppLoader {
     constructor() {
         super(...arguments);
-        this._repository = 'services';
+        this._repository = "services";
     }
     get sourceType() {
         return service_1.Service;
@@ -14,8 +14,7 @@ class ServiceLoader extends app_loader_1.AppLoader {
     call(args, path, rootDir) {
         return this.resolve(path ? this.load(path, service_1.Service, rootDir) : this._source, args);
     }
-    onGenerate(repository) {
-    }
+    onGenerate() { }
 }
 exports.ServiceLoader = ServiceLoader;
 //# sourceMappingURL=service_loader.js.map

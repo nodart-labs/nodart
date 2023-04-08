@@ -7,13 +7,6 @@
     "noImplicitAny": false,
     "outDir": "dist"
   },
-  "exclude": [
-    "node_modules",
-    "tests",
-    "sources",
-    "bin"
-  ],
-  "lib": [
-    "esnext"
-  ]
+  "exclude": ["node_modules", "tests", "sources", "bin"],
+  "lib": ["esnext"]
 }

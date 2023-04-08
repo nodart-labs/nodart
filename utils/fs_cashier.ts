@@ -1,132 +1,144 @@
-import {JSONLikeInterface} from "../core/interfaces/object";
-import {fs, $} from "./index";
+import { JSONLikeInterface } from "../core/interfaces/object";
+import { $, fs } from "./index";
 
-type FileData = {ext?: string, data?: JSONLikeInterface}
+type FileData = { ext?: string; data?: JSONLikeInterface };
 
 export class FSCashier {
+  protected static _files: { [path: string]: FileData } = {};
 
-    protected static _files: {[path:string]: FileData} = {}
+  constructor(
+    readonly config: {
+      excludeFolders?: string[];
+      extensions?: string[];
+    } = {},
+  ) {}
 
-    constructor(readonly config: {
-        excludeFolders?: string[],
-        extensions?: string[],
-    } = {}) {
-    }
+  static get files() {
+    return FSCashier._files;
+  }
 
-    static get files() {
+  static isFile(path: string) {
+    return path in FSCashier._files;
+  }
 
-        return FSCashier._files
-    }
+  createFileEntry(file: string, data?: FileData) {
+    const pathSkipExt = fs.skipExtension(file);
 
-    static isFile(path: string) {
+    return {
+      [file]: data,
+      [pathSkipExt]: data,
+      [fs.formatPath(file)]: data,
+      [fs.formatPath(pathSkipExt)]: data,
+    };
+  }
 
-        return path in FSCashier._files
-    }
+  addFile(file: string, data?: FileData) {
+    if (!fs.system.existsSync(file) || !fs.isFile(file)) return;
 
-    createFileEntry(file: string, data?: FileData) {
+    const extension = fs.getExtension(file);
 
-        const pathSkipExt = fs.skipExtension(file)
+    data ||= { ext: extension, data: this.requireFileData(file, extension) };
 
-        return {
-            [file]: data,
-            [pathSkipExt]: data,
-            [fs.formatPath(file)]: data,
-            [fs.formatPath(pathSkipExt)]: data
-        }
-    }
+    Object.assign(FSCashier._files, this.createFileEntry(file, data));
+  }
 
-    addFile(file: string, data?: FileData) {
+  getFile(path: string) {
+    return FSCashier._files[path];
+  }
 
-        if (!fs.system.existsSync(file) || !fs.isFile(file)) return
+  requireFileData(file: string, extension?: string) {
+    extension ||= fs.getExtension(file);
 
-        const extension = fs.getExtension(file)
+    return ["js", "ts", "mjs"].includes(extension) ? require(file) : {};
+  }
 
-        data ||= {ext: extension, data: this.requireFileData(file, extension)}
+  cacheFolder(folder: string) {
+    FSCashier._files = {};
 
-        Object.assign(FSCashier._files, this.createFileEntry(file, data))
-    }
+    fs.dir(
+      folder,
+      ({ file, directory }) => {
+        if (directory?.includes(".")) return false;
 
-    getFile(path: string) {
+        if (!file) return;
 
-        return FSCashier._files[path]
-    }
+        const extension = fs.getExtension(file);
 
-    requireFileData(file: string, extension?: string) {
+        if (!this.config.extensions?.includes(extension)) return;
 
-        extension ||= fs.getExtension(file)
+        const data = {
+          ext: extension,
+          data: this.requireFileData(file, extension),
+        };
 
-        return ['js', 'ts', 'mjs'].includes(extension) ? require(file) : {}
-    }
+        this.addFile(file, data);
+      },
+      this.config.excludeFolders,
+    );
+  }
 
-    cacheFolder(folder: string) {
+  watchFolder(
+    folder: string,
+    callback?: (mode: string, file: string) => boolean | void,
+  ) {
+    fs.system.readdirSync(folder).forEach((path) => {
+      path = fs.path(folder, path);
 
-        FSCashier._files = {}
+      if (!fs.isDir(path) || path.includes(".")) return;
 
-        fs.dir(folder, ({file, directory}) => {
+      if (
+        this.config.excludeFolders?.some((v) =>
+          path.endsWith(fs.path(folder, v)),
+        )
+      )
+        return;
 
-            if (directory?.includes('.')) return false
+      fs.system.watch(path, { recursive: true }, (mode, file) => {
+        if (false === callback?.(mode, file)) return;
 
-            if (!file) return
+        setTimeout(
+          () =>
+            fs.system.existsSync(fs.join(path, file)) &&
+            this.cacheFolder(folder),
+          1,
+        );
+      });
+    });
+  }
 
-            const extension = fs.getExtension(file)
+  watchFile(
+    path: string,
+    callback?: (mode: string, file: string, folder: string) => boolean | void,
+  ) {
+    if (!fs.system.existsSync(path) || !fs.isFile(path)) return;
 
-            if (!this.config.extensions?.includes(extension)) return
+    const folder = require("path").dirname(path);
 
-            const data = {ext: extension, data: this.requireFileData(file, extension)}
+    fs.system.watch(path, (mode, file) => {
+      if (false === callback?.(mode, file, folder)) return;
 
-            this.addFile(file, data)
+      this.removeFile(path);
 
-        }, this.config.excludeFolders)
-    }
+      file = fs.path(folder, $.trimPath(file));
 
-    watchFolder(folder: string, callback?: (mode: string, file: string) => boolean | void) {
+      if (!fs.system.existsSync(file)) return;
 
-        fs.system.readdirSync(folder).forEach(path => {
+      const extension = fs.getExtension(file);
 
-            path = fs.path(folder, path)
+      const data = {
+        ext: extension,
+        data: this.requireFileData(file, extension),
+      };
 
-            if (!fs.isDir(path) || path.includes('.')) return
+      this.addFile(file, data);
+    });
+  }
 
-            if (this.config.excludeFolders?.some(v => path.endsWith(fs.path(folder, v)))) return
+  removeFile(path: string) {
+    const paths = this.createFileEntry(path);
 
-            fs.system.watch(path, {recursive: true}, (mode, file) => {
-
-                if (false === callback?.(mode, file)) return
-
-                setTimeout(() => fs.system.existsSync(fs.join(path, file)) && this.cacheFolder(folder), 1)
-            })
-        })
-    }
-
-    watchFile(path: string, callback?: (mode: string, file: string, folder: string) => boolean | void) {
-
-        if (!fs.system.existsSync(path) || !fs.isFile(path)) return
-
-        const folder = require('path').dirname(path)
-
-        fs.system.watch(path, (mode, file) => {
-
-            if (false === callback?.(mode, file, folder)) return
-
-            this.removeFile(path)
-
-            file = fs.path(folder, $.trimPath(file))
-
-            if (!fs.system.existsSync(file)) return
-
-            const extension = fs.getExtension(file)
-
-            const data = {ext: extension, data: this.requireFileData(file, extension)}
-
-            this.addFile(file, data)
-        })
-    }
-
-    removeFile(path: string) {
-
-        const paths = this.createFileEntry(path)
-
-        Object.keys(paths).forEach(key => FSCashier._files[key] && delete FSCashier._files[key])
-    }
-
+    Object.keys(paths).forEach(
+      (key) => FSCashier._files[key] && delete FSCashier._files[key],
+    );
+  }
 }

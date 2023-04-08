@@ -9,11 +9,11 @@ class Observer {
     get getter() {
         return this._getter;
     }
-    get setter() {
-        return this._setter;
-    }
     set getter(get) {
         this._getter = get;
+    }
+    get setter() {
+        return this._setter;
     }
     set setter(set) {
         this._setter = set;
@@ -28,25 +28,29 @@ class Observer {
     }
     pull(data) {
         const { prop, source } = data;
-        return this._getter ? this._getter(prop, data) : Array.isArray(source) ? source[prop] : source;
+        return this._getter
+            ? this._getter(prop, data)
+            : Array.isArray(source)
+                ? source[prop]
+                : source;
     }
     push(data) {
         const { prop, value } = data;
         return this._setter ? this._setter(prop, value, data) : undefined;
     }
     static isObject(data) {
-        return data && typeof data === 'object' && data.constructor === Object;
+        return data && typeof data === "object" && data.constructor === Object;
     }
 }
 exports.Observer = Observer;
 const setPath = (prop, path, delim) => {
-    return path += path ? delim + prop : prop;
+    return (path += path ? delim + prop : prop);
 };
 const getPath = (path, delim) => {
     return path.split(delim).slice(0, -1);
 };
 class Observable {
-    static get(source, observer, { path: path = '', pathDelim: pathDelim = '', lastCall: lastCall = '' } = {}) {
+    static get(source, observer, { path: path = "", pathDelim: pathDelim = "", lastCall: lastCall = "", } = {}) {
         pathDelim || (pathDelim = Math.random().toString(20));
         return new Proxy(source, {
             set: (t, p, value) => {
@@ -57,7 +61,7 @@ class Observable {
                     source,
                     path: getPath(path, pathDelim),
                     value,
-                    old: source[p]
+                    old: source[p],
                 });
                 if (data !== undefined)
                     source[p] = data;
@@ -76,20 +80,24 @@ class Observable {
                             prop: p,
                             source,
                             value: source[p],
-                            path: getPath(path, pathDelim)
+                            path: getPath(path, pathDelim),
                         });
                 }
                 if (isObject)
-                    return Observable.get(source[p], observer, { path, pathDelim, lastCall });
+                    return Observable.get(source[p], observer, {
+                        path,
+                        pathDelim,
+                        lastCall,
+                    });
                 return source[p];
-            }
+            },
         });
     }
     static isStackPointer(source, prop) {
-        return ((Array.isArray(source) && isNaN(+prop))
-            || (source && typeof source === 'object' && !source.hasOwnProperty(prop)))
-            || Observable._stackPointer === prop && !(prop in source);
+        return ((Array.isArray(source) && isNaN(+prop)) ||
+            (source && typeof source === "object" && !source.hasOwnProperty(prop)) ||
+            (Observable._stackPointer === prop && !(prop in source)));
     }
 }
-Observable._stackPointer = 'stack';
+Observable._stackPointer = "stack";
 //# sourceMappingURL=observer.js.map

@@ -13,10 +13,10 @@ class StoreLoader extends app_loader_1.AppLoader {
     onGenerate(repository) {
         if (!repository)
             return;
-        const ext = this.app.env.isCommonJS ? '.js' : '.ts';
+        const ext = this.app.env.isCommonJS ? ".js" : ".ts";
         const state = utils_1.$.trimPath(this.app.config.get.stateName) || app_config_1.CLIENT_STATE_NAME;
-        const dest = repository + '/' + state + ext;
-        utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)('store/app' + ext), dest);
+        const dest = repository + "/" + state + ext;
+        utils_1.fs.isFile(dest) || utils_1.fs.copy((0, app_config_1.getSourcesDir)("store/app" + ext), dest);
     }
 }
 exports.StoreLoader = StoreLoader;

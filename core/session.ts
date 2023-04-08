@@ -1,45 +1,42 @@
-import {SessionClientConfigInterface} from "./interfaces/session";
-import {HttpContainerInterface} from "./interfaces/http";
+import { SessionClientConfigInterface } from "./interfaces/session";
+import { HttpContainerInterface } from "./interfaces/http";
 
-export const DEFAULT_SESSION_NAME = 'session'
+export const DEFAULT_SESSION_NAME = "session";
 
 export class Session {
+  readonly client = require("client-sessions");
 
-    readonly client = require("client-sessions")
+  protected _session;
 
-    protected _session
+  protected _sessionName;
 
-    protected _sessionName
+  constructor(readonly config: SessionClientConfigInterface) {
+    this.client = this.client(config);
 
-    constructor(readonly config: SessionClientConfigInterface) {
+    this._sessionName = config.cookieName || DEFAULT_SESSION_NAME;
+  }
 
-        this.client = this.client(config)
+  load(http: HttpContainerInterface) {
+    this.client(
+      http.request,
+      http.response,
+      () => (this._session = http.request[this._sessionName]),
+    );
 
-        this._sessionName = config.cookieName || DEFAULT_SESSION_NAME
-    }
+    return this;
+  }
 
-    load(http: HttpContainerInterface) {
+  get get() {
+    return this._session || {};
+  }
 
-        this.client(http.request, http.response, () => this._session = http.request[this._sessionName])
+  set(data: { [key: string]: any }) {
+    Object.assign(this.get, data);
+  }
 
-        return this
-    }
+  unset(key: string | string[]) {
+    Array.isArray(key) || (key = [key]);
 
-    get get() {
-
-        return this._session || {}
-    }
-
-    set(data: {[key: string]: any}) {
-
-        Object.assign(this.get, data)
-    }
-
-    unset(key: string | string[]) {
-
-        Array.isArray(key) || (key = [key])
-
-        key.forEach(k => k in this.get && delete this.get[k])
-    }
-
+    key.forEach((k) => k in this.get && delete this.get[k]);
+  }
 }

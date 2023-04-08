@@ -16,12 +16,12 @@ class AppLoader extends di_1.DependencyInterceptor {
     constructor(app) {
         super();
         this.app = app;
-        this._repository = '';
-        this._repositoryPath = '';
-        this._pathSuffix = '';
+        this._repository = "";
+        this._repositoryPath = "";
+        this._pathSuffix = "";
     }
-    getDependency(acceptor, property, dependency) {
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getDependency(acceptor, property, dependency) { }
     get rootDir() {
         return this.app.rootDir;
     }
@@ -74,23 +74,23 @@ class AppLoader extends di_1.DependencyInterceptor {
             return utils_1.fs.join(rootDir, repoName);
         }
         if (!this.repository)
-            return '';
-        return this._repositoryPath || (this._repositoryPath = utils_1.fs.join(this.rootDir, this.repository));
+            return "";
+        return (this._repositoryPath || (this._repositoryPath = utils_1.fs.join(this.rootDir, this.repository)));
     }
     absPath(path, rootDir) {
         const repo = this.getRepo(rootDir);
         path = this.securePath(path);
-        return repo ? utils_1.fs.join(repo, path) + this._pathSuffix : '';
+        return repo ? utils_1.fs.join(repo, path) + this._pathSuffix : "";
     }
     isSource(path, rootDir) {
-        return utils_1.fs.isFile(this.absPath(path, rootDir), ['ts', 'js']);
+        return utils_1.fs.isFile(this.absPath(path, rootDir), ["ts", "js"]);
     }
     isFile(path, rootDir) {
         return utils_1.fs.isFile(this.absPath(path, rootDir));
     }
     securePath(path) {
-        path || (path = '');
-        return path.includes('.') ? path.replace(/(\.\.\\|\.\.\/)/g, '') : path;
+        path || (path = "");
+        return path.includes(".") ? path.replace(/(\.\.\\|\.\.\/)/g, "") : path;
     }
 }
 exports.AppLoader = AppLoader;

@@ -11,11 +11,16 @@ module.exports = {
     node: true,
   },
   plugins: ["import", "@typescript-eslint"],
+  ignorePatterns: ["dist/*", "build/*"],
   rules: {
     "no-var": 2,
     "no-prototype-builtins": "off",
     "import/newline-after-import": ["error", { count: 1 }],
     "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "prefer-spread": "off",
     "padding-line-between-statements": [
       "warn",
       {
