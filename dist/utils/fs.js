@@ -96,8 +96,8 @@ const json = function (path) {
             ? JSON.parse(fs.readFileSync(path, "utf8"))
             : undefined;
     }
-    catch (e) {
-        console.error(e);
+    catch (_a) {
+        /* empty */
     }
 };
 const read = function (path) {

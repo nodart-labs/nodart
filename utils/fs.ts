@@ -122,8 +122,8 @@ const json = function (path: string): JSONLikeInterface | void {
     return fs.existsSync(path)
       ? JSON.parse(fs.readFileSync(path, "utf8"))
       : undefined;
-  } catch (e) {
-    console.error(e);
+  } catch {
+    /* empty */
   }
 };
 
