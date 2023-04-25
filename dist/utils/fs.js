@@ -97,7 +97,7 @@ const json = function (path) {
             : undefined;
     }
     catch (_a) {
-        /* empty */
+        return false;
     }
 };
 const read = function (path) {

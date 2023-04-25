@@ -117,13 +117,13 @@ const isDir = function (path: string): boolean {
   return !!stat(path)?.isDirectory();
 };
 
-const json = function (path: string): JSONLikeInterface | void {
+const json = function (path: string): JSONLikeInterface | undefined | false {
   try {
     return fs.existsSync(path)
       ? JSON.parse(fs.readFileSync(path, "utf8"))
       : undefined;
   } catch {
-    /* empty */
+    return false;
   }
 };
 

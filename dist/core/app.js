@@ -339,11 +339,13 @@ class AppEnv {
         return utils_1.fs.path(this.app.rootDir, this.envFilename);
     }
     get tsConfig() {
-        var _a;
-        return (_a = utils_1.fs.json(utils_1.fs.path(this.baseDir, this.tsConfigFileName))) !== null && _a !== void 0 ? _a : {};
+        return utils_1.fs.json(this.tsConfigFile);
+    }
+    get tsConfigFile() {
+        return utils_1.fs.path(this.baseDir, this.tsConfigFileName);
     }
     get tsConfigExists() {
-        return utils_1.fs.isFile(utils_1.fs.path(this.baseDir, this.tsConfigFileName));
+        return utils_1.fs.isFile(this.tsConfigFile);
     }
     get isCommonJS() {
         return !this.tsConfigExists;
@@ -433,6 +435,8 @@ class AppBuilder {
         const buildDirname = this.app.config.get.buildDirname || app_config_1.DEFAULT_APP_BUILD_DIR;
         const buildDir = utils_1.fs.path(this.app.env.baseDir, buildDirname);
         const tsConfig = this.app.env.tsConfig;
+        if (tsConfig === false)
+            throw `Error: Unable to read data from ${this.app.env.tsConfigFile}; check that the JSON data is in the correct format.`;
         return ((_a = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) === null || _a === void 0 ? void 0 : _a.outDir) === buildDirname ? buildDir : null;
     }
     build(onError) {
@@ -440,16 +444,16 @@ class AppBuilder {
             return;
         const buildDir = this.buildDir;
         if (buildDir === null)
-            throw new exception_1.RuntimeException("App Build failed. Cannot retrieve a build directory name." +
-                ' Check that configuration parameter "buildDirname" and the option "outDir"' +
-                " in tsconfig.json file are both the same values.");
+            throw new exception_1.RuntimeException(`App Build failed. Cannot retrieve a build directory name.
+          Check that configuration parameter "buildDirname" and the option "outDir"
+          in ${this.app.env.tsConfigFile} are both the same values.`);
         utils_1.fs.rmDir(buildDir, (err) => {
-            err ||
-                require("child_process").execFileSync("tsc", ["--build"], {
+            err
+                ? onError === null || onError === void 0 ? void 0 : onError(err)
+                : require("node:child_process").execFileSync("tsc", ["--build"], {
                     shell: true,
                     encoding: "utf-8",
                 });
-            err && (onError === null || onError === void 0 ? void 0 : onError(err));
         });
     }
     substractRootDir(buildDir, rootDir) {

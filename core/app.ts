@@ -511,11 +511,15 @@ export class AppEnv {
   }
 
   get tsConfig() {
-    return fs.json(fs.path(this.baseDir, this.tsConfigFileName)) ?? {};
+    return fs.json(this.tsConfigFile);
+  }
+
+  get tsConfigFile() {
+    return fs.path(this.baseDir, this.tsConfigFileName);
   }
 
   get tsConfigExists(): boolean {
-    return fs.isFile(fs.path(this.baseDir, this.tsConfigFileName));
+    return fs.isFile(this.tsConfigFile);
   }
 
   get isCommonJS(): boolean {
@@ -626,13 +630,16 @@ export class AppExceptionResolve {
 export class AppBuilder {
   constructor(readonly app: App) {}
 
-  get buildDir(): string | null {
+  get buildDir(): string | null | never {
     const buildDirname =
       this.app.config.get.buildDirname || DEFAULT_APP_BUILD_DIR;
 
     const buildDir = fs.path(this.app.env.baseDir, buildDirname);
 
     const tsConfig = this.app.env.tsConfig;
+
+    if (tsConfig === false)
+      throw `Error: Unable to read data from ${this.app.env.tsConfigFile}; check that the JSON data is in the correct format.`;
 
     return tsConfig?.compilerOptions?.outDir === buildDirname ? buildDir : null;
   }
@@ -644,18 +651,18 @@ export class AppBuilder {
 
     if (buildDir === null)
       throw new RuntimeException(
-        "App Build failed. Cannot retrieve a build directory name." +
-          ' Check that configuration parameter "buildDirname" and the option "outDir"' +
-          " in tsconfig.json file are both the same values.",
+        `App Build failed. Cannot retrieve a build directory name.
+          Check that configuration parameter "buildDirname" and the option "outDir"
+          in ${this.app.env.tsConfigFile} are both the same values.`,
       );
 
     fs.rmDir(buildDir, (err) => {
-      err ||
-        require("child_process").execFileSync("tsc", ["--build"], {
-          shell: true,
-          encoding: "utf-8",
-        });
-      err && onError?.(err);
+      err
+        ? onError?.(err)
+        : require("node:child_process").execFileSync("tsc", ["--build"], {
+            shell: true,
+            encoding: "utf-8",
+          });
     });
   }
 
