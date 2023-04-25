@@ -58,7 +58,9 @@ module.exports = async ({ app, cmd }) => {
 
     if (source) {
       for (const migration of source.migrationList) {
-        await migrator[action]().then(() =>
+        const target = await source.getMigration(migration);
+
+        await target[action](migrator.client).then(() =>
           console.log(`migrate source "${migration}" ${action} is complete.`),
         );
       }
@@ -200,27 +202,14 @@ module.exports = async ({ app, cmd }) => {
     },
 
     async sourceUp(name, migrations = []) {
-      const data = fetchMigrations(name, migrations);
-
-      name = $.camel2Snake(data.name).toLowerCase();
-      migrations = data.migrations;
-
       cmd.system.buildApp(app);
+      await migrateSource(name, "up", migrations);
+      process.exit();
+    },
 
-      const migrator = orm().migrator();
-      const source = migrator.source(name, migrations).getSource();
-
-      if (source) {
-        for (const migration of source.migrationList) {
-          await migrator
-            .up()
-            .then(() =>
-              console.log(`migrate source "${migration}" up is complete.`),
-            );
-        }
-      } else {
-        console.error(`migration source "${name}" is not found.`);
-      }
+    async sourceDown(name, migrations = []) {
+      cmd.system.buildApp(app);
+      await migrateSource(name, "down", migrations);
       process.exit();
     },
 
@@ -233,31 +222,6 @@ module.exports = async ({ app, cmd }) => {
         }
       }
 
-      process.exit();
-    },
-
-    async sourceDown(name, migrations = []) {
-      const data = fetchMigrations(name, migrations);
-
-      name = $.camel2Snake(data.name).toLowerCase();
-      migrations = data.migrations;
-
-      cmd.system.buildApp(app);
-
-      const migrator = orm().migrator();
-      const source = migrator.source(name, migrations).getSource();
-
-      if (source) {
-        for (const migration of source.migrationList) {
-          await migrator
-            .down()
-            .then(() =>
-              console.log(`migrate source "${migration}" down is complete.`),
-            );
-        }
-      } else {
-        console.error(`migration source "${name}" is not found.`);
-      }
       process.exit();
     },
 

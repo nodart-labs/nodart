@@ -1,5 +1,5 @@
 import { knex } from "knex";
-import { fs, object } from "../utils";
+import { $, fs, object } from "../utils";
 import {
   ConnectionManagerInterface,
   OrmClient,
@@ -132,10 +132,6 @@ export class OrmMigrator {
     }
   }
 
-  assignSource() {
-    return this._source ? { migrationSource: this._source } : undefined;
-  }
-
   /**
    * Specifies a custom migration source class.
    * @param src
@@ -190,14 +186,14 @@ export class OrmMigrator {
    * Runs the specified (by config.name parameter) or the next chronological migration that has not yet be run.
    */
   async up() {
-    return await this.client.migrate.up(this.assignSource() ?? this.config);
+    return await this.client.migrate.up(this.config);
   }
 
   /**
    * Will undo the specified (by config.name parameter) or the last migration that was run.
    */
   async down() {
-    return await this.client.migrate.down(this.assignSource() ?? this.config);
+    return await this.client.migrate.down(this.config);
   }
 
   /**

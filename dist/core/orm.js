@@ -113,9 +113,6 @@ class OrmMigrator {
             });
         }
     }
-    assignSource() {
-        return this._source ? { migrationSource: this._source } : undefined;
-    }
     /**
      * Specifies a custom migration source class.
      * @param src
@@ -166,18 +163,16 @@ class OrmMigrator {
      * Runs the specified (by config.name parameter) or the next chronological migration that has not yet be run.
      */
     up() {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.client.migrate.up((_a = this.assignSource()) !== null && _a !== void 0 ? _a : this.config);
+            return yield this.client.migrate.up(this.config);
         });
     }
     /**
      * Will undo the specified (by config.name parameter) or the last migration that was run.
      */
     down() {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.client.migrate.down((_a = this.assignSource()) !== null && _a !== void 0 ? _a : this.config);
+            return yield this.client.migrate.down(this.config);
         });
     }
     /**
