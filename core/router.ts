@@ -214,14 +214,12 @@ export class Router {
 
   arrangeRouteParams(data: RouteData) {
     data.params ||= {};
-
     const paramData = this._paramsData[data.path] || { names: [] };
-
+    const names = paramData.names.filter((value) => value !== undefined);
     const arrange = [];
     let i = 0;
 
-    for (; i < paramData.names.length; i++)
-      arrange.push(data.params[paramData.names[i]]);
+    for (; i < names.length; i++) arrange.push(data.params[names[i]]);
 
     return arrange;
   }

@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "A complete framework for creating microservices and large-scale server-side applications for businesses",
   "repository": {
     "type": "git",
@@ -14,7 +14,10 @@
     "post-build": "node post-build.js",
     "clean": "tsc --build --clean",
     "lint": "eslint . --ext .js,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "migrate@sources:up": "node cmd migrate all-source-up",
+    "migrate@sources:down": "node cmd migrate all-source-down",
+    "seed@sources": "node cmd seed all-source-run"
   },
   "author": "ArGab",
   "license": "MIT",
