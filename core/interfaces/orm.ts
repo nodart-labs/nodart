@@ -29,7 +29,6 @@ export interface OrmSeedInterface {
 }
 
 export interface BaseModelInterface {
-  queryBuilder?: unknown;
   orm?: ConnectionManagerInterface;
 
   get query(): unknown;

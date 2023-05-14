@@ -6,13 +6,14 @@ import { OrmLoader } from "../loaders/orm_loader";
 export class OrmService {
   readonly orm: Orm;
 
-  readonly query: OrmQueryBuilder;
-
   readonly loader: OrmLoader;
 
   constructor(readonly app: App) {
     this.loader = this.app.get("orm");
     this.orm = this.loader.call();
-    this.query = this.orm.queryBuilder;
+  }
+
+  get query(): OrmQueryBuilder {
+    return this.orm.queryBuilder;
   }
 }

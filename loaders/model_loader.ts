@@ -24,10 +24,7 @@ export class ModelLoader extends AppLoader {
       args,
     );
 
-    if (model) {
-      model.orm ||= app.service.db.orm;
-      model.queryBuilder ||= model.orm.queryBuilder;
-    }
+    model && (model.orm ||= app.service.db.orm);
 
     return model;
   }

@@ -16,10 +16,7 @@ class ModelLoader extends app_loader_1.AppLoader {
         type || (type = this._source);
         app || (app = this.app);
         const model = this.resolve(path ? this.load(path, model_1.Model, rootDir) : type, args);
-        if (model) {
-            model.orm || (model.orm = app.service.db.orm);
-            model.queryBuilder || (model.queryBuilder = model.orm.queryBuilder);
-        }
+        model && (model.orm || (model.orm = app.service.db.orm));
         return model;
     }
     onGenerate() { }

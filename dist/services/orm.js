@@ -6,7 +6,9 @@ class OrmService {
         this.app = app;
         this.loader = this.app.get("orm");
         this.orm = this.loader.call();
-        this.query = this.orm.queryBuilder;
+    }
+    get query() {
+        return this.orm.queryBuilder;
     }
 }
 exports.OrmService = OrmService;
