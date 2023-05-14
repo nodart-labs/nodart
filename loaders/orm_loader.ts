@@ -28,9 +28,9 @@ export class OrmLoader extends AppLoader {
   }
 
   onGenerate() {
-    const db = this.database(this.app.config.get.orm || {});
-    const migrationsDir = db.migrations.directory;
-    const seedsDir = db.seeds.directory;
+    const config = this.createConfig(this.app.config.get.orm || {});
+    const migrationsDir = config.migrations.directory;
+    const seedsDir = config.seeds.directory;
     const srcDir = this.migrationSourceDirectory;
     const srcSeedDir = this.seedSourceDirectory;
 
@@ -45,24 +45,21 @@ export class OrmLoader extends AppLoader {
   }
 
   call(args?: [config: OrmConfig]): any {
-    const getSources = () => this.migrationSourceDirectory;
-    const getSeedSources = () => this.seedSourceDirectory;
-    const config = this.database(
-      object.merge(this.app.config.get.orm || {}, args?.[0] || {}),
-    );
+    const config = this.defineConfig(args?.[0]);
 
-    Orm.prototype.sources = function () {
-      return this._sources || getSources();
-    };
-
-    Orm.prototype.seedSources = function () {
-      return this._seedSources || getSeedSources();
-    };
-
-    return new Orm(config);
+    return new Orm(config, {
+      sources: this.migrationSourceDirectory,
+      seedSources: this.seedSourceDirectory,
+    });
   }
 
-  database(config: OrmConfig) {
+  defineConfig(config?: OrmConfig) {
+    return this.createConfig(
+      object.merge(this.app.config.get.orm || {}, config || {}),
+    );
+  }
+
+  createConfig(config: OrmConfig) {
     config ||= {};
     config.migrations ||= {};
     config.seeds ||= {};

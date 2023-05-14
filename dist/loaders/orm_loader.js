@@ -19,9 +19,9 @@ class OrmLoader extends app_loader_1.AppLoader {
         return utils_1.fs.join(this.getRepo(), app_config_1.DEFAULT_DATABASE_SEED_SRC_REPOSITORY);
     }
     onGenerate() {
-        const db = this.database(this.app.config.get.orm || {});
-        const migrationsDir = db.migrations.directory;
-        const seedsDir = db.seeds.directory;
+        const config = this.createConfig(this.app.config.get.orm || {});
+        const migrationsDir = config.migrations.directory;
+        const seedsDir = config.seeds.directory;
         const srcDir = this.migrationSourceDirectory;
         const srcSeedDir = this.seedSourceDirectory;
         typeof migrationsDir === "string" &&
@@ -32,18 +32,16 @@ class OrmLoader extends app_loader_1.AppLoader {
         utils_1.fs.isDir(srcSeedDir) || utils_1.fs.mkDeepDir(srcSeedDir);
     }
     call(args) {
-        const getSources = () => this.migrationSourceDirectory;
-        const getSeedSources = () => this.seedSourceDirectory;
-        const config = this.database(utils_1.object.merge(this.app.config.get.orm || {}, (args === null || args === void 0 ? void 0 : args[0]) || {}));
-        orm_1.Orm.prototype.sources = function () {
-            return this._sources || getSources();
-        };
-        orm_1.Orm.prototype.seedSources = function () {
-            return this._seedSources || getSeedSources();
-        };
-        return new orm_1.Orm(config);
+        const config = this.defineConfig(args === null || args === void 0 ? void 0 : args[0]);
+        return new orm_1.Orm(config, {
+            sources: this.migrationSourceDirectory,
+            seedSources: this.seedSourceDirectory,
+        });
     }
-    database(config) {
+    defineConfig(config) {
+        return this.createConfig(utils_1.object.merge(this.app.config.get.orm || {}, config || {}));
+    }
+    createConfig(config) {
         config || (config = {});
         config.migrations || (config.migrations = {});
         config.seeds || (config.seeds = {});

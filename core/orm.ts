@@ -1,5 +1,5 @@
 import { knex } from "knex";
-import { $, fs, object } from "../utils";
+import { fs, object } from "../utils";
 import {
   ConnectionManagerInterface,
   OrmClient,
@@ -21,8 +21,13 @@ export class Orm implements ConnectionManagerInterface {
 
   protected _seedSources = ""; // Seed sources directory
 
-  constructor(readonly config: OrmConfig) {
+  constructor(
+    readonly config: OrmConfig,
+    props: { sources?: string; seedSources?: string } = {},
+  ) {
     this.client = this.connect(config);
+    this._sources = props.sources || "";
+    this._seedSources = props.seedSources || "";
   }
 
   connect(config: OrmConfig) {

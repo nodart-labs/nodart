@@ -17,7 +17,6 @@ export class ModelLoader extends AppLoader {
     let [type, app] = args || [];
 
     type ||= this._source;
-
     app ||= this.app;
 
     const model = this.resolve(
@@ -26,8 +25,7 @@ export class ModelLoader extends AppLoader {
     );
 
     if (model) {
-      model.orm ||= app.get("orm").call();
-
+      model.orm ||= app.service.db.orm;
       model.queryBuilder ||= model.orm.queryBuilder;
     }
 

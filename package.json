@@ -1,6 +1,6 @@
 {
   "name": "nodart",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "description": "A complete framework for creating microservices and large-scale server-side applications for businesses",
   "repository": {
     "type": "git",

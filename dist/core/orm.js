@@ -14,11 +14,13 @@ const knex_1 = require("knex");
 const utils_1 = require("../utils");
 const exception_1 = require("./exception");
 class Orm {
-    constructor(config) {
+    constructor(config, props = {}) {
         this.config = config;
         this._sources = ""; // Migration sources directory
         this._seedSources = ""; // Seed sources directory
         this.client = this.connect(config);
+        this._sources = props.sources || "";
+        this._seedSources = props.seedSources || "";
     }
     connect(config) {
         return (0, knex_1.knex)(config);
