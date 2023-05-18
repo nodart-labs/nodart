@@ -22,6 +22,8 @@ import { BaseController, Controller } from "./core/controller";
 import { Engine } from "./core/engine";
 import { Service, ServiceFactory } from "./core/service";
 import { Model } from "./core/model";
+import { RelationModel } from "./core/relation_model";
+import { Mutable } from "./core/mutable";
 import {
   Orm,
   OrmMigrationSource,
@@ -105,6 +107,8 @@ export {
   Controller,
   Engine,
   Model,
+  RelationModel,
+  Mutable,
   Orm,
   OrmMigrationSource,
   OrmMigrator,

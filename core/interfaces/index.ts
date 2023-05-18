@@ -1,3 +1,4 @@
+import * as common from "./common";
 import * as app from "./app";
 import * as cli from "./cmd";
 import * as di from "./di";
@@ -11,8 +12,11 @@ import * as router from "./router";
 import * as service from "./service";
 import * as session from "./session";
 import * as store from "./store";
+import * as mutable from "./mutable";
+import * as relationModel from "./relation_model";
 
 export {
+  common,
   app,
   cli,
   di,
@@ -26,4 +30,6 @@ export {
   service,
   session,
   store,
+  mutable,
+  relationModel,
 };

@@ -202,9 +202,241 @@ export class SampleService extends Service {
 }
 ```
 
+## SPECIFYING LOADERS
+
+You can change the basic behavior of class loaders by specifying in the base project configuration
+
+```typescript
+import { App, ControllerLoader, nodart } from "nodart";
+
+class ControllerLoaderOverride extends ControllerLoader {
+  protected _pathSuffix = "Controller";
+}
+
+const config = <nodart.app.AppConfigInterface>{
+  loaders: {
+    controller: ControllerLoaderOverride,
+  },
+};
+
+new App(config);
+```
+
 ---
 
-### CREATION OF CUSTOM SERVER
+## RELATION MODEL
+
+> An abstract class called `RelationModel` enhances the functionality of the standard query builder. The system by default use the well-liked `Knex` query builder: https://knexjs.org/guide/
+
+> Using pre-written database queries, `RelationModel` enables you to create query blanks and chain them together into a series of inquiries. In this manner, retrieving a list or a single object from the database does not require you to always develop new methods in the data model.
+
+### **USAGE SAMPLE**:
+
+### `@/models/Book.ts`:
+
+```typescript
+import { RelationModel } from "nodart";
+
+export interface IBook {
+  id: number;
+  author_id: number;
+  name: string;
+  meta_keywords: string;
+  meta_description: string;
+}
+
+export class Book extends RelationModel {
+  declare model: IBook;
+
+  get table() {
+    return "books";
+  }
+
+  static get table() {
+    return "books";
+  }
+
+  statements = (query: this["query"]) => ({
+    author: (author_id: number) =>
+      query.where("author_id", author_id) as Promise<IBook>,
+  });
+}
+```
+
+### `@/controllers/BooksController.ts`:
+
+```typescript
+import { Controller, nodart } from "nodart";
+import { Book, IBook } from "@/models/Book";
+
+const statuses = nodart.http.HTTP_STATUS;
+
+export class BooksController extends Controller {
+  model = {
+    Book: {} as Book,
+  };
+
+  declare book: Book;
+
+  init() {
+    this.book = this.model.Book;
+  }
+
+  /**
+   @returns: {Object<IBook>}
+   */
+  async get(id: number) {
+    // Be aware to use the "result" property
+    // at the end of the call chain.
+
+    return await this.book.use.get({ id }).result;
+  }
+
+  /**
+   @returns: {Array<IBook>}
+   */
+  async list(author_id: number) {
+    // The "result" property is not required
+    // after "on" property.
+
+    return await this.book.use.list("id", "name").on.author(author_id);
+  }
+
+  async patch(id: number) {
+    const { name } = this.http.data;
+    const result = await this.book.use.set({ name }).at({ id }).result;
+
+    return result ? { ok: true } : this.http.throw(statuses.NOT_FOUND);
+  }
+
+  async post() {
+    const data = this.http.data as IBook;
+    const result = await this.book.use.add(data).result; // Array<number>;
+
+    return { ok: !!result?.[0] };
+  }
+
+  async delete(id: number) {
+    const result = await this.book.use.delete({ id }).result;
+
+    return { ok: !!result };
+  }
+}
+```
+
+---
+
+## DATA MUTABLE
+
+> `nodart.mutable.MutableInterface` is an interface that provides a property with methods to cast the source data to the desired data model.
+
+### **USAGE SAMPLE**:
+
+### `@/models/Book.ts`:
+
+```typescript
+import { RelationModel } from "nodart";
+
+export interface IBook {
+  id: number;
+  author_id: number;
+  name: string;
+  meta_keywords: string;
+  meta_description: string;
+}
+
+export interface IBookAPI
+  extends Omit<IBook, "meta_keywords" | "meta_description"> {
+  meta: {
+    description: string;
+    keywords: string;
+  };
+}
+
+/**
+  RelationModel implements nodart.mutable.MutableInterface
+*/
+export class Book extends RelationModel {
+  declare model: IBook;
+
+  get table() {
+    return "books";
+  }
+
+  static get table() {
+    return "books";
+  }
+
+  readonly mutable = {
+    book: (data: IBook): [Partial<IBookAPI>, (keyof IBook)[]] => [
+      // This data will be assigned to the source data:
+      {
+        meta: {
+          description: data.meta_description,
+          keywords: data.meta_keywords,
+        },
+      },
+      // This optional part specifies which properties
+      // will be excluded from the source data:
+      ["meta_description", "meta_keywords"],
+    ],
+  };
+
+  statements = (query: this["query"]) => ({
+    author: (author_id: number) =>
+      query.where("author_id", author_id) as Promise<IBook>,
+  });
+}
+```
+
+### `@/controllers/BooksController.ts`:
+
+```typescript
+import { Controller } from "nodart";
+import { Book } from "@/models/Book";
+
+export class BooksController extends Controller {
+  model = {
+    Book: {} as Book,
+  };
+
+  declare book: Book;
+
+  init() {
+    this.book = this.model.Book;
+  }
+
+  /**
+   @returns: {Object<IBookAPI>} -> {
+      id: number;
+      author_id: number;
+      name: string;
+      meta: { 
+        description: string;
+        keywords: string;
+      }
+    }
+   */
+  async get(id: number) {
+    const data = await this.book.use.get({ id }).result;
+
+    return this.book.mutate.get.book(data);
+  }
+
+  /**
+   @returns: {Array<IBookAPI>}
+   */
+  async list(author_id: number) {
+    const data = await this.book.use.list().on.author(author_id);
+
+    return this.book.mutate.list.book(data);
+  }
+}
+```
+
+---
+
+## CREATION OF CUSTOM SERVER
 
 ```typescript
 new App({ ...config }).init().then(async (app) => {
@@ -245,26 +477,6 @@ npm run dev
 
 ```shell
 npm run start
-```
-
-## SPECIFYING LOADERS
-
-You can change the basic behavior of class loaders by specifying in the base project configuration
-
-```typescript
-import { App, ControllerLoader, nodart } from "nodart";
-
-class ControllerLoaderOverride extends ControllerLoader {
-  protected _pathSuffix = "Controller";
-}
-
-const config = <nodart.app.AppConfigInterface>{
-  loaders: {
-    controller: ControllerLoaderOverride,
-  },
-};
-
-new App(config);
 ```
 
 ---
