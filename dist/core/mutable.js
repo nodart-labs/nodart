@@ -38,12 +38,13 @@ class Mutable {
     }
     _resolve(get, args) {
         const [target, exclude] = get.apply(this.entity, args);
-        Object.assign(args[0], target);
+        const output = Object.assign({}, args[0]);
+        Object.assign(output, target);
         if (exclude)
             for (let i = 0; i < exclude.length; i++) {
-                delete args[0][exclude[i]];
+                delete output[exclude[i]];
             }
-        return args[0];
+        return output;
     }
 }
 exports.Mutable = Mutable;

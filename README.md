@@ -257,8 +257,10 @@ export class Book extends RelationModel {
   }
 
   statements = (query: this["query"]) => ({
-    author: (author_id: number) =>
-      query.where("author_id", author_id) as Promise<IBook>,
+    author: <T extends string>(author_id: number) =>
+      query.where("author_id", author_id) as T extends "list"
+        ? Promise<IBook[]>
+        : Promise<IBook>,
   });
 }
 ```
@@ -335,7 +337,7 @@ export class BooksController extends Controller {
 ### `@/models/Book.ts`:
 
 ```typescript
-import { RelationModel } from "nodart";
+import { RelationModel, nodart } from "nodart";
 
 export interface IBook {
   id: number;
@@ -353,6 +355,10 @@ export interface IBookAPI
   };
 }
 
+export interface IBookMutable extends nodart.mutable.DataMutable {
+  book(data: IBook): [Partial<IBookAPI>, (keyof IBook)[]];
+}
+
 /**
   RelationModel implements nodart.mutable.MutableInterface
 */
@@ -367,8 +373,8 @@ export class Book extends RelationModel {
     return "books";
   }
 
-  readonly mutable = {
-    book: (data: IBook): [Partial<IBookAPI>, (keyof IBook)[]] => [
+  readonly mutable: IBookMutable = {
+    book: (data) => [
       // This data will be assigned to the source data:
       {
         meta: {
@@ -383,8 +389,10 @@ export class Book extends RelationModel {
   };
 
   statements = (query: this["query"]) => ({
-    author: (author_id: number) =>
-      query.where("author_id", author_id) as Promise<IBook>,
+    author: <T extends string>(author_id: number) =>
+      query.where("author_id", author_id) as T extends "list"
+        ? Promise<IBook[]>
+        : Promise<IBook>,
   });
 }
 ```
@@ -427,7 +435,7 @@ export class BooksController extends Controller {
    @returns: {Array<IBookAPI>}
    */
   async list(author_id: number) {
-    const data = await this.book.use.list().on.author(author_id);
+    const data = await this.book.use.list().on.author<"list">(author_id);
 
     return this.book.mutate.list.book(data);
   }

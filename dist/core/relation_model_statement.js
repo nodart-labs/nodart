@@ -43,13 +43,13 @@ class RelationModelStatement {
                 return query;
             },
             use: (callback) => callback(query),
-            exclude: (props) => {
-                Object.keys(props).forEach((key) => {
-                    if (props[key] === undefined)
+            exclude: (arg) => {
+                Object.keys(arg).forEach((k) => {
+                    if (arg[k] === undefined)
                         return;
-                    Array.isArray(props[key])
-                        ? query.whereNotIn(key, props[key])
-                        : query.whereNot(key, props[key]);
+                    Array.isArray(arg[k])
+                        ? query.whereNotIn(k, arg[k])
+                        : query.whereNot(k, arg[k]);
                 });
                 return query;
             },

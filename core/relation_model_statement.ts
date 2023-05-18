@@ -1,5 +1,4 @@
 import {
-  EmbedRelationModelStatementProps,
   EmbedRelationModelStatements,
   RelationModelInterface,
   RelationModelStatementChain,
@@ -56,13 +55,13 @@ export class RelationModelStatement<
       return query;
     },
     use: (callback: (query: T["query"]) => T["query"]) => callback(query),
-    exclude: (props: EmbedRelationModelStatementProps<T>) => {
-      Object.keys(props).forEach((key) => {
-        if (props[key] === undefined) return;
+    exclude: (arg: object) => {
+      Object.keys(arg).forEach((k) => {
+        if (arg[k] === undefined) return;
 
-        Array.isArray(props[key])
-          ? query.whereNotIn(key, props[key])
-          : query.whereNot(key, props[key]);
+        Array.isArray(arg[k])
+          ? query.whereNotIn(k, arg[k])
+          : query.whereNot(k, arg[k]);
       });
 
       return query;

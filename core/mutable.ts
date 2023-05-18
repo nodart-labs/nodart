@@ -52,14 +52,15 @@ export class Mutable<T extends MutableInterface> {
 
   private _resolve(get: (...args) => any, args: any[]) {
     const [target, exclude] = get.apply(this.entity, args);
+    const output = { ...args[0] };
 
-    Object.assign(args[0], target);
+    Object.assign(output, target);
 
     if (exclude)
       for (let i = 0; i < exclude.length; i++) {
-        delete args[0][exclude[i]];
+        delete output[exclude[i]];
       }
 
-    return args[0];
+    return output;
   }
 }
