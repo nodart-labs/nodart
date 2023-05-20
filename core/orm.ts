@@ -13,6 +13,7 @@ import {
   OrmSeederConfig,
 } from "./interfaces/orm";
 import { RuntimeException } from "./exception";
+import { OrmSchema } from "./orm_schema";
 
 export class Orm implements ConnectionManagerInterface {
   readonly client: OrmClient;
@@ -20,6 +21,8 @@ export class Orm implements ConnectionManagerInterface {
   protected _sources = ""; // Migration sources directory
 
   protected _seedSources = ""; // Seed sources directory
+
+  private declare _schema: OrmSchema;
 
   constructor(
     readonly config: OrmConfig,
@@ -32,6 +35,19 @@ export class Orm implements ConnectionManagerInterface {
 
   connect(config: OrmConfig) {
     return knex(config);
+  }
+
+  newSchema(client: OrmClient) {
+    return new OrmSchema(client);
+  }
+
+  get schema() {
+    return (this._schema ||= this.newSchema(this.client));
+  }
+
+  async buildSchema() {
+    this._schema = this.newSchema(this.client);
+    await this._schema.createSchema();
   }
 
   get queryBuilder(): OrmQueryBuilder {

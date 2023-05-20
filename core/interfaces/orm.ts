@@ -1,4 +1,6 @@
 import { Knex } from "knex";
+import { Table } from "knex-schema-inspector/lib/types/table";
+import { Column } from "knex-schema-inspector/lib/types/column";
 
 /**
  * See ORM docs: https://knexjs.org/guide/
@@ -39,3 +41,12 @@ export interface ConnectionManagerInterface {
 
   connect(connectionConfig: unknown, ...args: any): unknown;
 }
+
+export type OrmSchemaTables = {
+  [name: string]: {
+    info: Table;
+    columns: {
+      [name: string]: Column;
+    };
+  };
+};

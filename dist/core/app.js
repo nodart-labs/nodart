@@ -146,8 +146,12 @@ class App {
             : app_config_1.SYSTEM_STORE.events.HTTP_REQUEST(this, req, res);
     }
     resolveException(exception, req, res) {
-        const resolve = this.config.get.exception.resolve || AppExceptionResolve;
-        new resolve(this, exception).resolveOnHttp(req, res);
+        const client = this.config.get.exception.resolve || AppExceptionResolve;
+        const resolve = new client(this, exception);
+        resolve.resolveOnHttp(req, res).then(() => {
+            const log = resolve.getLog();
+            this.service.logger.dumpError(log.dump, log.dumpData.httpStatusCode);
+        });
     }
     static store(storeName) {
         return store_1.Store.get(storeName);
@@ -309,6 +313,9 @@ class AppServiceManager {
     get cashier() {
         return (this._cashier || (this._cashier = new cashier_1.CashierService(this.app)));
     }
+    get logger() {
+        return (this._logger || (this._logger = new this.app.config.get.logger.client(this.app.config.get.logger.options)));
+    }
 }
 exports.AppServiceManager = AppServiceManager;
 class AppEnv {
@@ -398,10 +405,7 @@ class AppExceptionResolve {
             const handler = this.getHandler();
             handler && (this.exception = handler) && (yield handler.resolve());
             const exceptionLog = this.getLog();
-            this._httpResponseData = exceptionLog
-                .onHttp(request, response)
-                .getHttpResponseData(request, response);
-            exceptionLog.dump();
+            this._httpResponseData = exceptionLog.onHttp(request, response);
             this._sendHttpException(request, response);
         });
     }

@@ -13,6 +13,7 @@ exports.OrmSeeder = exports.OrmSeedSource = exports.OrmMigrator = exports.OrmMig
 const knex_1 = require("knex");
 const utils_1 = require("../utils");
 const exception_1 = require("./exception");
+const orm_schema_1 = require("./orm_schema");
 class Orm {
     constructor(config, props = {}) {
         this.config = config;
@@ -24,6 +25,18 @@ class Orm {
     }
     connect(config) {
         return (0, knex_1.knex)(config);
+    }
+    newSchema(client) {
+        return new orm_schema_1.OrmSchema(client);
+    }
+    get schema() {
+        return (this._schema || (this._schema = this.newSchema(this.client)));
+    }
+    buildSchema() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._schema = this.newSchema(this.client);
+            yield this._schema.createSchema();
+        });
     }
     get queryBuilder() {
         return this.client.queryBuilder();

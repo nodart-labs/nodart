@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExceptionLog = exports.RuntimeExceptionHandler = exports.HttpExceptionHandler = exports.ExceptionHandler = exports.RuntimeException = exports.HttpException = exports.Exception = void 0;
-const utils_1 = require("../utils");
 const http_1 = require("./interfaces/http");
 const http_client_1 = require("./http_client");
 class Exception {
@@ -92,7 +91,7 @@ exports.RuntimeExceptionHandler = RuntimeExceptionHandler;
 class ExceptionLog {
     constructor(source) {
         this.source = source;
-        this.dumpData = {
+        this._dumpData = {
             query: "",
             error: undefined,
         };
@@ -112,29 +111,35 @@ class ExceptionLog {
         const exceptionData = isException ? exception.exceptionData : this.source;
         return Object.assign(Object.assign({}, exception), { exceptionMessage, exceptionData });
     }
-    dump() {
+    get dump() {
         if (!this.dumpData.query && !this.dumpData.error)
-            return;
-        console.error(`[${utils_1.$.date.currentDateTime()}]`, this.dumpData.query);
-        this.dumpData.error && console.error(this.dumpData.error);
+            return "";
+        const error = this.dumpData.error
+            ? require("node:util").format(this.dumpData.error)
+            : "";
+        return `${this.dumpData.query}\n${error}`;
+    }
+    get dumpData() {
+        return this._dumpData;
     }
     onHttp(request, response) {
         var _a;
         const responseData = this.getHttpResponseData(request, response);
+        this.dumpData.httpStatusCode = responseData.status;
         this.dumpData.query =
             "HTTP " +
                 this.http.request.method.toUpperCase() +
                 ": " +
-                this.http.request.url +
-                ": " +
                 responseData.status +
+                ": " +
+                this.http.request.url +
                 ": " +
                 responseData.content;
         this.dumpData.error =
             this.http.exceptionMessage === ((_a = this.http.exceptionData) === null || _a === void 0 ? void 0 : _a.toString())
                 ? this.http.exceptionMessage
                 : this.http.exceptionData;
-        return this;
+        return responseData;
     }
     getHttpResponseData(request, response) {
         const exception = this._getHttpException(request, response);

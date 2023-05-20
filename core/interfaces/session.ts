@@ -1,12 +1,10 @@
-/**
- * See session supporting docs: https://github.com/mozilla/node-client-sessions
- */
 export interface SessionConfigInterface {
   secret: string | Buffer;
 
   [addon: string]: any;
 }
 
+/** https://www.npmjs.com/package/client-sessions */
 export interface SessionClientConfigInterface extends SessionConfigInterface {
   cookieName?: string;
   requestKey?: string; // requestKey overrides cookieName for the key name added to the request object.

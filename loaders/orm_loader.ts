@@ -27,8 +27,8 @@ export class OrmLoader extends AppLoader {
     return fs.join(this.getRepo(), DEFAULT_DATABASE_SEED_SRC_REPOSITORY);
   }
 
-  onGenerate() {
-    const config = this.createConfig(this.app.config.get.orm || {});
+  async onGenerate() {
+    const config: OrmConfig = this.createConfig(this.app.config.get.orm || {});
     const migrationsDir = config.migrations.directory;
     const seedsDir = config.seeds.directory;
     const srcDir = this.migrationSourceDirectory;
@@ -42,6 +42,10 @@ export class OrmLoader extends AppLoader {
 
     fs.isDir(srcDir) || fs.mkDeepDir(srcDir);
     fs.isDir(srcSeedDir) || fs.mkDeepDir(srcSeedDir);
+
+    config.client &&
+      config.connection &&
+      (await this.app.service.db.orm.buildSchema());
   }
 
   call(args?: [config: OrmConfig]): any {

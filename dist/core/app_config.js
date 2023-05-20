@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE_REPOSITORY = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE_REPOSITORY = exports.SYSTEM_STORE = void 0;
+exports.getSource = exports.getSources = exports.getSourcesDir = exports.AppConfig = exports.APP_CONFIG = exports.DEFAULT_ERROR_LOG_FILENAME = exports.DEFAULT_ERROR_LOG_DIRECTORY = exports.DEFAULT_ENV_FILE_NAME = exports.DEFAULT_APP_BUILD_DIR = exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = exports.DEFAULT_CMD_COMMANDS_DIR = exports.DEFAULT_CMD_DIR = exports.DEFAULT_DATABASE_SEED_SRC_REPOSITORY = exports.DEFAULT_DATABASE_SEED_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_SRC_REPOSITORY = exports.DEFAULT_DATABASE_MIGRATION_REPOSITORY = exports.DEFAULT_DATABASE_REPOSITORY = exports.DEFAULT_STATIC_REPOSITORY = exports.DEFAULT_STATIC_INDEX = exports.DEFAULT_CONTROLLER_NAME = exports.CLIENT_STATE_NAME = exports.CLIENT_STORE_NAME = exports.CLIENT_STORE_REPOSITORY = exports.SYSTEM_STATE_NAME = exports.SYSTEM_STORE_NAME = exports.SYSTEM_STORE_REPOSITORY = exports.SYSTEM_STORE = void 0;
 const utils_1 = require("../utils");
 const controller_loader_1 = require("../loaders/controller_loader");
 const model_loader_1 = require("../loaders/model_loader");
@@ -17,8 +17,10 @@ const exception_log_loader_1 = require("../loaders/exception_log_loader");
 const exception_template_loader_1 = require("../loaders/exception_template_loader");
 const app_builder_loader_1 = require("../loaders/app_builder_loader");
 const http_form_data_loader_1 = require("../loaders/http_form_data_loader");
+const logger_1 = require("../services/logger");
 const exception_1 = require("./exception");
 const app_1 = require("./app");
+const http_1 = require("./interfaces/http");
 exports.SYSTEM_STORE = require("../store/system");
 exports.SYSTEM_STORE_REPOSITORY = "store"; //system store repository name
 exports.SYSTEM_STORE_NAME = "system_store";
@@ -39,6 +41,8 @@ exports.DEFAULT_CMD_COMMANDS_DIR = "commands";
 exports.DEFAULT_ENGINE_VIEWS_REPOSITORY = "views";
 exports.DEFAULT_APP_BUILD_DIR = "build";
 exports.DEFAULT_ENV_FILE_NAME = "env.ts";
+exports.DEFAULT_ERROR_LOG_DIRECTORY = utils_1.fs.join(process.cwd(), "logs");
+exports.DEFAULT_ERROR_LOG_FILENAME = "error.log";
 exports.APP_CONFIG = Object.freeze({
     rootDir: "",
     envFilename: exports.DEFAULT_ENV_FILE_NAME,
@@ -97,6 +101,19 @@ exports.APP_CONFIG = Object.freeze({
     reference: {
         service: (app) => app.service.cashier.get("service"),
         model: (app) => app.service.cashier.get("model"),
+    },
+    logger: {
+        client: logger_1.LoggerService,
+        options: {
+            error: {
+                useLogging: false,
+                directory: exports.DEFAULT_ERROR_LOG_DIRECTORY,
+                filename: exports.DEFAULT_ERROR_LOG_FILENAME,
+            },
+            onHttp: {
+                statuses: [http_1.HTTP_STATUS.INTERNAL_SERVER_ERROR],
+            },
+        },
     },
 });
 class AppConfig {

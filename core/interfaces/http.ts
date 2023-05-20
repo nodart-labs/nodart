@@ -1,4 +1,5 @@
 import { Http2ServerRequest, Http2ServerResponse } from "http2";
+import { BusboyConfig, FieldInfo, FileInfo } from "busboy";
 import { HttpResponder } from "../http_responder";
 import { HttpFormData } from "../http_client";
 import { Engine } from "../engine";
@@ -174,43 +175,15 @@ export interface HttpFormDataClientConfigInterface
   options: HttpFormDataOptions;
 }
 
-export type HttpFormDataOptions = {
-  headers?: { [name: string]: string }; // These are the HTTP headers of the incoming request, which are used by individual parsers.
-  highWaterMark?: number; // highWaterMark to use for the parser stream. Default: node's stream.Writable default.
-  fileHwm?: number; // highWaterMark to use for individual file streams. Default: node's stream.Readable default.
-  defCharset?: string; // Default character set to use when one isn't defined. Default: 'utf8'.
-  defParamCharset?: string; // For multipart forms, the default character set to use for values
-  // of part header parameters (e.g. filename) that are not extended parameters
-  // (that contain an explicit charset). Default: 'latin1'.
-  preservePath?: boolean; // If paths in filenames from file parts in a 'multipart/form-data' request shall be preserved. Default: false.
-  limits?: {
-    fieldNameSize?: number; // Max field name size = 100 bytes
-    fieldSize?: number; // Max field value size (in bytes) = 1048576 (1MB)
-    fields?: number; // Max number of non-file fields = Infinity
-    fileSize?: number; // For multipart forms, the max file size (in bytes) = Infinity
-    files?: number; // For multipart forms, the max number of file fields = Infinity
-    parts?: number; // For multipart forms, the max number of parts (fields + files) = Infinity
-    headerPairs?: number; // For multipart forms, the max number of header key=>value pairs to parse = 2000
-  };
-
+/** https://www.npmjs.com/package/busboy */
+export type HttpFormDataOptions = BusboyConfig & {
   [addon: string]: any;
 };
 
-export type HttpFormDataClientsField = {
-  nameTruncated?: boolean; // Whether name was truncated or not (due to a configured limits.fieldNameSize limit)
-  valueTruncated?: boolean; // Whether value was truncated or not (due to a configured limits.fieldSize limit)
-  encoding?: string; // The field's 'Content-Transfer-Encoding' value.
-  mimeType?: string; // The field's 'Content-Type' value.
-};
+export type HttpFormDataClientsField = FieldInfo;
 
-export type HttpFormDataClientsFile = {
+export type HttpFormDataClientsFile = FileInfo & {
   path?: string; // The path to uploaded file with randomly generated name
-  filename?: string; // If supplied, this contains the file's filename.
-  // WARNING: You should almost never use this value as-is
-  // (especially if you are using preservePath: true in your config)
-  // as it could contain malicious input. You are better off generating your own (safe)
-  encoding?: string; // The file's 'Content-Transfer-Encoding' value.
-  mimeType?: string; // The file's 'Content-Type' value.
 };
 
 export type HttpFormDataClientsFieldFilter = (

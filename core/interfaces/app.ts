@@ -18,6 +18,7 @@ import { CommandLineLoader } from "../../loaders/cmd_loader";
 import { ExceptionHandlerLoader } from "../../loaders/exception_handler_loader";
 import { ExceptionLogLoader } from "../../loaders/exception_log_loader";
 import { ExceptionTemplateLoader } from "../../loaders/exception_template_loader";
+import { LoggerService } from "../../services/logger";
 import { RouteEntry } from "./router";
 import { CommandLineConfigInterface } from "./cmd";
 import {
@@ -106,6 +107,19 @@ export interface AppModuleConfigInterface {
   options: { [key: string]: unknown };
 }
 
+export interface AppLoggerConfigInterface {
+  error?: {
+    useLogging?: boolean;
+    directory?: string;
+    filename?: string;
+  };
+
+  onHttp?: {
+    statuses?: number[];
+    excludeStatuses?: number[];
+  };
+}
+
 export interface AppConfigInterface {
   rootDir?: string;
   envFilename?: string;
@@ -136,6 +150,11 @@ export interface AppConfigInterface {
     template?:
       | string
       | ((response: HttpResponseDataInterface) => string | void); // Path to html (from views directory)
+  };
+
+  logger?: {
+    client?: typeof LoggerService;
+    options: AppLoggerConfigInterface;
   };
 
   [addon: string]: any;

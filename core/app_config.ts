@@ -14,6 +14,7 @@ import { ExceptionLogLoader } from "../loaders/exception_log_loader";
 import { ExceptionTemplateLoader } from "../loaders/exception_template_loader";
 import { AppBuilderLoader } from "../loaders/app_builder_loader";
 import { HttpFormDataLoader } from "../loaders/http_form_data_loader";
+import { LoggerService } from "../services/logger";
 import {
   ExceptionLog,
   HttpException,
@@ -23,6 +24,7 @@ import {
 } from "./exception";
 import { AppConfigInterface, AppStoreInterface } from "./interfaces/app";
 import { App, AppExceptionResolve } from "./app";
+import { HTTP_STATUS } from "./interfaces/http";
 
 export const SYSTEM_STORE: AppStoreInterface = require("../store/system");
 
@@ -48,6 +50,9 @@ export const DEFAULT_CMD_COMMANDS_DIR = "commands";
 export const DEFAULT_ENGINE_VIEWS_REPOSITORY = "views";
 export const DEFAULT_APP_BUILD_DIR = "build";
 export const DEFAULT_ENV_FILE_NAME = "env.ts";
+
+export const DEFAULT_ERROR_LOG_DIRECTORY = fs.join(process.cwd(), "logs");
+export const DEFAULT_ERROR_LOG_FILENAME = "error.log";
 
 export const APP_CONFIG: AppConfigInterface = Object.freeze({
   rootDir: "",
@@ -108,6 +113,19 @@ export const APP_CONFIG: AppConfigInterface = Object.freeze({
     service: (app: App) => app.service.cashier.get("service"),
     model: (app: App) => app.service.cashier.get("model"),
   },
+  logger: {
+    client: LoggerService,
+    options: {
+      error: {
+        useLogging: false,
+        directory: DEFAULT_ERROR_LOG_DIRECTORY,
+        filename: DEFAULT_ERROR_LOG_FILENAME,
+      },
+      onHttp: {
+        statuses: [HTTP_STATUS.INTERNAL_SERVER_ERROR],
+      },
+    },
+  },
 });
 
 export class AppConfig {
@@ -128,7 +146,7 @@ export class AppConfig {
     );
   }
 
-  set(config: AppConfigInterface) {
+  set(config: Partial<AppConfigInterface>) {
     this._config = object.merge(this._config, config);
     this.validate();
 

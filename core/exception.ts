@@ -1,8 +1,9 @@
 import { Http2ServerRequest, Http2ServerResponse } from "http2";
-import { $ } from "../utils";
+
 import {
   BaseExceptionHandlerInterface,
   BaseExceptionInterface,
+  ExceptionDump,
 } from "./interfaces/exception";
 import {
   BaseHttpResponseInterface,
@@ -109,7 +110,7 @@ export class RuntimeExceptionHandler extends ExceptionHandler {
 }
 
 export class ExceptionLog {
-  private dumpData: { query: string; error: any } = {
+  private _dumpData: ExceptionDump = {
     query: "",
     error: undefined,
   };
@@ -136,24 +137,32 @@ export class ExceptionLog {
     return { ...exception, ...{ exceptionMessage, exceptionData } };
   }
 
-  dump() {
-    if (!this.dumpData.query && !this.dumpData.error) return;
+  get dump(): string {
+    if (!this.dumpData.query && !this.dumpData.error) return "";
 
-    console.error(`[${$.date.currentDateTime()}]`, this.dumpData.query);
+    const error = this.dumpData.error
+      ? require("node:util").format(this.dumpData.error)
+      : "";
 
-    this.dumpData.error && console.error(this.dumpData.error);
+    return `${this.dumpData.query}\n${error}`;
+  }
+
+  get dumpData() {
+    return this._dumpData;
   }
 
   onHttp(request: Http2ServerRequest, response: Http2ServerResponse) {
     const responseData = this.getHttpResponseData(request, response);
 
+    this.dumpData.httpStatusCode = responseData.status;
+
     this.dumpData.query =
       "HTTP " +
       this.http.request.method.toUpperCase() +
       ": " +
-      this.http.request.url +
-      ": " +
       responseData.status +
+      ": " +
+      this.http.request.url +
       ": " +
       responseData.content;
 
@@ -162,7 +171,7 @@ export class ExceptionLog {
         ? this.http.exceptionMessage
         : this.http.exceptionData;
 
-    return this;
+    return responseData;
   }
 
   getHttpResponseData(

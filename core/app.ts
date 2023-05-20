@@ -6,6 +6,7 @@ import { $, fs } from "../utils";
 import { ModuleService } from "../services/module";
 import { CashierService } from "../services/cashier";
 import { OrmService } from "../services/orm";
+import { LoggerService } from "../services/logger";
 import {
   AppConfigInterface,
   AppEmitterEvents,
@@ -43,6 +44,7 @@ import {
 import { HttpClient } from "./http_client";
 import { RouteData } from "./interfaces/router";
 import { ServiceFactory } from "./service";
+import { ExceptionDump } from "./interfaces/exception";
 
 export const DEFAULT_PORT = 3000;
 export const DEFAULT_HOST = "localhost";
@@ -245,9 +247,14 @@ export class App {
     req: Http2ServerRequest,
     res: Http2ServerResponse,
   ) {
-    const resolve = this.config.get.exception.resolve || AppExceptionResolve;
+    const client = this.config.get.exception.resolve || AppExceptionResolve;
+    const resolve = new client(this, exception);
 
-    new resolve(this, exception).resolveOnHttp(req, res);
+    resolve.resolveOnHttp(req, res).then(() => {
+      const log = resolve.getLog();
+
+      this.service.logger.dumpError(log.dump, log.dumpData.httpStatusCode);
+    });
   }
 
   static store(storeName: string): State {
@@ -346,6 +353,8 @@ export class AppServiceManager {
   protected _module: ModuleService;
 
   protected _cashier: CashierService;
+
+  protected _logger: LoggerService;
 
   protected _requestPayload: (
     request: Http2ServerRequest,
@@ -472,6 +481,12 @@ export class AppServiceManager {
   get cashier() {
     return (this._cashier ||= new CashierService(this.app));
   }
+
+  get logger() {
+    return (this._logger ||= new this.app.config.get.logger.client(
+      this.app.config.get.logger.options,
+    ));
+  }
 }
 
 export class AppEnv {
@@ -587,11 +602,7 @@ export class AppExceptionResolve {
 
     const exceptionLog = this.getLog();
 
-    this._httpResponseData = exceptionLog
-      .onHttp(request, response)
-      .getHttpResponseData(request, response);
-
-    exceptionLog.dump();
+    this._httpResponseData = exceptionLog.onHttp(request, response);
 
     this._sendHttpException(request, response);
   }
@@ -603,9 +614,7 @@ export class AppExceptionResolve {
     if (HttpClient.getResponseIsSent(response)) return;
 
     const data = this._httpResponseData ?? ({} as HttpResponseDataInterface);
-
     const contentType = data.contentType;
-
     const payload = this.app.service.exceptionPayload;
 
     Object.assign(data, { request, response });

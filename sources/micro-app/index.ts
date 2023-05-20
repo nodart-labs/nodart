@@ -15,7 +15,7 @@ const config: nodart.app.AppConfigInterface = {
   },
   // See ORM supporting docs: https://knexjs.org/guide/
   orm: {
-    client: "better-sqlite3", // or 'sqlite3'
+    client: "sqlite3", // or 'sqlite3'
     connection: {
       filename: require("node:path").resolve(
         __dirname,
@@ -28,6 +28,20 @@ const config: nodart.app.AppConfigInterface = {
     /* Uncomment this line and set another path to your exception.html or leave it as is. */
     /* This option provides template (under the "views" folder) for view data from Exception on client side. */
     // template: 'exception' // or (response: nodart.http.HttpResponseDataInterface) => 'string/path'
+  },
+  logger: {
+    // Error Logging
+    options: {
+      error: {
+        useLogging: false, // Disabled by default
+        // filename: "", // errors logging filename: "error.log" by default
+        // directory: "" // absolute path to logging directory: "{project_directory}/logs" by default
+      },
+      onHttp: {
+        statuses: [500], // select under which http response code statuses the logging will be executed
+        excludeStatuses: [], // select under which http response code statuses the logging will be skipped
+      },
+    },
   },
 };
 

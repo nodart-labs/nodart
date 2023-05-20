@@ -31,6 +31,7 @@ import {
   OrmSeedSource,
   OrmSeeder,
 } from "./core/orm";
+import { OrmSchema } from "./core/orm_schema";
 import { HttpClient, HttpFormData } from "./core/http_client";
 import { HttpHandler } from "./core/http_handler";
 import { HttpResponder } from "./core/http_responder";
@@ -38,6 +39,7 @@ import { HttpService, HttpServiceAcceptor } from "./services/http";
 import { OrmService } from "./services/orm";
 import { ModuleService } from "./services/module";
 import { CashierService } from "./services/cashier";
+import { LoggerService } from "./services/logger";
 import { Router } from "./core/router";
 import { Session } from "./core/session";
 import { Observer } from "./core/observer";
@@ -101,6 +103,7 @@ export {
   ModuleService,
   OrmService,
   CashierService,
+  LoggerService,
   Router,
   Session,
   BaseController,
@@ -114,6 +117,7 @@ export {
   OrmMigrator,
   OrmSeedSource,
   OrmSeeder,
+  OrmSchema,
   Service,
   ServiceFactory,
   Observer,

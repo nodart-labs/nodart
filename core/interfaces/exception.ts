@@ -6,3 +6,9 @@ export interface BaseExceptionInterface {
 export interface BaseExceptionHandlerInterface {
   resolve(): PromiseLike<any>;
 }
+
+export type ExceptionDump = {
+  query: string;
+  error: any;
+  httpStatusCode?: number;
+};
