@@ -41,7 +41,9 @@ module.exports = {
         return !value;
     },
     capitalize(text) {
-        return ((text === null || text === void 0 ? void 0 : text.toString().charAt(0).toUpperCase()) + text.toString().slice(1) || "");
+        return this.isNil(text)
+            ? ""
+            : text.charAt(0).toUpperCase() + text.slice(1) || "";
     },
     trim(str, characters, flags = "g") {
         str && (str = str.toString());

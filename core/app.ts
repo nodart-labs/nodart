@@ -44,7 +44,6 @@ import {
 import { HttpClient } from "./http_client";
 import { RouteData } from "./interfaces/router";
 import { ServiceFactory } from "./service";
-import { ExceptionDump } from "./interfaces/exception";
 
 export const DEFAULT_PORT = 3000;
 export const DEFAULT_HOST = "localhost";
@@ -425,7 +424,7 @@ export class AppServiceManager {
         (data: HttpServiceRouteObject & { route: RouteData }) => {
           data.route.callback = data.callback;
 
-          this.app.router.addRoute(data.route, data.action as HttpMethod);
+          this.app.router.addRoute(data.route, data.method);
         },
       );
 

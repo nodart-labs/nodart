@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpHandler = void 0;
+const utils_1 = require("../utils");
 const app_1 = require("./app");
 const http_client_1 = require("./http_client");
 const http_1 = require("./interfaces/http");
@@ -23,11 +24,9 @@ class HttpHandler {
                 return;
             }
         }
-        else {
-            if (!HttpHandler.warnings.useCors) {
-                HttpHandler.warnings.useCors = true;
-                console.log("The CORS headers are disabled in configuration.");
-            }
+        else if (!HttpHandler.warnings.useCors) {
+            HttpHandler.warnings.useCors = true;
+            console.warn("The CORS headers are disabled in configuration.");
         }
     }
     serveStatic(callback) {
@@ -50,7 +49,7 @@ class HttpHandler {
             callback();
             if (!HttpHandler.warnings.serveStatic) {
                 HttpHandler.warnings.serveStatic = true;
-                console.log("Static files serve is disabled in configuration.");
+                console.warn("Static files serve is disabled in configuration.");
             }
         }
     }
@@ -77,7 +76,7 @@ class HttpHandler {
             callback();
             if (!HttpHandler.warnings.fetchDataOnRequest) {
                 HttpHandler.warnings.fetchDataOnRequest = true;
-                console.log("Auto fetching data on request is disabled in configuration.");
+                console.warn("Auto fetching data on request is disabled in configuration.");
             }
         }
     }
@@ -89,19 +88,33 @@ class HttpHandler {
     }
     initController(route) {
         const controller = (0, app_1.loaders)().controller.getControllerByRouteDescriptor(this.app, route, this.http) ||
-            (0, app_1.loaders)().controller.getControllerByRoutePath(this.app, route, this.http);
+            // deprecated: loaders().controller.getControllerByRoutePath(this.app, route, this.http);
+            (0, app_1.loaders)().controller.getControllerByRouteEntry(this.app, route, this.http);
         if (!controller)
             return false;
-        this.processData(controller[controller_1.CONTROLLER_INITIAL_ACTION](), () => this.runController(controller, route));
-    }
-    runController(controller, route) {
-        const action = controller.route.action || this.http.method;
-        if (typeof controller[action] !== "function" ||
-            (http_1.HTTP_METHODS.includes(action) && action !== this.http.method))
+        const action = this.fetchControllerAction(controller);
+        if (!action)
             http_client_1.HttpClient.throwBadRequest();
+        this.processData(controller[controller_1.CONTROLLER_INITIAL_ACTION]({ action }), () => this.runController(controller, route, action));
+    }
+    runController(controller, route, action) {
         const args = this.app.router.arrangeRouteParams(route);
-        // eslint-disable-next-line prefer-spread
         this.processData(controller[action].apply(controller, args));
+    }
+    fetchControllerAction(controller) {
+        var _a;
+        const action = (_a = controller.route.action) === null || _a === void 0 ? void 0 : _a.trim();
+        if (!action) {
+            return typeof controller[this.http.method] === "function"
+                ? this.http.method
+                : "";
+        }
+        const httpAction = `${this.http.method}${utils_1.$.capitalize(action)}`;
+        return typeof controller[httpAction] === "function"
+            ? httpAction
+            : typeof controller[action] === "function"
+                ? action
+                : "";
     }
     processData(data, callback) {
         if (http_client_1.HttpClient.getResponseIsSent(this.response))

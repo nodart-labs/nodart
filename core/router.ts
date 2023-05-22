@@ -9,19 +9,29 @@ import {
   RouterParamEntryRoutes,
   RouterParamsData,
 } from "./interfaces/router";
-import { HTTP_METHODS, HttpMethod } from "./interfaces/http";
+import { AnyHttpMethods } from "./interfaces/router";
+import { HTTP_METHODS } from "./interfaces/http";
+
+const ANY_HTTP_METHODS = "any";
+const SPLIT_ROUTE_ENTRY_ACTION_DELIMITER = ":";
+const DEFINE_ROUTE_PATH_HTTP_METHODS_POINTER = "@";
+const SPLIT_ROUTE_PATH_HTTP_METHODS_DELIMITER = ":";
+
+const DEFINE_ROUTE_PATH_PARAM_POINTER = ":";
+const DEFINE_ROUTE_PATH_NUMBER_PARAM_POINTER = "+";
+const DEFINE_ROUTE_PATH_OPTIONAL_PARAM_POINTER = "?";
 
 export class Router {
   readonly entries: RouterEntries = {};
 
   readonly paramEntries: RouterParamEntries = {};
 
-  protected _paramsData: RouterParamsData = {};
+  readonly paramsData: RouterParamsData = {};
 
   protected _paramEntryPointers = {
-    param: ":",
-    number: "+",
-    optional: "?",
+    param: DEFINE_ROUTE_PATH_PARAM_POINTER,
+    number: DEFINE_ROUTE_PATH_NUMBER_PARAM_POINTER,
+    optional: DEFINE_ROUTE_PATH_OPTIONAL_PARAM_POINTER,
   };
 
   constructor(protected _routes: RouteEntry) {
@@ -29,28 +39,83 @@ export class Router {
   }
 
   addEntries(routes: RouteEntry) {
-    this.paramEntries["any"] ||= [];
+    this.paramEntries[ANY_HTTP_METHODS] ||= [];
 
     Object.entries(routes).forEach(([name, data]) => {
       Array.isArray(data) || (data = [data]);
 
-      for (const route of data as RouteDescriptor[]) {
-        const routeData = typeof route === "string" ? { path: route } : route;
+      let action = "";
 
-        this.addRoute(
-          routeData as RouteDescriptor,
-          (HTTP_METHODS.includes(route.action)
-            ? route.action
-            : "any") as HttpMethod,
-          name,
-        );
+      if (name.includes(SPLIT_ROUTE_ENTRY_ACTION_DELIMITER)) {
+        const split = name.split(SPLIT_ROUTE_ENTRY_ACTION_DELIMITER);
+
+        name = split[0].trim();
+        action = split[1]?.trim();
+      }
+
+      for (const route of data as RouteDescriptor[] | string[]) {
+        let routeData: Partial<RouteDescriptor> = {};
+
+        if (typeof route === "string") {
+          if (route.startsWith(DEFINE_ROUTE_PATH_HTTP_METHODS_POINTER)) {
+            const { path, methods } =
+              this.fetchPathAndMethodsFromRoutePath(route);
+
+            if (!path) continue;
+
+            if (methods.length) {
+              for (const method of methods) {
+                routeData = { path, action, method };
+
+                this.addRoute(routeData, method, name);
+              }
+
+              continue;
+            }
+          }
+
+          routeData = { path: route, action };
+        } else {
+          routeData = route;
+          routeData.action ||= action;
+        }
+
+        this.addRoute(routeData, routeData.method || ANY_HTTP_METHODS, name);
       }
     });
   }
 
+  fetchPathAndMethodsFromRoutePath(path: string) {
+    const split = path.split(SPLIT_ROUTE_PATH_HTTP_METHODS_DELIMITER);
+    const methods = [];
+
+    for (const method of split) {
+      const httpMethod = method.trim().substring(1);
+
+      if (
+        !method.trim().startsWith(DEFINE_ROUTE_PATH_HTTP_METHODS_POINTER) ||
+        !HTTP_METHODS.includes(httpMethod)
+      ) {
+        break;
+      }
+
+      methods.push(httpMethod);
+
+      path = path.replace(
+        new RegExp(
+          `(^${method}${SPLIT_ROUTE_PATH_HTTP_METHODS_DELIMITER})`,
+          "gi",
+        ),
+        "",
+      );
+    }
+
+    return { path, methods };
+  }
+
   addRoute(
-    desc: string | RouteDescriptor,
-    method: HttpMethod | "any",
+    desc: string | Partial<RouteDescriptor>,
+    method: AnyHttpMethods,
     route?: string,
   ) {
     const data = this.getRouteData(
@@ -75,8 +140,8 @@ export class Router {
     this._addParamEntry(data, method);
   }
 
-  protected _addParamEntry(data: RouteData, method: HttpMethod | "any") {
-    this._paramsData[data.path] = {
+  protected _addParamEntry(data: RouteData, method: AnyHttpMethods) {
+    this.paramsData[data.path] = {
       index: {},
       types: {},
       names: [],
@@ -97,9 +162,9 @@ export class Router {
 
       const param = entry.slice(start, end);
 
-      this._paramsData[data.path].index[index] = param;
-      this._paramsData[data.path].names[index] = param;
-      this._paramsData[data.path].types[param] = { optional, number };
+      this.paramsData[data.path].index[index] = param;
+      this.paramsData[data.path].names[index] = param;
+      this.paramsData[data.path].types[param] = { optional, number };
     }
 
     this.paramEntries[method] = [
@@ -110,24 +175,26 @@ export class Router {
 
   getRouteByURLPathname(
     pathname: string,
-    method: HttpMethod | "any",
+    method: AnyHttpMethods,
   ): Readonly<RouteData> {
     pathname = $.trimPath(pathname);
     pathname ||= "/";
 
     const route =
-      this.entries[pathname]?.[method] || this.entries[pathname]?.["any"];
+      this.entries[pathname]?.[method] ||
+      this.entries[pathname]?.[ANY_HTTP_METHODS];
 
     if (route) return this.getRouteData({ ...route, pathname });
 
     const routes = [
       ...(this.paramEntries[method] || []),
-      ...this.paramEntries["any"],
+      ...this.paramEntries[ANY_HTTP_METHODS],
     ] as RouterParamEntryRoutes;
+
     const path = pathname.split("/");
 
     OUTER: for (const route of routes) {
-      const paramData = this._paramsData[route.path] || {
+      const paramData = this.paramsData[route.path] || {
         names: [],
         types: {},
         index: {},
@@ -180,6 +247,7 @@ export class Router {
         pathname: "",
         route: "",
         action: "",
+        method: "",
         callback: null,
         controller: null,
         params: {},
@@ -214,7 +282,7 @@ export class Router {
 
   arrangeRouteParams(data: RouteData) {
     data.params ||= {};
-    const paramData = this._paramsData[data.path] || { names: [] };
+    const paramData = this.paramsData[data.path] || { names: [] };
     const names = paramData.names.filter((value) => value !== undefined);
     const arrange = [];
     let i = 0;

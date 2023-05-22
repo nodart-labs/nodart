@@ -281,7 +281,7 @@ class AppServiceManager {
         this.httpService.subscribers.length ||
             this.httpService.subscribe((data) => {
                 data.route.callback = data.callback;
-                this.app.router.addRoute(data.route, data.action);
+                this.app.router.addRoute(data.route, data.method);
             });
         return this.httpService.httpAcceptor;
     }

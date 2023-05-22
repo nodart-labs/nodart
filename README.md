@@ -280,6 +280,9 @@ export class BooksController extends Controller {
 
   declare book: Book;
 
+  /**
+   * @property data?: {Object<{action: string}>}
+   */
   init() {
     this.book = this.model.Book;
   }
@@ -410,6 +413,9 @@ export class BooksController extends Controller {
 
   declare book: Book;
 
+  /**
+   * @property data?: {Object<{action: string}>}
+   */
   init() {
     this.book = this.model.Book;
   }
@@ -438,6 +444,123 @@ export class BooksController extends Controller {
     const data = await this.book.use.list().on.author<"list">(author_id);
 
     return this.book.mutate.list.book(data);
+  }
+}
+```
+
+---
+
+## ROUTING
+
+> ROUTING is one of the main components of any backend and frontend application. Simplicity and clarity, as well as further support of the entire application, depends on the convenience of configuring routing. The routing system in the nodart framework is optimized for fast search and navigation.
+
+> Basic routing is defined in the configuration file and described as JSON notation:
+
+```typescript
+import { nodart } from "nodart";
+
+export = <nodart.app.AppConfigInterface>{
+  ...
+
+  routes: <nodart.router.RouteEntry>{
+    /** The entry "path/Book" specifies the path
+    * to your "BooksController"
+    * under the "controllers" folder.
+    * */
+    "path/Books": [
+      {
+        /**
+         * The ":" pointer defines the route parameter entry;
+         *
+         * The "+" pointer indicates that the parameter is
+         *   of a numeric type, and casts its value to a number
+         *   if the value is of a numeric type;
+         *
+         * The "?" pointer indicates that the parameter
+         *   is optional and may not be in the route path;
+         */
+        path: "/:category/books/:+id?",
+
+        /**
+         * The "action" property defines which controller's
+         * method must be called
+         * (if not specified then the controller's action
+         * named by the current HTTP method will be called)
+         */
+        action: "list",
+
+        /** The "method" property defines HTTP method on which
+         * the action must be called ("any" by default)
+         */
+        method: "get",
+      },
+      {
+        path: "/books/:category/:name",
+
+        /** Validating and filtering route parameters: */
+        types: {
+          category: (value) => {
+
+            return ["history", "adventure"].includes(value)
+              ? value
+              : null;
+          },
+          name: /(^book-)/ // Starts with "book-" in name
+        },
+      }
+    ]
+  }
+
+  ...
+}
+```
+
+**Now we can simplify the above example in "inline" manner:**
+
+```typescript
+import { nodart } from "nodart";
+
+export = <nodart.app.AppConfigInterface>{
+  ...
+
+  routes: <nodart.router.RouteEntry>{
+    "path/Books:list": "@get:/:category/books/:+id?",
+
+    "path/MyBooks": [
+      "@get:/my/book/:id",
+      "@patch:@put:/my/book/:id",
+    ]
+  }
+
+  ...
+}
+```
+
+**Alternatively, we can call controller methods by appending the name of the HTTP method to the class method:**
+
+```typescript
+routes: <nodart.router.RouteEntry>{
+  "path/Books:myBook": "/my/books/:+id?",
+};
+```
+
+```typescript
+export class BooksController extends Controller {
+
+  getMyBook(id) {
+    ...
+  }
+
+  postMyBook() {
+    ...
+  }
+
+  patchMyBook(id) {
+    ...
+  }
+
+  deleteMyBook(id) {
+    ...
   }
 }
 ```
@@ -489,80 +612,6 @@ npm run start
 
 ---
 
-## BENCHMARKS
-
-The framework is built on the premise that performance
-and functionality should be perfectly balanced.
-The performance of some well-known **server-side** frameworks is compared here.
-
-> Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
-> and in some aspects surpasses it and all other frameworks.
-
-Environment:
-
-- Computer: AMD Ryzen 5 4600H Radeon, 3000 MHz, 6 Cores, SSD, 16 Gb RAM
-- Benchmarking tool: <a href="https://www.npmjs.com/package/autocannon">AutoCannon</a>
-- Benchmarking command:
-
-`autocannon -R 10000 http://localhost:3000`
-
-_(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)_
-
-### 1. Testing simple JSON response:
-
-```typescript
-http.get("/", () => {
-  return { hello: "world" };
-});
-```
-
-| Framework         | Bytes/sec   | Requests/sec |
-| ----------------- | ----------- | ------------ |
-| Fastify v4.0.0    | 1.91 MB     | 10183        |
-| **NodArt v4.2.0** | **2.02 MB** | **10143**    |
-| Express v4.18.2   | 1.94 MB     | 7683         |
-| Nest.js v9.0.0    | 1.61 MB     | 6395         |
-
-### 2. Testing parametric route:
-
-```typescript
-http.get("/test/:param1/:param2/:param3/:param4", ({ route }) => {
-  const { param1, param2, param3, param4 } = route.params;
-  return { param1, param2, param3, param4 };
-});
-```
-
-| Framework         | Bytes/sec   | Requests/sec |
-| ----------------- | ----------- | ------------ |
-| Fastify v4.0.0    | 2.27 MB     | 10143        |
-| **NodArt v4.2.0** | **2.45 MB** | **10127**    |
-| Express v4.18.2   | 2.17 MB     | 7531         |
-| Nest.js v9.0.0    | 1.8 MB      | 6239         |
-
-### 3. Testing static file serve:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Title</title>
-  </head>
-  <body>
-    <h1>Hello world!</h1>
-  </body>
-</html>
-```
-
-| Framework         | Bytes/sec  | Requests/sec |
-| ----------------- | ---------- | ------------ |
-| **NodArt v4.2.0** | **4.4 MB** | **7955**     |
-| Fastify v4.0.0    | 2.32 MB    | 5295         |
-| Express v4.18.2   | 2 MB       | 4343         |
-| Nest.js v9.0.0    | 1.87 MB    | 4057         |
-
----
-
 ## COMMAND LINE INTERFACE
 
 ### System Commands:
@@ -571,7 +620,7 @@ http.get("/test/:param1/:param2/:param3/:param4", ({ route }) => {
 npx nodart [command name] [command action optional] --[argument name optional] [argument value]
 ```
 
-### App Commands:
+### Project Commands:
 
 ```shell
 node cmd [command name] [command action optional] --[argument name optional] [argument value]
@@ -669,4 +718,85 @@ npx nodart seed all-source-run --exclude[optional] excluded-seed-sourcename
 
 ---
 
-#### <font color=orange>Documentation is processing. The link will be available as soon as possible.</font>
+## BENCHMARKS
+
+The framework is built on the premise that performance
+and functionality should be perfectly balanced.
+The performance of some well-known **server-side** frameworks is compared here.
+
+> Spoiler message: As you can see, the NodArt framework is not far behind the fastest Fastify,
+> and in some aspects surpasses it and all other frameworks.
+
+Environment:
+
+- Computer: AMD Ryzen 5 4600H Radeon, 3000 MHz, 6 Cores, SSD, 16 Gb RAM
+- Benchmarking tool: <a href="https://www.npmjs.com/package/autocannon">AutoCannon</a>
+- Benchmarking command:
+
+`autocannon -R 10000 http://localhost:3000`
+
+_(10000 requests per second; Total connections/users: 10; Total time: 10 seconds)_
+
+### 1. Testing simple JSON response:
+
+```typescript
+http.get("/", () => {
+  return { hello: "world" };
+});
+```
+
+| Framework         | Bytes/sec   | Requests/sec |
+| ----------------- | ----------- | ------------ |
+| Fastify v4.0.0    | 1.91 MB     | 10183        |
+| **NodArt v4.2.0** | **2.02 MB** | **10143**    |
+| Express v4.18.2   | 1.94 MB     | 7683         |
+| Nest.js v9.0.0    | 1.61 MB     | 6395         |
+
+### 2. Testing parametric route:
+
+```typescript
+http.get("/test/:param1/:param2/:param3/:param4", ({ route }) => {
+  const { param1, param2, param3, param4 } = route.params;
+  return { param1, param2, param3, param4 };
+});
+```
+
+| Framework         | Bytes/sec   | Requests/sec |
+| ----------------- | ----------- | ------------ |
+| Fastify v4.0.0    | 2.27 MB     | 10143        |
+| **NodArt v4.2.0** | **2.45 MB** | **10127**    |
+| Express v4.18.2   | 2.17 MB     | 7531         |
+| Nest.js v9.0.0    | 1.8 MB      | 6239         |
+
+### 3. Testing static file serve:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <h1>Hello world!</h1>
+  </body>
+</html>
+```
+
+| Framework         | Bytes/sec  | Requests/sec |
+| ----------------- | ---------- | ------------ |
+| **NodArt v4.2.0** | **4.4 MB** | **7955**     |
+| Fastify v4.0.0    | 2.32 MB    | 5295         |
+| Express v4.18.2   | 2 MB       | 4343         |
+| Nest.js v9.0.0    | 1.87 MB    | 4057         |
+
+---
+
+### Support
+
+Join the development team, we will be happy to consider any of your
+ideas and codebase that will be included in the next release.
+
+> **email**: nodart.labs@gmail.com
+
+> **issue reports**: https://github.com/nodart-labs/nodart/issues

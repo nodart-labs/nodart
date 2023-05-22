@@ -45,6 +45,16 @@ class ControllerLoader extends app_loader_1.AppLoader {
                 ]);
         }
     }
+    getControllerByRouteEntry(app, route, http) {
+        if (!route.route)
+            return;
+        const controller = this.load(route.route, controller_1.BaseController, app.rootDir);
+        if (controller)
+            return this.call([app, http, route, controller]);
+    }
+    /**
+     * @deprecated
+     */
     getControllerByRoutePath(app, route, http) {
         const data = { path: "", action: "" };
         const rootDir = app.rootDir;

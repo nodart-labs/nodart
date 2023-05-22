@@ -64,6 +64,21 @@ export class ControllerLoader extends AppLoader {
     }
   }
 
+  getControllerByRouteEntry(
+    app: App,
+    route: RouteData,
+    http: HttpContainer,
+  ): BaseController | void {
+    if (!route.route) return;
+
+    const controller = this.load(route.route, BaseController, app.rootDir);
+
+    if (controller) return this.call([app, http, route, controller]);
+  }
+
+  /**
+   * @deprecated
+   */
   getControllerByRoutePath(
     app: App,
     route: RouteData,

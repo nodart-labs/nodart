@@ -1,13 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpServiceAcceptor = exports.HttpService = void 0;
+const http_1 = require("../core/interfaces/http");
 class HttpService {
     constructor() {
         this.subscribers = [];
     }
-    sendRoute(route, action, callback) {
+    sendRoute(route, method, callback) {
         route = typeof route === "string" ? { path: route } : route;
-        this.subscribers.forEach((listen) => listen({ route, action, callback }));
+        http_1.HTTP_METHODS.includes(method) && (route.method = method);
+        this.subscribers.forEach((listen) => listen({ route, method, callback }));
     }
     subscribe(subscriber) {
         this.subscribers.push(subscriber);

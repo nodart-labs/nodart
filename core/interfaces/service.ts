@@ -1,8 +1,9 @@
 import { App } from "../app";
 import { HttpContainer } from "../http_client";
 import { BaseController } from "../controller";
-import { RouteData, RouteDescriptor } from "./router";
+import { AnyHttpMethods, RouteData, RouteDescriptor } from "./router";
 import { JSONObjectInterface } from "./object";
+import { HttpMethod } from "./http";
 
 export type ServiceScope = {
   app?: App;
@@ -24,7 +25,7 @@ export type HttpServiceCallback = (
 
 export type HttpServiceRouteObject = {
   route: string | RouteDescriptor;
-  action: string;
+  method: AnyHttpMethods;
   callback: HttpServiceCallback;
 };
 

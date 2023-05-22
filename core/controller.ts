@@ -6,10 +6,11 @@ import { injects } from "./di";
 import { RouteData } from "./interfaces/router";
 import { ObjectDeepNestedGeneric } from "./interfaces/object";
 import { HttpContainer } from "./http_client";
+import { BaseControllerInterface } from "./interfaces/controller";
 
 export const CONTROLLER_INITIAL_ACTION = "init";
 
-export abstract class BaseController {
+export abstract class BaseController implements BaseControllerInterface {
   abstract readonly service: ObjectDeepNestedGeneric<Service | typeof Service>;
 
   abstract readonly model: ObjectDeepNestedGeneric<Model | typeof Model>;
@@ -20,7 +21,7 @@ export abstract class BaseController {
     readonly route: RouteData,
   ) {}
 
-  abstract init(): any;
+  abstract init(data?: { action: string }): any;
 
   get session() {
     return this.http.session;

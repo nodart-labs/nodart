@@ -1,7 +1,8 @@
 import { Http2ServerRequest, Http2ServerResponse } from "http2";
+import { $ } from "../utils";
 import { App, loaders } from "./app";
 import { HttpClient, HttpContainer, JSON_CONTENT_TYPE } from "./http_client";
-import { HTTP_METHODS, HTTP_STATUS } from "./interfaces/http";
+import { HTTP_STATUS } from "./interfaces/http";
 import { JSONLikeInterface } from "./interfaces/object";
 import { RouteData } from "./interfaces/router";
 import { BaseController, CONTROLLER_INITIAL_ACTION } from "./controller";
@@ -39,12 +40,10 @@ export class HttpHandler {
 
         return;
       }
-    } else {
-      if (!HttpHandler.warnings.useCors) {
-        HttpHandler.warnings.useCors = true;
+    } else if (!HttpHandler.warnings.useCors) {
+      HttpHandler.warnings.useCors = true;
 
-        console.log("The CORS headers are disabled in configuration.");
-      }
+      console.warn("The CORS headers are disabled in configuration.");
     }
   }
 
@@ -70,7 +69,7 @@ export class HttpHandler {
       if (!HttpHandler.warnings.serveStatic) {
         HttpHandler.warnings.serveStatic = true;
 
-        console.log("Static files serve is disabled in configuration.");
+        console.warn("Static files serve is disabled in configuration.");
       }
     }
   }
@@ -105,7 +104,7 @@ export class HttpHandler {
       if (!HttpHandler.warnings.fetchDataOnRequest) {
         HttpHandler.warnings.fetchDataOnRequest = true;
 
-        console.log(
+        console.warn(
           "Auto fetching data on request is disabled in configuration.",
         );
       }
@@ -127,28 +126,46 @@ export class HttpHandler {
         route,
         this.http,
       ) ||
-      loaders().controller.getControllerByRoutePath(this.app, route, this.http);
+      // deprecated: loaders().controller.getControllerByRoutePath(this.app, route, this.http);
+      loaders().controller.getControllerByRouteEntry(
+        this.app,
+        route,
+        this.http,
+      );
 
     if (!controller) return false;
 
-    this.processData(controller[CONTROLLER_INITIAL_ACTION](), () =>
-      this.runController(controller, route),
+    const action = this.fetchControllerAction(controller);
+
+    if (!action) HttpClient.throwBadRequest();
+
+    this.processData(controller[CONTROLLER_INITIAL_ACTION]({ action }), () =>
+      this.runController(controller, route, action),
     );
   }
 
-  runController(controller: BaseController, route: RouteData) {
-    const action = controller.route.action || this.http.method;
-
-    if (
-      typeof controller[action] !== "function" ||
-      (HTTP_METHODS.includes(action) && action !== this.http.method)
-    )
-      HttpClient.throwBadRequest();
-
+  runController(controller: BaseController, route: RouteData, action: string) {
     const args = this.app.router.arrangeRouteParams(route);
 
-    // eslint-disable-next-line prefer-spread
     this.processData(controller[action].apply(controller, args));
+  }
+
+  fetchControllerAction(controller: BaseController): string {
+    const action = controller.route.action?.trim();
+
+    if (!action) {
+      return typeof controller[this.http.method] === "function"
+        ? this.http.method
+        : "";
+    }
+
+    const httpAction = `${this.http.method}${$.capitalize(action)}`;
+
+    return typeof controller[httpAction] === "function"
+      ? httpAction
+      : typeof controller[action] === "function"
+      ? action
+      : "";
   }
 
   processData(data: any, callback?: (...args) => any) {

@@ -8,7 +8,7 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
-    "nodart": "^5.4.0"
+    "nodart": "^5.5.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

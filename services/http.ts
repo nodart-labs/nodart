@@ -1,21 +1,27 @@
-import { HttpAcceptorInterface } from "../core/interfaces/http";
+import {
+  HTTP_METHODS,
+  HttpAcceptorInterface,
+  HttpMethod,
+} from "../core/interfaces/http";
 import {
   HttpServiceCallback,
   HttpServiceSubscriber,
 } from "../core/interfaces/service";
-import { RouteDescriptor } from "../core/interfaces/router";
+import { AnyHttpMethods, RouteDescriptor } from "../core/interfaces/router";
 
 export class HttpService {
   readonly subscribers: HttpServiceSubscriber[] = [];
 
   sendRoute(
     route: string | RouteDescriptor,
-    action: string,
+    method: AnyHttpMethods,
     callback: HttpServiceCallback,
   ) {
     route = typeof route === "string" ? { path: route } : route;
 
-    this.subscribers.forEach((listen) => listen({ route, action, callback }));
+    HTTP_METHODS.includes(method) && (route.method = method as HttpMethod);
+
+    this.subscribers.forEach((listen) => listen({ route, method, callback }));
   }
 
   subscribe(subscriber: HttpServiceSubscriber) {

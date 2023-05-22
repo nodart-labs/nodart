@@ -51,9 +51,9 @@ export = {
   },
 
   capitalize(text: string) {
-    return (
-      text?.toString().charAt(0).toUpperCase() + text.toString().slice(1) || ""
-    );
+    return this.isNil(text)
+      ? ""
+      : text.charAt(0).toUpperCase() + text.slice(1) || "";
   },
 
   trim(str: string, characters: string | string[], flags = "g") {

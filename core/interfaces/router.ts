@@ -32,6 +32,7 @@ export type RouteDescriptor = {
   path: string;
   name?: string;
   action?: string;
+  method?: HttpMethod;
   controller?: (route: RouteData) => typeof BaseController;
   types?: { [param: string]: RouteDescriptorParamTypes };
   [addon: string]: any;
@@ -43,3 +44,5 @@ export type RouteData = RouteDescriptor & {
   params?: { [name: string]: string | number };
   callback?: HttpServiceCallback;
 };
+
+export type AnyHttpMethods = HttpMethod | "any";
